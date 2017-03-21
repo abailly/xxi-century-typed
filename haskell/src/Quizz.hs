@@ -60,9 +60,18 @@ isCorrectAnswer (QCM _ _        (Closed e) (Just r@(Option _))) = e == r
 isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
 isCorrectAnswer _                                               = False
 
+answerQuestion :: Knight -> Question -> Quizz -> Quizz
+answerQuestion Knight{..} question quizz =
+  update quizz (responses question)
+  where
+    update Quizz{..} r = quizz { previousQuestions = question { response = r } : previousQuestions
+                               , currentQuestion = head nextQuestions
+                               , nextQuestions = tail nextQuestions
+                               }
+
 answers :: Knight -> Quizz -> Quizz
 answers k q =
-  foldr (_answerQuestion k) q (nextQuestions q)
+ foldr (answerQuestion k) q (nextQuestions q)
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
 bridgeKeeperAssessment knight _ = IsDoomed knight

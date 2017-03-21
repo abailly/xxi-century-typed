@@ -5,13 +5,24 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 possibleQuestions =
-  elements [ OpenQuestion "What is your name ?" Nothing
-           , OpenQuestion "What is your quest?" Nothing
-           , QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] Nothing
-           , QCM "What is the capital of Assyria?" [ "Babylone", "Ninive", "Ur", "Don't know" ] Nothing
-           , Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) Nothing
+  elements [ OpenQuestion "What is your name ?" (Open $ const True) Nothing
+           , OpenQuestion "What is your quest?" (Open $ const True) Nothing
+           , QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] (Closed $ Option 0) Nothing
+           , QCM "What is the capital of Assyria?" [ "Babylone", "Ninive", "Ur", "Don't know" ] (Closed $ Option 1) Nothing
+           , Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) (Closed $ Graded 35) Nothing
            ]
 
+instance Arbitrary Question where
+  arbitrary = possibleQuestions
+
+instance Arbitrary Response where
+  arbitrary = oneof [ Graded <$> choose (0, 100)
+                    , Option <$> choose (0,3)
+                    , FreeText <$> elements [ "Sir Lancelot"
+                                            , "To seek the Holy Grail"
+                                            ]
+                    ]
+    
 instance Arbitrary Quizz where
   arbitrary = do
     questions <- vectorOf 3 possibleQuestions
@@ -19,11 +30,11 @@ instance Arbitrary Quizz where
 
 lancelot = Knight "Lancelot"
            (\case
-               OpenQuestion "What is your name ?"     _ -> FreeText "Sir Lancelot"
-               OpenQuestion "What is your quest?"     _ -> FreeText "To seek the Holy Grail"
-               QCM  "What is your  favourite colour?" _ _ -> Option 0
-               QCM  "What is the capital of Assyria?" _ _ -> Option 1
-               Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ -> Graded 35
+               OpenQuestion "What is your name ?"     _ _ -> FreeText "Sir Lancelot"
+               OpenQuestion "What is your quest?"     _ _ -> FreeText "To seek the Holy Grail"
+               QCM  "What is your  favourite colour?" _ _ _ -> Option 0
+               QCM  "What is the capital of Assyria?" _ _ _ -> Option 1
+               Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ _ -> Graded 35
                )
 instance Arbitrary Knight where
   arbitrary = elements [ lancelot ]
@@ -38,9 +49,21 @@ allows_crossing_bridge_when_3_answers_are_correct quizz knight =
   in  all isCorrectAnswer (previousQuestions result) ==> outcome == CanCross knight
 
 
+answer_is_correct_when_matches_expected :: Question -> Maybe Response -> Bool
+answer_is_correct_when_matches_expected question response =
+  let oracle = isCorrectAnswer (question { response = response })
+  in oracle ==
+     case (expected question, response) of
+       (Open f, Just (FreeText t)) -> f t
+       (Closed e, Just r)          -> e == r 
+       _                           -> False
+  
 
 spec :: Spec
 spec = describe "Bridge of Death" $ do
+
+  it "answer is correct if it matches expected" $ property $
+    answer_is_correct_when_matches_expected
 
   it "allows crossing the bridge if three answers are correct" $ property $
     allows_crossing_bridge_when_3_answers_are_correct

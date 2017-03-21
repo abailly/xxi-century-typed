@@ -1,9 +1,9 @@
 module Quizz (Quizz(..), Question(..), Knight(..), Fate(..), Response(..),
+              Expected(..),
               answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
 import           Data.Text
-import           Test.QuickCheck
 
 data Quizz = Quizz { previousQuestions :: [ Question ]
                    , currentQuestion   :: Question
@@ -14,17 +14,28 @@ data Quizz = Quizz { previousQuestions :: [ Question ]
 data Response = Graded Int
               | Option Int
               | FreeText Text
-              deriving  (Show)
+              deriving  (Eq, Show)
+
+data Expected =
+  Open (Text -> Bool)
+  | Closed Response
+
+instance Show Expected where
+  show (Open _  ) = "Open ended"
+  show (Closed r) = "Closed " ++ show r
 
 data Question = QCM { question   :: Text
                     , qcmOptions :: [ Text ]
+                    , expected   :: Expected
                     , response   :: Maybe Response
                     }
               | Grade { question   :: Text
                       , gradeRange :: (Int, Int)
+                      , expected   :: Expected
                       , response   :: Maybe Response
                       }
               | OpenQuestion { question :: Text
+                             , expected :: Expected
                              , response :: Maybe Response
                              }
               deriving (Show)

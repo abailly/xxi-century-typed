@@ -55,7 +55,9 @@ data Fate = CanCross Knight
           deriving (Eq, Show)
 
 isCorrectAnswer :: Question -> Bool
-isCorrectAnswer _ = False
+isCorrectAnswer (OpenQuestion _ (Open f)   (Just (FreeText t))) = f t
+isCorrectAnswer (QCM _ _        (Closed e) (Just r@(Option _))) = e == r
+isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
 
 answers :: Knight -> Quizz -> Quizz
 answers _ q = q

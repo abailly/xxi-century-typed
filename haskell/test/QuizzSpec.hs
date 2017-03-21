@@ -37,8 +37,18 @@ lancelot = Knight "Lancelot"
                Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ _ -> Just $ Graded 35
                _ -> Nothing
                )
+           
+robin = Knight "Robin"
+           (\case
+               OpenQuestion "What is your name ?"     _ _   -> Just $ FreeText "Sir Robin"
+               OpenQuestion "What is your quest?"     _ _   -> Just $ FreeText "To seek the Holy Grail"
+               QCM  "What is your  favourite colour?" _ _ _ -> Just $ Option 1
+               QCM  "What is the capital of Assyria?" _ _ _ -> Just $ Option 1
+               Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ _ -> Just $ Graded 35
+               _ -> Nothing
+               )
 instance Arbitrary Knight where
-  arbitrary = elements [ lancelot ]
+  arbitrary = elements [ lancelot, robin ]
 
 -- from Monty Python's Holy Grail
 -- see http://www.retrojunk.com/content/child/quote/page/210/monty-python-and-the-holy-grail

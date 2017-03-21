@@ -5,7 +5,7 @@ where
 
 import           Data.Text (Text, unpack)
 
-data Quizz = Quizz { previousQuestions :: [ Question ]
+data Quizz = Quizz { previousQuestions :: [ Question ] -- there should be a concept of answered questions...
                    , currentQuestion   :: Question
                    , nextQuestions     :: [ Question ]
                    }
@@ -74,4 +74,7 @@ answers k q =
  foldr (answerQuestion k) q (nextQuestions q)
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
-bridgeKeeperAssessment knight _ = IsDoomed knight
+bridgeKeeperAssessment knight quizz =
+  if all isCorrectAnswer (previousQuestions $ knight `answers` quizz)
+  then CanCross knight
+  else IsDoomed knight

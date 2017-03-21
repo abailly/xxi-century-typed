@@ -1,9 +1,9 @@
-module Quizz (Quizz(..), Question(..), Knight(..),
-              answers, bridgeKeeperAssessment)
+module Quizz (Quizz(..), Question(..), Knight(..), Fate(..), Response(..),
+              answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
 import           Data.Text
-
+import           Test.QuickCheck
 
 data Quizz = Quizz { previousQuestions :: [ Question ]
                    , currentQuestion   :: Question
@@ -29,22 +29,25 @@ data Question = QCM { question   :: Text
                              }
               deriving (Show)
 
-data Knight = Knight { name    :: Text
+data Knight = Knight { name      :: Text
                      , responses :: Question -> Response
                      }
 
 instance Show Knight where
-  show Knight{..} = "Sir " ++ show name
+  show Knight{..} = "Sir " ++ unpack name
 
 instance Eq Knight where
   Knight n1 _ == Knight n2 _ = n1 == n2
-  
+
 data Fate = CanCross Knight
           | IsDoomed Knight
           deriving (Eq, Show)
+
+isCorrectAnswer :: Question -> Bool
+isCorrectAnswer _ = False
 
 answers :: Knight -> Quizz -> Quizz
 answers _ q = q
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
-bridgeKeeperAssessment knight _ = IsDoomed knight 
+bridgeKeeperAssessment knight _ = IsDoomed knight

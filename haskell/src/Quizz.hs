@@ -1,11 +1,11 @@
-module Survey where
+module Quizz where
 
 import           Data.Text
 
 
-data Survey = Survey { previousQuestions :: [ Question ]
-                     , currentQuestion   :: Question
-                     , nextQuestions     :: [ Question ]
+data Quizz = Quizz { previousQuestions :: [ Question ]
+                     , currentQuestion :: Question
+                     , nextQuestions   :: [ Question ]
                      }
               deriving (Show)
 
@@ -26,3 +26,6 @@ data Question = QCM { question   :: Text
                              , response :: Maybe Response
                              }
               deriving (Show)
+
+
+

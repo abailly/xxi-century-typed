@@ -3,7 +3,7 @@ module Quizz (Quizz(..), Question(..), Knight(..), Fate(..), Response(..),
               answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
-import           Data.Text
+import           Data.Text (Text, unpack)
 
 data Quizz = Quizz { previousQuestions :: [ Question ]
                    , currentQuestion   :: Question
@@ -61,7 +61,8 @@ isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
 isCorrectAnswer _                                               = False
 
 answers :: Knight -> Quizz -> Quizz
-answers _ q = q
+answers k q =
+  foldr (_answerQuestion k) q (nextQuestions q)
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
 bridgeKeeperAssessment knight _ = IsDoomed knight

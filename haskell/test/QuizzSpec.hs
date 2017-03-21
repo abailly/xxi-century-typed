@@ -8,8 +8,8 @@ import           Test.QuickCheck
 allows_crossing_bridge_when_3_answers_are_correct :: Quizz -> Knight -> Bool
 allows_crossing_bridge_when_3_answers_are_correct quizz knight =
   let result  = knight `answers` quizz
-      outcome = bridgeKeeperAssessment result
-  in  all isCorrectAnswer result ==> outcome == CanCross knight
+      outcome = bridgeKeeperAssessment knight result
+  in  all _isCorrectAnswer (previousQuestions result) ==> outcome == CanCross knight
 
 
 

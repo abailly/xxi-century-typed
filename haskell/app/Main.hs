@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import           Survey
 
 main :: IO ()
 main = someFunc

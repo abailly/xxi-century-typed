@@ -41,7 +41,7 @@ data Question = QCM { question   :: Text
               deriving (Show)
 
 data Knight = Knight { name      :: Text
-                     , responses :: Question -> Response
+                     , responses :: Question -> Maybe Response
                      }
 
 instance Show Knight where
@@ -58,6 +58,7 @@ isCorrectAnswer :: Question -> Bool
 isCorrectAnswer (OpenQuestion _ (Open f)   (Just (FreeText t))) = f t
 isCorrectAnswer (QCM _ _        (Closed e) (Just r@(Option _))) = e == r
 isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
+isCorrectAnswer _                                               = False
 
 answers :: Knight -> Quizz -> Quizz
 answers _ q = q

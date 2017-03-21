@@ -30,11 +30,12 @@ instance Arbitrary Quizz where
 
 lancelot = Knight "Lancelot"
            (\case
-               OpenQuestion "What is your name ?"     _ _ -> FreeText "Sir Lancelot"
-               OpenQuestion "What is your quest?"     _ _ -> FreeText "To seek the Holy Grail"
-               QCM  "What is your  favourite colour?" _ _ _ -> Option 0
-               QCM  "What is the capital of Assyria?" _ _ _ -> Option 1
-               Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ _ -> Graded 35
+               OpenQuestion "What is your name ?"     _ _   -> Just $ FreeText "Sir Lancelot"
+               OpenQuestion "What is your quest?"     _ _   -> Just $ FreeText "To seek the Holy Grail"
+               QCM  "What is your  favourite colour?" _ _ _ -> Just $ Option 0
+               QCM  "What is the capital of Assyria?" _ _ _ -> Just $ Option 1
+               Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) _ _ -> Just $ Graded 35
+               _ -> Nothing
                )
 instance Arbitrary Knight where
   arbitrary = elements [ lancelot ]
@@ -58,9 +59,6 @@ spec = describe "Bridge of Death" $ do
       `shouldBe` True
     isCorrectAnswer (Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) (Closed $ Graded 35) (Just $ Graded 35))
       `shouldBe` True
-
-  it "answer is incorrect if it does not matches expected" $ property $
-    answer_is_incorrect_when_it_does_not_match_expected
 
   it "allows crossing the bridge if three answers are correct" $ property $
     allows_crossing_bridge_when_3_answers_are_correct

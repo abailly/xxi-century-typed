@@ -1,6 +1,6 @@
 package xxi
 
 sourcedir = src
-modules = Quizz
+modules = HolyGrail
 main = quizz
 executable = quizz

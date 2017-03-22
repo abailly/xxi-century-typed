@@ -1,0 +1,6 @@
+package xxi
+
+sourcedir = src
+modules = Quizz
+main = quizz
+executable = quizz

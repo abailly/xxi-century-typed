@@ -57,7 +57,12 @@ notANumber _ = VOID
 tooLargeOption : Answer (QCM question qcmOptions expected) -> Void
 tooLargeOption _ = VOID 
 
-total
+tooLarge : (contra : LTE num ub -> Void) -> Answer (Grade question (lb, ub) expected) -> Void
+tooLarge contra x = VOID
+
+tooSmall : (contra : LTE lb num -> Void) -> Answer (Grade question (lb, ub) expected) -> Void
+tooSmall contra x = VOID
+
 validateAnswer : (s : String) -> (q : Question) -> Dec (Answer q)
 validateAnswer s (QCM {numOptions} question qcmOptions expected) = 
   case parsePositive s of
@@ -72,8 +77,8 @@ validateAnswer s (Grade question (lb, ub) expected) =
                 in case isLTE lb num of
                      (Yes prf) => case isLTE num ub of
                                       (Yes prf) => Yes (AnswerGrade num) 
-                                      (No contra) => ?hole_3
-                     (No contra) => ?hole_2
+                                      (No contra) => No (tooLarge contra)
+                     (No contra) => No (tooSmall contra)
 
 readAnswer : (q : Question) -> IO (Answer q)
 readAnswer q = do

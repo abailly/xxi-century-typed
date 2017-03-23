@@ -5,7 +5,7 @@ import Data.Vect
 import Data.Fin
 
 interface Displayable d where
-  display : d -> String
+  total display : d -> String
   
 data Question : Type where
   QCM : {numOptions : Nat}
@@ -13,7 +13,8 @@ data Question : Type where
       -> (qcmOptions : Vect numOptions String)
       -> (expected : Fin numOptions)
       -> Question
-  Grade : (question : String) 
+  Grade : (question : String)
+       -> (bounds : (Nat, Nat))
        -> (expected : Nat)
        -> Question
 
@@ -23,7 +24,7 @@ indexed k (x :: xs) =
   (k, x) :: indexed (k + 1) xs
 
 Displayable Question where
-  display (QCM question qcmOptions expected) = 
+   display (QCM question qcmOptions expected) = 
     question ++ "\n" ++ enumerateOptions
     where 
       asString : (Nat, String) -> String
@@ -31,6 +32,9 @@ Displayable Question where
       
       enumerateOptions : String
       enumerateOptions = concatMap asString (indexed 1 qcmOptions)
+   display (Grade question bounds _) =
+    question ++ " " ++ show bounds 
+    
       
 data Answer : (q : Question) -> Type where
    AnswerQCM : (option : Fin n) -> Answer (QCM {numOptions = n } q opts exp)

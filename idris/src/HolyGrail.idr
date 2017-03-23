@@ -37,7 +37,7 @@ Displayable Question where
       
 data Answer : (q : Question) -> Type where
    AnswerQCM   : (option : Fin n) -> Answer (QCM {numOptions = n } q opts exp)
-   AnswerGrade : (answer : Nat) -> {lbok : LTE lb answer} -> {ubok : LTE answer ub} ->  Answer (Grade q (lb, ub) exp)
+   AnswerGrade : (answer : Nat) -> {auto lbok : LTE lb answer} -> {auto ubok : LTE answer ub} ->  Answer (Grade q (lb, ub) exp)
 
 total 
 isCorrectAnswer : (q : Question ) -> Answer q -> Bool
@@ -51,12 +51,13 @@ where
   hd : List a -> a
   hd (x :: xs) = x
   
-notANumber : Answer (QCM question qcmOptions expected) -> Void
+notANumber : Answer q -> Void
 notANumber _ = VOID
 
 tooLargeOption : Answer (QCM question qcmOptions expected) -> Void
 tooLargeOption _ = VOID 
 
+total
 validateAnswer : (s : String) -> (q : Question) -> Dec (Answer q)
 validateAnswer s (QCM {numOptions} question qcmOptions expected) = 
   case parsePositive s of
@@ -64,6 +65,15 @@ validateAnswer s (QCM {numOptions} question qcmOptions expected) =
     (Just n) => case integerToFin n numOptions of
                      Nothing => No tooLargeOption
                      (Just m) => Yes (AnswerQCM m)
+validateAnswer s (Grade question (lb, ub) expected) = 
+  case parsePositive s of
+    Nothing => No notANumber
+    (Just n) => let num = (fromInteger n)
+                in case isLTE lb num of
+                     (Yes prf) => case isLTE num ub of
+                                      (Yes prf) => Yes (AnswerGrade num) 
+                                      (No contra) => ?hole_3
+                     (No contra) => ?hole_2
 
 readAnswer : (q : Question) -> IO (Answer q)
 readAnswer q = do

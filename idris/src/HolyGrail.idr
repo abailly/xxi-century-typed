@@ -13,6 +13,9 @@ data Question : Type where
       -> (qcmOptions : Vect numOptions String)
       -> (expected : Fin numOptions)
       -> Question
+  Grade : (question : String) 
+       -> (expected : Nat)
+       -> Question
 
 indexed : Nat ->  Vect n a -> Vect n (Nat, a)
 indexed k [] = []

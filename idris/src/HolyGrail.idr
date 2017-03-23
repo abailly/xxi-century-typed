@@ -24,7 +24,9 @@ indexed k (x :: xs) =
   (k, x) :: indexed (k + 1) xs
 
 Displayable Question where
-   display (QCM question qcmOptions expected) = 
+  display (Grade question bounds _) =
+    question ++ " " ++ show bounds 
+  display (QCM question qcmOptions expected) = 
     question ++ "\n" ++ enumerateOptions
     where 
       asString : (Nat, String) -> String
@@ -32,16 +34,15 @@ Displayable Question where
       
       enumerateOptions : String
       enumerateOptions = concatMap asString (indexed 1 qcmOptions)
-   display (Grade question bounds _) =
-    question ++ " " ++ show bounds 
-    
       
 data Answer : (q : Question) -> Type where
-   AnswerQCM : (option : Fin n) -> Answer (QCM {numOptions = n } q opts exp)
+   AnswerQCM   : (option : Fin n) -> Answer (QCM {numOptions = n } q opts exp)
+   AnswerGrade : (answer : Nat) -> {lbok : LTE lb answer} -> {ubok : LTE answer ub} ->  Answer (Grade q (lb, ub) exp)
 
 total 
 isCorrectAnswer : (q : Question ) -> Answer q -> Bool
 isCorrectAnswer (QCM {numOptions} question qcmOptions expected) (AnswerQCM option) = option == expected
+isCorrectAnswer (Grade question _ expected)                     (AnswerGrade answer) = answer == expected
 
 -- an impossible value which we use to construct contradictory proofs
 VOID : _|_

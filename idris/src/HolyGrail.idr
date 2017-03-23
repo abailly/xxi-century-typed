@@ -1,9 +1,12 @@
 module HolyGrail
 
-import Data.String
+import Data.String 
 import Data.Vect
 import Data.Fin
 
+interface Displayable d where
+  display : d -> String
+  
 data Question : Type where
   QCM : {numOptions : Nat}
       -> (question : String) 
@@ -11,6 +14,21 @@ data Question : Type where
       -> (expected : Fin numOptions)
       -> Question
 
+indexed : Nat ->  Vect n a -> Vect n (Nat, a)
+indexed k [] = []
+indexed k (x :: xs) = 
+  (k, x) :: indexed (k + 1) xs
+
+Displayable Question where
+  display (QCM question qcmOptions expected) = 
+    question ++ "\n" ++ enumerateOptions
+    where 
+      asString : (Nat, String) -> String
+      asString (k, q) = show k ++ "- "  ++ q ++ "\n"
+      
+      enumerateOptions : String
+      enumerateOptions = concatMap asString (indexed 1 qcmOptions)
+      
 data Answer : (q : Question) -> Type where
    AnswerQCM : (option : Fin n) -> Answer (QCM {numOptions = n } q opts exp)
 
@@ -18,7 +36,7 @@ total
 isCorrectAnswer : (q : Question ) -> Answer q -> Bool
 isCorrectAnswer (QCM {numOptions} question qcmOptions expected) (AnswerQCM option) = option == expected
 
--- an impossible value whcih we use to construct 
+-- an impossible value which we use to construct contradictory proofs
 VOID : _|_
 VOID = hd []
 where
@@ -31,10 +49,28 @@ notANumber _ = VOID
 tooLargeOption : Answer (QCM question qcmOptions expected) -> Void
 tooLargeOption _ = VOID 
 
-readAnswer : (s : String) -> (q : Question) -> Dec (Answer q)
-readAnswer s (QCM {numOptions} question qcmOptions expected) = 
+validateAnswer : (s : String) -> (q : Question) -> Dec (Answer q)
+validateAnswer s (QCM {numOptions} question qcmOptions expected) = 
   case parsePositive s of
     Nothing => No notANumber
     (Just n) => case integerToFin n numOptions of
                      Nothing => No tooLargeOption
                      (Just m) => Yes (AnswerQCM m)
+
+readAnswer : (q : Question) -> IO (Answer q)
+readAnswer q = do
+  putStr (display q)
+  input <- getLine
+  case validateAnswer input q of 
+    (Yes prf) => pure prf
+    (No contra) => do
+      putStr "Incorrect answer !"
+      readAnswer q
+
+main : IO () 
+main = do
+  let q = QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] 2
+  a <- readAnswer q
+  if isCorrectAnswer q a
+  then putStr "That's correct!"
+  else putStr "Try again!"

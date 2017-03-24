@@ -92,8 +92,49 @@ readAnswer q = do
   case validateAnswer input q of 
     (Yes prf) => pure prf
     (No contra) => do
-      putStr "Incorrect answer !"
+      putStr "Invalid answer !"
       readAnswer q
+
+data Answered : Type where 
+  MkAnswered : (question ** Answer question) -> Answered
+
+data Quizz : (numQuestions : Nat) -> Type where
+  MkQuizz :  (answered : Vect n Answered) ->
+             (current  : Question) -> 
+             (next : Vect m Question) -> 
+             Quizz (n + m)
+
+data Input : Type where
+  GoBack     : Input
+  QuitGame   : Input
+  GiveAnswer : String -> Input
+  
+data Command : Type -> Type where   
+  Prompt         : String -> Command Input
+  AnswerQuestion : String -> Command Bool
+  Back           : Command ()
+  Quit           : Command ()
+
+runCommand : Quizz n -> Command a -> IO (a, Quizz n)
+runCommand quizz  (Prompt x)         = do
+  putStr x
+  l <- getLine
+  pure (?parseInput l, quizz)
+  
+runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
+  a <- readAnswer current
+  if isCorrectAnswer current a 
+  then do
+    putStr "Correct !"
+    case next of 
+      []        => pure (True, q)
+      (x :: xs) => pure (True, MkQuizz (MkAnswered (current ** a) :: answered) x xs)
+  else do
+    putStr "That's Wrong !"
+    pure (False, q)
+runCommand (MkQuizz answered current next) Back               = ?runCommand_rhs_4
+runCommand (MkQuizz answered current next) Quit               = ?runCommand_rhs_5
+
 
 main : IO () 
 main = do

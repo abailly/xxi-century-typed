@@ -108,7 +108,8 @@ data Input : Type where
   GoBack     : Input
   QuitGame   : Input
   GiveAnswer : String -> Input
-  
+  Garbage    : Input
+
 data Command : Type -> Type where   
   Prompt         : String -> Command Input
   AnswerQuestion : String -> Command Bool
@@ -122,15 +123,31 @@ plusOneCommutes (S k) j     =
  let inductiveHypothesis = plusOneCommutes k j in
    rewrite inductiveHypothesis in Refl
    
-updateQuizz : (current : Question) -> (q : Question) -> (qs : Vect len Question) -> (answered : Vect n Answered) -> (a : Answer current) -> Quizz (plus n (S len))
+updateQuizz : (current : Question) 
+           -> (q : Question) 
+           -> (qs : Vect len Question)
+           -> (answered : Vect n Answered)
+           -> (a : Answer current)
+            -> Quizz (plus n (S len))
 updateQuizz {n} {len} current q qs answered a = 
   rewrite plusOneCommutes n len in MkQuizz (MkAnswered (current ** a) :: answered) q qs
+
+goBack : (x : Question) -> (current : Question) -> (next : Vect m Question) -> (answered : Vect len Answered) -> Quizz (S (plus len m))
+goBack {m} {len} x current next answered = 
+  rewrite plusSuccRightSucc len m in MkQuizz answered x (current :: next)
+
+
+parseInput : (l : List Char) -> Input
+parseInput []    = Garbage
+parseInput ['q'] = QuitGame
+parseInput ['b'] = GoBack
+parseInput s     = GiveAnswer (pack s)
 
 runCommand : Quizz n -> Command a -> IO (a, Quizz n)
 runCommand quizz  (Prompt x)         = do
   putStr x
   l <- getLine
-  pure (?parseInput l, quizz)
+  pure (parseInput $ unpack l, quizz)
   
 runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
   a <- readAnswer current
@@ -143,8 +160,11 @@ runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
   else do
     putStr "That's Wrong !"
     pure (False, q)
-runCommand (MkQuizz answered current next) Back               = ?runCommand_rhs_4
-runCommand (MkQuizz answered current next) Quit               = ?runCommand_rhs_5
+runCommand q@(MkQuizz answered current next) Back  = do
+  case answered of
+    []                          => pure ((), q)
+    (MkAnswered (x ** _) :: xs) => pure ((), goBack x current next xs) 
+runCommand q Quit    = pure ((), q) 
 
 
 main : IO () 

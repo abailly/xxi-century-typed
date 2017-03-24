@@ -87,7 +87,6 @@ validateAnswer s (Grade question (lb, ub) expected) =
 
 readAnswer : (q : Question) -> IO (Answer q)
 readAnswer q = do
-  putStr (display q)
   input <- getLine
   case validateAnswer input q of 
     (Yes prf) => pure prf
@@ -111,7 +110,7 @@ data Input : Type where
   Garbage    : Input
 
 data Command : Type -> Type where   
-  Prompt         : String -> Command Input
+  Prompt         : Question -> Command Input
   AnswerQuestion : String -> Command Bool
   Back           : Command ()
   Quit           : Command ()
@@ -144,8 +143,8 @@ parseInput ['b'] = GoBack
 parseInput s     = GiveAnswer (pack s)
 
 runCommand : Quizz n -> Command a -> IO (a, Quizz n)
-runCommand quizz  (Prompt x)         = do
-  putStr x
+runCommand quizz  (Prompt q)         = do
+  putStr $ display q
   l <- getLine
   pure (parseInput $ unpack l, quizz)
   
@@ -166,11 +165,28 @@ runCommand q@(MkQuizz answered current next) Back  = do
     (MkAnswered (x ** _) :: xs) => pure ((), goBack x current next xs) 
 runCommand q Quit    = pure ((), q) 
 
+sampleQuizz : Quizz 4
+sampleQuizz = MkQuizz [] (Open "What is your name ?" "Sir Arthur")
+              [ Open "What is your quest?" "To seek the holy grail"
+              , QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] 0
+              , QCM "What is the capital of Assyria?" [ "Babylone", "Ninive", "Ur", "Don't know" ] 1
+              , Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) 35
+              ]
 
+
+runQuizz : Quizz n -> IO ()
+runQuizz quizz@(MkQuizz answered current next) = do
+  (input, quizz') <- runCommand quizz (Prompt current)
+  case input of 
+    GoBack => do
+      ((), q') <- runCommand quizz' Back 
+      runQuizz q'
+    QuitGame => pure ()
+    (GiveAnswer x) => do
+      (res, q') <- runCommand quizz' (AnswerQuestion x)
+      runQuizz q'
+    Garbage => do
+      runQuizz quizz'
+   
 main : IO () 
-main = do
-  let q = QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] 2
-  a <- readAnswer q
-  if isCorrectAnswer q a
-  then putStr "That's correct!"
-  else putStr "Try again!"
+main = runQuizz sampleQuizz

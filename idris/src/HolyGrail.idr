@@ -115,6 +115,17 @@ data Command : Type -> Type where
   Back           : Command ()
   Quit           : Command ()
 
+total
+plusOneCommutes : (n : Nat) -> (m : Nat) -> (n + S m = S n + m)
+plusOneCommutes Z     k     = Refl
+plusOneCommutes (S k) j     = 
+ let inductiveHypothesis = plusOneCommutes k j in
+   rewrite inductiveHypothesis in Refl
+   
+updateQuizz : (current : Question) -> (q : Question) -> (qs : Vect len Question) -> (answered : Vect n Answered) -> (a : Answer current) -> Quizz (plus n (S len))
+updateQuizz {n} {len} current q qs answered a = 
+  rewrite plusOneCommutes n len in MkQuizz (MkAnswered (current ** a) :: answered) q qs
+
 runCommand : Quizz n -> Command a -> IO (a, Quizz n)
 runCommand quizz  (Prompt x)         = do
   putStr x
@@ -128,7 +139,7 @@ runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
     putStr "Correct !"
     case next of 
       []        => pure (True, q)
-      (x :: xs) => pure (True, MkQuizz (MkAnswered (current ** a) :: answered) x xs)
+      (x :: xs) => pure (True, updateQuizz current x xs answered a)
   else do
     putStr "That's Wrong !"
     pure (False, q)

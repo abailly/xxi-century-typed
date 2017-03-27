@@ -8117,22 +8117,176 @@ var _elm_lang$html$Html_Attributes$classList = function (list) {
 				A2(_elm_lang$core$List$filter, _elm_lang$core$Tuple$second, list))));
 };
 var _elm_lang$html$Html_Attributes$style = _elm_lang$virtual_dom$VirtualDom$style;
+var _elm_lang$html$Html_Events$keyCode = A2(_elm_lang$core$Json_Decode$field, 'keyCode', _elm_lang$core$Json_Decode$int);
+var _elm_lang$html$Html_Events$targetChecked = A2(
+	_elm_lang$core$Json_Decode$at,
+	{
+		ctor: '::',
+		_0: 'target',
+		_1: {
+			ctor: '::',
+			_0: 'checked',
+			_1: {ctor: '[]'}
+		}
+	},
+	_elm_lang$core$Json_Decode$bool);
+var _elm_lang$html$Html_Events$targetValue = A2(
+	_elm_lang$core$Json_Decode$at,
+	{
+		ctor: '::',
+		_0: 'target',
+		_1: {
+			ctor: '::',
+			_0: 'value',
+			_1: {ctor: '[]'}
+		}
+	},
+	_elm_lang$core$Json_Decode$string);
+var _elm_lang$html$Html_Events$defaultOptions = _elm_lang$virtual_dom$VirtualDom$defaultOptions;
+var _elm_lang$html$Html_Events$onWithOptions = _elm_lang$virtual_dom$VirtualDom$onWithOptions;
+var _elm_lang$html$Html_Events$on = _elm_lang$virtual_dom$VirtualDom$on;
+var _elm_lang$html$Html_Events$onFocus = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'focus',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onBlur = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'blur',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onSubmitOptions = _elm_lang$core$Native_Utils.update(
+	_elm_lang$html$Html_Events$defaultOptions,
+	{preventDefault: true});
+var _elm_lang$html$Html_Events$onSubmit = function (msg) {
+	return A3(
+		_elm_lang$html$Html_Events$onWithOptions,
+		'submit',
+		_elm_lang$html$Html_Events$onSubmitOptions,
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onCheck = function (tagger) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'change',
+		A2(_elm_lang$core$Json_Decode$map, tagger, _elm_lang$html$Html_Events$targetChecked));
+};
+var _elm_lang$html$Html_Events$onInput = function (tagger) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'input',
+		A2(_elm_lang$core$Json_Decode$map, tagger, _elm_lang$html$Html_Events$targetValue));
+};
+var _elm_lang$html$Html_Events$onMouseOut = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mouseout',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onMouseOver = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mouseover',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onMouseLeave = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mouseleave',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onMouseEnter = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mouseenter',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onMouseUp = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mouseup',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onMouseDown = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'mousedown',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onDoubleClick = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'dblclick',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$onClick = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'click',
+		_elm_lang$core$Json_Decode$succeed(msg));
+};
+var _elm_lang$html$Html_Events$Options = F2(
+	function (a, b) {
+		return {stopPropagation: a, preventDefault: b};
+	});
+var _user$project$Quizz$is13 = function (code) {
+	return _elm_lang$core$Native_Utils.eq(code, 13) ? _elm_lang$core$Json_Decode$succeed(
+		{ctor: '_Tuple0'}) : _elm_lang$core$Json_Decode$fail('not the right key code');
+};
+var _user$project$Quizz$onEnter = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Events$on,
+		'keydown',
+		A2(
+			_elm_lang$core$Json_Decode$andThen,
+			_elm_lang$core$Basics$always(
+				_elm_lang$core$Json_Decode$succeed(msg)),
+			A2(_elm_lang$core$Json_Decode$andThen, _user$project$Quizz$is13, _elm_lang$html$Html_Events$keyCode)));
+};
 var _user$project$Quizz$update = F2(
 	function (msg, quizz) {
-		return A2(
-			_elm_lang$core$Platform_Cmd_ops['!'],
-			quizz,
-			{ctor: '[]'});
+		var _p0 = msg;
+		switch (_p0.ctor) {
+			case 'UpdateResponse':
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					_elm_lang$core$Native_Utils.update(
+						quizz,
+						{currentResponse: _p0._0}),
+					{ctor: '[]'});
+			case 'CheckResponse':
+				var q = quizz.current;
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					_elm_lang$core$Native_Utils.update(
+						quizz,
+						{
+							current: _elm_lang$core$Native_Utils.update(
+								q,
+								{response: _p0._0})
+						}),
+					{ctor: '[]'});
+			default:
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					quizz,
+					{ctor: '[]'});
+		}
 	});
-var _user$project$Quizz$Quizz = function (a) {
-	return {current: a};
-};
+var _user$project$Quizz$Quizz = F2(
+	function (a, b) {
+		return {current: a, currentResponse: b};
+	});
 var _user$project$Quizz$Question = F3(
 	function (a, b, c) {
 		return {question: a, expected: b, response: c};
 	});
-var _user$project$Quizz$initialQuizz = _user$project$Quizz$Quizz(
-	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing));
+var _user$project$Quizz$initialQuizz = A2(
+	_user$project$Quizz$Quizz,
+	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing),
+	'');
 var _user$project$Quizz$init = A2(
 	_elm_lang$core$Platform_Cmd_ops['!'],
 	_user$project$Quizz$initialQuizz,
@@ -8140,21 +8294,29 @@ var _user$project$Quizz$init = A2(
 var _user$project$Quizz$Incorrect = {ctor: 'Incorrect'};
 var _user$project$Quizz$Correct = {ctor: 'Correct'};
 var _user$project$Quizz$Unknown = {ctor: 'Unknown'};
-var _user$project$Quizz$checkResponseVsExpectation = function (_p0) {
-	var _p1 = _p0;
-	var _p2 = _p1.response;
-	if (_p2.ctor === 'Nothing') {
+var _user$project$Quizz$checkResponseVsExpectation = function (_p1) {
+	var _p2 = _p1;
+	var _p3 = _p2.response;
+	if (_p3.ctor === 'Nothing') {
 		return _user$project$Quizz$Unknown;
 	} else {
-		return _elm_lang$core$Native_Utils.eq(_p2._0, _p1.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
+		return _elm_lang$core$Native_Utils.eq(_p3._0, _p2.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
 	}
 };
-var _user$project$Quizz$view = function (_p3) {
-	var _p4 = _p3;
-	var _p6 = _p4.current;
+var _user$project$Quizz$NoOp = {ctor: 'NoOp'};
+var _user$project$Quizz$UpdateResponse = function (a) {
+	return {ctor: 'UpdateResponse', _0: a};
+};
+var _user$project$Quizz$CheckResponse = function (a) {
+	return {ctor: 'CheckResponse', _0: a};
+};
+var _user$project$Quizz$view = function (_p4) {
+	var _p5 = _p4;
+	var _p8 = _p5.currentResponse;
+	var _p7 = _p5.current;
 	var answer = function () {
-		var _p5 = _user$project$Quizz$checkResponseVsExpectation(_p6);
-		switch (_p5.ctor) {
+		var _p6 = _user$project$Quizz$checkResponseVsExpectation(_p7);
+		switch (_p6.ctor) {
 			case 'Unknown':
 				return A2(
 					_elm_lang$html$Html$span,
@@ -8233,7 +8395,7 @@ var _user$project$Quizz$view = function (_p3) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p6.question),
+					_0: _elm_lang$html$Html$text(_p7.question),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -8246,7 +8408,21 @@ var _user$project$Quizz$view = function (_p3) {
 						_1: {
 							ctor: '::',
 							_0: _elm_lang$html$Html_Attributes$width(20),
-							_1: {ctor: '[]'}
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onInput(_user$project$Quizz$UpdateResponse),
+								_1: {
+									ctor: '::',
+									_0: _user$project$Quizz$onEnter(
+										_user$project$Quizz$CheckResponse(
+											_elm_lang$core$Maybe$Just(_p8))),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(_p8),
+										_1: {ctor: '[]'}
+									}
+								}
+							}
 						}
 					},
 					{ctor: '[]'}),
@@ -8265,7 +8441,6 @@ var _user$project$Quizz$main = _elm_lang$html$Html$program(
 		update: _user$project$Quizz$update,
 		subscriptions: _elm_lang$core$Basics$always(_elm_lang$core$Platform_Sub$none)
 	})();
-var _user$project$Quizz$NoOp = {ctor: 'NoOp'};
 var Elm = {};
 Elm['Quizz'] = Elm['Quizz'] || {};
 if (typeof _user$project$Quizz$main !== 'undefined') {

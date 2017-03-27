@@ -1,19 +1,25 @@
 module Quizz exposing (main, ResponseStatus(..), checkResponseVsExpectation, Question)
 
 import Html as H
-import Html.Attributes exposing (type_, width, style)
+import Html.Attributes exposing (type_, width, style, value)
+import Html.Events exposing (on, keyCode, onInput)
+import Json.Decode as Json
 
 
 -- * Types
 
 
 type alias Quizz =
-    { current : Question }
+    { current : Question
+    , currentResponse :
+        String
+        -- UI only state
+    }
 
 
 initialQuizz : Quizz
 initialQuizz =
-    Quizz (Question "What is your name?" "Sir Arthur" Nothing)
+    Quizz (Question "What is your name?" "Sir Arthur" Nothing) ""
 
 
 type alias Question =
@@ -43,7 +49,9 @@ checkResponseVsExpectation { expected, response } =
 
 
 type Msg
-    = NoOp
+    = CheckResponse (Maybe String)
+    | UpdateResponse String
+    | NoOp
 
 
 {-| Main
@@ -65,11 +73,23 @@ init =
 
 update : Msg -> Quizz -> ( Quizz, Cmd Msg )
 update msg quizz =
-    quizz ! []
+    case msg of
+        UpdateResponse s ->
+            { quizz | currentResponse = s } ! []
+
+        CheckResponse r ->
+            let
+                q =
+                    quizz.current
+            in
+                { quizz | current = { q | response = r } } ! []
+
+        NoOp ->
+            quizz ! []
 
 
 view : Quizz -> H.Html Msg
-view { current } =
+view { current, currentResponse } =
     let
         answer =
             case checkResponseVsExpectation current of
@@ -84,6 +104,30 @@ view { current } =
     in
         H.div []
             [ H.label [] [ H.text <| current.question ]
-            , H.input [ type_ "text", width 20 ] []
+            , H.input
+                [ type_ "text"
+                , width 20
+                , onInput UpdateResponse
+                , onEnter (CheckResponse <| Just currentResponse)
+                , value currentResponse
+                ]
+                []
             , answer
             ]
+
+
+onEnter : msg -> H.Attribute msg
+onEnter msg =
+    on "keydown"
+        (keyCode
+            |> Json.andThen is13
+            |> Json.andThen (always <| Json.succeed msg)
+        )
+
+
+is13 : Int -> Json.Decoder ()
+is13 code =
+    if code == 13 then
+        Json.succeed ()
+    else
+        Json.fail "not the right key code"

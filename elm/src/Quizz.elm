@@ -11,7 +11,7 @@ import Json.Decode as Json
 
 type alias Quizz =
     { pastQuestions : List Question
-    , current : Question
+    , current : Maybe Question
     , nextQuestions : List Question
     , currentResponse :
         String
@@ -21,7 +21,7 @@ type alias Quizz =
 
 initialQuizz : Quizz
 initialQuizz =
-    Quizz [] (Question "What is your name?" "Sir Arthur" Nothing) [ Question "What is your quest?" "To seek the Holy Grail" Nothing ] ""
+    Quizz [] (Just <| Question "What is your name?" "Sir Arthur" Nothing) [ Question "What is your quest?" "To seek the Holy Grail" Nothing ] ""
 
 
 type alias Question =
@@ -81,17 +81,20 @@ update msg quizz =
 
         SubmitResponse r ->
             let
-                q =
-                    quizz.current
-
                 answeredQuestion =
-                    { q | response = r }
+                    Maybe.map (\q -> { q | response = r }) quizz.current
             in
-                { quizz
-                    | pastQuestions = answeredQuestion :: quizz.pastQuestions
-                    , current = List.head quizz.nextQuestions
-                }
-                    ! []
+                case answeredQuestion of
+                    Nothing ->
+                        quizz ! []
+
+                    Just a ->
+                        { quizz
+                            | pastQuestions = a :: quizz.pastQuestions
+                            , current = List.head quizz.nextQuestions
+                            , nextQuestions = Maybe.withDefault [] <| List.tail quizz.nextQuestions
+                        }
+                            ! []
 
         NoOp ->
             quizz ! []
@@ -107,7 +110,7 @@ view quizz =
 
 viewPastQuestions : List Question -> H.Html Msg
 viewPastQuestions questions =
-    H.div [] <| List.map viewPastQuestion questions
+    H.div [] <| List.map viewPastQuestion <| List.reverse questions
 
 
 viewPastQuestion : Question -> H.Html Msg
@@ -132,30 +135,35 @@ viewPastQuestion question =
 
 viewCurrentQuestion : Quizz -> H.Html Msg
 viewCurrentQuestion { pastQuestions, current, nextQuestions, currentResponse } =
-    let
-        answer =
-            case checkResponseVsExpectation current of
-                Unknown ->
-                    H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
+    case current of
+        Nothing ->
+            H.text ""
 
-                Correct ->
-                    H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
+        Just q ->
+            let
+                answer =
+                    case checkResponseVsExpectation q of
+                        Unknown ->
+                            H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
 
-                Incorrect ->
-                    H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
-    in
-        H.div []
-            [ H.label [] [ H.text <| current.question ]
-            , H.input
-                [ type_ "text"
-                , width 20
-                , onInput UpdateResponse
-                , onEnter (SubmitResponse <| Just currentResponse)
-                , value currentResponse
-                ]
-                []
-            , answer
-            ]
+                        Correct ->
+                            H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
+
+                        Incorrect ->
+                            H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
+            in
+                H.div []
+                    [ H.label [] [ H.text <| q.question ]
+                    , H.input
+                        [ type_ "text"
+                        , width 20
+                        , onInput UpdateResponse
+                        , onEnter (SubmitResponse <| Just currentResponse)
+                        , value currentResponse
+                        ]
+                        []
+                    , answer
+                    ]
 
 
 onEnter : msg -> H.Attribute msg

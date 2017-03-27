@@ -8256,18 +8256,36 @@ var _user$project$Quizz$update = F2(
 						quizz,
 						{currentResponse: _p0._0}),
 					{ctor: '[]'});
-			case 'CheckResponse':
-				var q = quizz.current;
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
+			case 'SubmitResponse':
+				var answeredQuestion = A2(
+					_elm_lang$core$Maybe$map,
+					function (q) {
+						return _elm_lang$core$Native_Utils.update(
+							q,
+							{response: _p0._0});
+					},
+					quizz.current);
+				var _p1 = answeredQuestion;
+				if (_p1.ctor === 'Nothing') {
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
 						quizz,
-						{
-							current: _elm_lang$core$Native_Utils.update(
-								q,
-								{response: _p0._0})
-						}),
-					{ctor: '[]'});
+						{ctor: '[]'});
+				} else {
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							quizz,
+							{
+								pastQuestions: {ctor: '::', _0: _p1._0, _1: quizz.pastQuestions},
+								current: _elm_lang$core$List$head(quizz.nextQuestions),
+								nextQuestions: A2(
+									_elm_lang$core$Maybe$withDefault,
+									{ctor: '[]'},
+									_elm_lang$core$List$tail(quizz.nextQuestions))
+							}),
+						{ctor: '[]'});
+				}
 			default:
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
@@ -8286,7 +8304,8 @@ var _user$project$Quizz$Question = F3(
 var _user$project$Quizz$initialQuizz = A4(
 	_user$project$Quizz$Quizz,
 	{ctor: '[]'},
-	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing),
+	_elm_lang$core$Maybe$Just(
+		A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing)),
 	{
 		ctor: '::',
 		_0: A3(_user$project$Quizz$Question, 'What is your quest?', 'To seek the Holy Grail', _elm_lang$core$Maybe$Nothing),
@@ -8300,19 +8319,19 @@ var _user$project$Quizz$init = A2(
 var _user$project$Quizz$Incorrect = {ctor: 'Incorrect'};
 var _user$project$Quizz$Correct = {ctor: 'Correct'};
 var _user$project$Quizz$Unknown = {ctor: 'Unknown'};
-var _user$project$Quizz$checkResponseVsExpectation = function (_p1) {
-	var _p2 = _p1;
-	var _p3 = _p2.response;
-	if (_p3.ctor === 'Nothing') {
+var _user$project$Quizz$checkResponseVsExpectation = function (_p2) {
+	var _p3 = _p2;
+	var _p4 = _p3.response;
+	if (_p4.ctor === 'Nothing') {
 		return _user$project$Quizz$Unknown;
 	} else {
-		return _elm_lang$core$Native_Utils.eq(_p3._0, _p2.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
+		return _elm_lang$core$Native_Utils.eq(_p4._0, _p3.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
 	}
 };
 var _user$project$Quizz$viewPastQuestion = function (question) {
 	var styles = function () {
-		var _p4 = _user$project$Quizz$checkResponseVsExpectation(question);
-		switch (_p4.ctor) {
+		var _p5 = _user$project$Quizz$checkResponseVsExpectation(question);
+		switch (_p5.ctor) {
 			case 'Unknown':
 				return {
 					ctor: '::',
@@ -8381,138 +8400,146 @@ var _user$project$Quizz$viewPastQuestions = function (questions) {
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
-		A2(_elm_lang$core$List$map, _user$project$Quizz$viewPastQuestion, questions));
+		A2(
+			_elm_lang$core$List$map,
+			_user$project$Quizz$viewPastQuestion,
+			_elm_lang$core$List$reverse(questions)));
 };
 var _user$project$Quizz$NoOp = {ctor: 'NoOp'};
 var _user$project$Quizz$UpdateResponse = function (a) {
 	return {ctor: 'UpdateResponse', _0: a};
 };
-var _user$project$Quizz$CheckResponse = function (a) {
-	return {ctor: 'CheckResponse', _0: a};
+var _user$project$Quizz$SubmitResponse = function (a) {
+	return {ctor: 'SubmitResponse', _0: a};
 };
-var _user$project$Quizz$viewCurrentQuestion = function (_p5) {
-	var _p6 = _p5;
-	var _p9 = _p6.currentResponse;
-	var _p8 = _p6.current;
-	var answer = function () {
-		var _p7 = _user$project$Quizz$checkResponseVsExpectation(_p8);
-		switch (_p7.ctor) {
-			case 'Unknown':
-				return A2(
-					_elm_lang$html$Html$span,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$style(
-							{
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
-								_1: {
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-									_1: {ctor: '[]'}
-								}
-							}),
-						_1: {ctor: '[]'}
-					},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('?'),
-						_1: {ctor: '[]'}
-					});
-			case 'Correct':
-				return A2(
-					_elm_lang$html$Html$span,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$style(
-							{
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'color', _1: 'green'},
-								_1: {
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-									_1: {ctor: '[]'}
-								}
-							}),
-						_1: {ctor: '[]'}
-					},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('Yes'),
-						_1: {ctor: '[]'}
-					});
-			default:
-				return A2(
-					_elm_lang$html$Html$span,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$style(
-							{
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'color', _1: 'red'},
-								_1: {
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-									_1: {ctor: '[]'}
-								}
-							}),
-						_1: {ctor: '[]'}
-					},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('No'),
-						_1: {ctor: '[]'}
-					});
-		}
-	}();
-	return A2(
-		_elm_lang$html$Html$div,
-		{ctor: '[]'},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$label,
-				{ctor: '[]'},
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p8.question),
-					_1: {ctor: '[]'}
-				}),
-			_1: {
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$input,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$type_('text'),
-						_1: {
+var _user$project$Quizz$viewCurrentQuestion = function (_p6) {
+	var _p7 = _p6;
+	var _p11 = _p7.currentResponse;
+	var _p8 = _p7.current;
+	if (_p8.ctor === 'Nothing') {
+		return _elm_lang$html$Html$text('');
+	} else {
+		var _p10 = _p8._0;
+		var answer = function () {
+			var _p9 = _user$project$Quizz$checkResponseVsExpectation(_p10);
+			switch (_p9.ctor) {
+				case 'Unknown':
+					return A2(
+						_elm_lang$html$Html$span,
+						{
 							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$width(20),
-							_1: {
-								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onInput(_user$project$Quizz$UpdateResponse),
-								_1: {
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
 									ctor: '::',
-									_0: _user$project$Quizz$onEnter(
-										_user$project$Quizz$CheckResponse(
-											_elm_lang$core$Maybe$Just(_p9))),
+									_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$value(_p9),
+										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
 										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('?'),
+							_1: {ctor: '[]'}
+						});
+				case 'Correct':
+					return A2(
+						_elm_lang$html$Html$span,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'color', _1: 'green'},
+									_1: {
+										ctor: '::',
+										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Yes'),
+							_1: {ctor: '[]'}
+						});
+				default:
+					return A2(
+						_elm_lang$html$Html$span,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'color', _1: 'red'},
+									_1: {
+										ctor: '::',
+										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('No'),
+							_1: {ctor: '[]'}
+						});
+			}
+		}();
+		return A2(
+			_elm_lang$html$Html$div,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$label,
+					{ctor: '[]'},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(_p10.question),
+						_1: {ctor: '[]'}
+					}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$input,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$type_('text'),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$width(20),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onInput(_user$project$Quizz$UpdateResponse),
+									_1: {
+										ctor: '::',
+										_0: _user$project$Quizz$onEnter(
+											_user$project$Quizz$SubmitResponse(
+												_elm_lang$core$Maybe$Just(_p11))),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$value(_p11),
+											_1: {ctor: '[]'}
+										}
 									}
 								}
 							}
-						}
-					},
-					{ctor: '[]'}),
-				_1: {
-					ctor: '::',
-					_0: answer,
-					_1: {ctor: '[]'}
+						},
+						{ctor: '[]'}),
+					_1: {
+						ctor: '::',
+						_0: answer,
+						_1: {ctor: '[]'}
+					}
 				}
-			}
-		});
+			});
+	}
 };
 var _user$project$Quizz$view = function (quizz) {
 	return A2(

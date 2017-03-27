@@ -8275,17 +8275,23 @@ var _user$project$Quizz$update = F2(
 					{ctor: '[]'});
 		}
 	});
-var _user$project$Quizz$Quizz = F2(
-	function (a, b) {
-		return {current: a, currentResponse: b};
+var _user$project$Quizz$Quizz = F4(
+	function (a, b, c, d) {
+		return {pastQuestions: a, current: b, nextQuestions: c, currentResponse: d};
 	});
 var _user$project$Quizz$Question = F3(
 	function (a, b, c) {
 		return {question: a, expected: b, response: c};
 	});
-var _user$project$Quizz$initialQuizz = A2(
+var _user$project$Quizz$initialQuizz = A4(
 	_user$project$Quizz$Quizz,
+	{ctor: '[]'},
 	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing),
+	{
+		ctor: '::',
+		_0: A3(_user$project$Quizz$Question, 'What is your quest?', 'To seek the Holy Grail', _elm_lang$core$Maybe$Nothing),
+		_1: {ctor: '[]'}
+	},
 	'');
 var _user$project$Quizz$init = A2(
 	_elm_lang$core$Platform_Cmd_ops['!'],
@@ -8310,7 +8316,7 @@ var _user$project$Quizz$UpdateResponse = function (a) {
 var _user$project$Quizz$CheckResponse = function (a) {
 	return {ctor: 'CheckResponse', _0: a};
 };
-var _user$project$Quizz$view = function (_p4) {
+var _user$project$Quizz$viewCurrentQuestion = function (_p4) {
 	var _p5 = _p4;
 	var _p8 = _p5.currentResponse;
 	var _p7 = _p5.current;
@@ -8433,6 +8439,9 @@ var _user$project$Quizz$view = function (_p4) {
 				}
 			}
 		});
+};
+var _user$project$Quizz$view = function (quizz) {
+	return _user$project$Quizz$viewCurrentQuestion(quizz);
 };
 var _user$project$Quizz$main = _elm_lang$html$Html$program(
 	{

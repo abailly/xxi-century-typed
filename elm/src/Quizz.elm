@@ -10,7 +10,9 @@ import Json.Decode as Json
 
 
 type alias Quizz =
-    { current : Question
+    { pastQuestions : List Question
+    , current : Question
+    , nextQuestions : List Question
     , currentResponse :
         String
         -- UI only state
@@ -19,7 +21,7 @@ type alias Quizz =
 
 initialQuizz : Quizz
 initialQuizz =
-    Quizz (Question "What is your name?" "Sir Arthur" Nothing) ""
+    Quizz [] (Question "What is your name?" "Sir Arthur" Nothing) [ Question "What is your quest?" "To seek the Holy Grail" Nothing ] ""
 
 
 type alias Question =
@@ -89,7 +91,40 @@ update msg quizz =
 
 
 view : Quizz -> H.Html Msg
-view { current, currentResponse } =
+view quizz =
+    H.div []
+        [ viewPastQuestions quizz.pastQuestions
+        , viewCurrentQuestion quizz
+        ]
+
+
+viewPastQuestions : List Question -> H.Html Msg
+viewPastQuestions questions =
+    H.div [] <| List.map viewPastQuestion questions
+
+
+viewPastQuestion : Question -> H.Html Msg
+viewPastQuestion question =
+    let
+        styles =
+            case checkResponseVsExpectation question of
+                Unknown ->
+                    [ ( "color", "orange" ), ( "font-weight", "bold" ) ]
+
+                Correct ->
+                    [ ( "color", "green" ), ( "font-weight", "bold" ) ]
+
+                Incorrect ->
+                    [ ( "color", "red" ), ( "font-weight", "bold" ) ]
+    in
+        H.div []
+            [ H.label [] [ H.text <| question.question ]
+            , H.span [ style styles ] [ H.text <| question.response ]
+            ]
+
+
+viewCurrentQuestion : Quizz -> H.Html Msg
+viewCurrentQuestion { pastQuestions, current, nextQuestions, currentResponse } =
     let
         answer =
             case checkResponseVsExpectation current of

@@ -8309,6 +8309,80 @@ var _user$project$Quizz$checkResponseVsExpectation = function (_p1) {
 		return _elm_lang$core$Native_Utils.eq(_p3._0, _p2.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
 	}
 };
+var _user$project$Quizz$viewPastQuestion = function (question) {
+	var styles = function () {
+		var _p4 = _user$project$Quizz$checkResponseVsExpectation(question);
+		switch (_p4.ctor) {
+			case 'Unknown':
+				return {
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+						_1: {ctor: '[]'}
+					}
+				};
+			case 'Correct':
+				return {
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'color', _1: 'green'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+						_1: {ctor: '[]'}
+					}
+				};
+			default:
+				return {
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'color', _1: 'red'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+						_1: {ctor: '[]'}
+					}
+				};
+		}
+	}();
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$label,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(question.question),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$span,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$style(styles),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(
+							A2(_elm_lang$core$Maybe$withDefault, '', question.response)),
+						_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
+			}
+		});
+};
+var _user$project$Quizz$viewPastQuestions = function (questions) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		A2(_elm_lang$core$List$map, _user$project$Quizz$viewPastQuestion, questions));
+};
 var _user$project$Quizz$NoOp = {ctor: 'NoOp'};
 var _user$project$Quizz$UpdateResponse = function (a) {
 	return {ctor: 'UpdateResponse', _0: a};
@@ -8316,13 +8390,13 @@ var _user$project$Quizz$UpdateResponse = function (a) {
 var _user$project$Quizz$CheckResponse = function (a) {
 	return {ctor: 'CheckResponse', _0: a};
 };
-var _user$project$Quizz$viewCurrentQuestion = function (_p4) {
-	var _p5 = _p4;
-	var _p8 = _p5.currentResponse;
-	var _p7 = _p5.current;
+var _user$project$Quizz$viewCurrentQuestion = function (_p5) {
+	var _p6 = _p5;
+	var _p9 = _p6.currentResponse;
+	var _p8 = _p6.current;
 	var answer = function () {
-		var _p6 = _user$project$Quizz$checkResponseVsExpectation(_p7);
-		switch (_p6.ctor) {
+		var _p7 = _user$project$Quizz$checkResponseVsExpectation(_p8);
+		switch (_p7.ctor) {
 			case 'Unknown':
 				return A2(
 					_elm_lang$html$Html$span,
@@ -8401,7 +8475,7 @@ var _user$project$Quizz$viewCurrentQuestion = function (_p4) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p7.question),
+					_0: _elm_lang$html$Html$text(_p8.question),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -8421,10 +8495,10 @@ var _user$project$Quizz$viewCurrentQuestion = function (_p4) {
 									ctor: '::',
 									_0: _user$project$Quizz$onEnter(
 										_user$project$Quizz$CheckResponse(
-											_elm_lang$core$Maybe$Just(_p8))),
+											_elm_lang$core$Maybe$Just(_p9))),
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$value(_p8),
+										_0: _elm_lang$html$Html_Attributes$value(_p9),
 										_1: {ctor: '[]'}
 									}
 								}
@@ -8441,7 +8515,18 @@ var _user$project$Quizz$viewCurrentQuestion = function (_p4) {
 		});
 };
 var _user$project$Quizz$view = function (quizz) {
-	return _user$project$Quizz$viewCurrentQuestion(quizz);
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _user$project$Quizz$viewPastQuestions(quizz.pastQuestions),
+			_1: {
+				ctor: '::',
+				_0: _user$project$Quizz$viewCurrentQuestion(quizz),
+				_1: {ctor: '[]'}
+			}
+		});
 };
 var _user$project$Quizz$main = _elm_lang$html$Html$program(
 	{

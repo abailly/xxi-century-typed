@@ -51,7 +51,7 @@ checkResponseVsExpectation { expected, response } =
 
 
 type Msg
-    = CheckResponse (Maybe String)
+    = SubmitResponse (Maybe String)
     | UpdateResponse String
     | NoOp
 
@@ -79,12 +79,19 @@ update msg quizz =
         UpdateResponse s ->
             { quizz | currentResponse = s } ! []
 
-        CheckResponse r ->
+        SubmitResponse r ->
             let
                 q =
                     quizz.current
+
+                answeredQuestion =
+                    { q | response = r }
             in
-                { quizz | current = { q | response = r } } ! []
+                { quizz
+                    | pastQuestions = answeredQuestion :: quizz.pastQuestions
+                    , current = List.head quizz.nextQuestions
+                }
+                    ! []
 
         NoOp ->
             quizz ! []
@@ -119,7 +126,7 @@ viewPastQuestion question =
     in
         H.div []
             [ H.label [] [ H.text <| question.question ]
-            , H.span [ style styles ] [ H.text <| question.response ]
+            , H.span [ style styles ] [ H.text <| Maybe.withDefault "" question.response ]
             ]
 
 
@@ -143,7 +150,7 @@ viewCurrentQuestion { pastQuestions, current, nextQuestions, currentResponse } =
                 [ type_ "text"
                 , width 20
                 , onInput UpdateResponse
-                , onEnter (CheckResponse <| Just currentResponse)
+                , onEnter (SubmitResponse <| Just currentResponse)
                 , value currentResponse
                 ]
                 []

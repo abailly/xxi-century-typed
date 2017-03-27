@@ -8117,55 +8117,110 @@ var _elm_lang$html$Html_Attributes$classList = function (list) {
 				A2(_elm_lang$core$List$filter, _elm_lang$core$Tuple$second, list))));
 };
 var _elm_lang$html$Html_Attributes$style = _elm_lang$virtual_dom$VirtualDom$style;
-var _user$project$Quizz$view = function (_p0) {
+var _user$project$Quizz$update = F2(
+	function (msg, quizz) {
+		return A2(
+			_elm_lang$core$Platform_Cmd_ops['!'],
+			quizz,
+			{ctor: '[]'});
+	});
+var _user$project$Quizz$Quizz = function (a) {
+	return {current: a};
+};
+var _user$project$Quizz$Question = F3(
+	function (a, b, c) {
+		return {question: a, expected: b, response: c};
+	});
+var _user$project$Quizz$initialQuizz = _user$project$Quizz$Quizz(
+	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing));
+var _user$project$Quizz$init = A2(
+	_elm_lang$core$Platform_Cmd_ops['!'],
+	_user$project$Quizz$initialQuizz,
+	{ctor: '[]'});
+var _user$project$Quizz$Incorrect = {ctor: 'Incorrect'};
+var _user$project$Quizz$Correct = {ctor: 'Correct'};
+var _user$project$Quizz$Unknown = {ctor: 'Unknown'};
+var _user$project$Quizz$checkResponseVsExpectation = function (_p0) {
 	var _p1 = _p0;
-	var _p3 = _p1.current;
+	var _p2 = _p1.response;
+	if (_p2.ctor === 'Nothing') {
+		return _user$project$Quizz$Unknown;
+	} else {
+		return _elm_lang$core$Native_Utils.eq(_p2._0, _p1.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
+	}
+};
+var _user$project$Quizz$view = function (_p3) {
+	var _p4 = _p3;
+	var _p6 = _p4.current;
 	var answer = function () {
-		var _p2 = _p3.response;
-		if (_p2.ctor === 'Nothing') {
-			return A2(
-				_elm_lang$html$Html$span,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$style(
-						{
-							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
-							_1: {
+		var _p5 = _user$project$Quizz$checkResponseVsExpectation(_p6);
+		switch (_p5.ctor) {
+			case 'Unknown':
+				return A2(
+					_elm_lang$html$Html$span,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$style(
+							{
 								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-								_1: {ctor: '[]'}
-							}
-						}),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html$text('?'),
-					_1: {ctor: '[]'}
-				});
-		} else {
-			return A2(
-				_elm_lang$html$Html$span,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$style(
-						{
-							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
-							_1: {
+								_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+									_1: {ctor: '[]'}
+								}
+							}),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text('?'),
+						_1: {ctor: '[]'}
+					});
+			case 'Correct':
+				return A2(
+					_elm_lang$html$Html$span,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$style(
+							{
 								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-								_1: {ctor: '[]'}
-							}
-						}),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html$text('?'),
-					_1: {ctor: '[]'}
-				});
+								_0: {ctor: '_Tuple2', _0: 'color', _1: 'green'},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+									_1: {ctor: '[]'}
+								}
+							}),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text('Yes'),
+						_1: {ctor: '[]'}
+					});
+			default:
+				return A2(
+					_elm_lang$html$Html$span,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$style(
+							{
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'color', _1: 'red'},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+									_1: {ctor: '[]'}
+								}
+							}),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text('No'),
+						_1: {ctor: '[]'}
+					});
 		}
 	}();
 	return A2(
@@ -8178,7 +8233,7 @@ var _user$project$Quizz$view = function (_p0) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p3.question),
+					_0: _elm_lang$html$Html$text(_p6.question),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -8203,26 +8258,6 @@ var _user$project$Quizz$view = function (_p0) {
 			}
 		});
 };
-var _user$project$Quizz$update = F2(
-	function (msg, quizz) {
-		return A2(
-			_elm_lang$core$Platform_Cmd_ops['!'],
-			quizz,
-			{ctor: '[]'});
-	});
-var _user$project$Quizz$Quizz = function (a) {
-	return {current: a};
-};
-var _user$project$Quizz$Question = F3(
-	function (a, b, c) {
-		return {question: a, expected: b, response: c};
-	});
-var _user$project$Quizz$initialQuizz = _user$project$Quizz$Quizz(
-	A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing));
-var _user$project$Quizz$init = A2(
-	_elm_lang$core$Platform_Cmd_ops['!'],
-	_user$project$Quizz$initialQuizz,
-	{ctor: '[]'});
 var _user$project$Quizz$main = _elm_lang$html$Html$program(
 	{
 		init: _user$project$Quizz$init,

@@ -23,6 +23,25 @@ type alias Question =
     }
 
 
+type ResponseStatus
+    = Unknown
+    | Correct
+    | Incorrect
+
+
+checkResponseVsExpectation : Question -> ResponseStatus
+checkResponseVsExpectation { expected, response } =
+    case response of
+        Nothing ->
+            Unknown
+
+        Just r ->
+            if r == expected then
+                Correct
+            else
+                Incorrect
+
+
 type Msg
     = NoOp
 
@@ -53,15 +72,15 @@ view : Quizz -> H.Html Msg
 view { current } =
     let
         answer =
-            case current.response of
-                Nothing ->
+            case checkResponseVsExpectation current of
+                Unknown ->
                     H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
 
-                Just r ->
-                    if r == expected then
-                        H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
-                    else
-                        H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
+                Correct ->
+                    H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
+
+                Incorrect ->
+                    H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
     in
         H.div []
             [ H.label [] [ H.text <| current.question ]

@@ -9,9 +9,14 @@ import Json.Decode as Json
 -- * Types
 
 
+type Model
+    = QuizzInProgress Quizz
+    | QuizzCompleted { answers : List Question }
+
+
 type alias Quizz =
     { pastQuestions : List Question
-    , current : Maybe Question
+    , current : Question
     , nextQuestions : List Question
     , currentResponse :
         String
@@ -19,9 +24,14 @@ type alias Quizz =
     }
 
 
-initialQuizz : Quizz
-initialQuizz =
-    Quizz [] (Just <| Question "What is your name?" "Sir Arthur" Nothing) [ Question "What is your quest?" "To seek the Holy Grail" Nothing ] ""
+initialModel : Model
+initialModel =
+    QuizzInProgress
+        { pastQuestions = []
+        , current = Question "What is your name?" "Sir Arthur" Nothing
+        , nextQuestions = [ Question "What is your quest?" "To seek the Holy Grail" Nothing ]
+        , currentResponse = ""
+        }
 
 
 type alias Question =
@@ -58,7 +68,7 @@ type Msg
 
 {-| Main
 -}
-main : Program Never Quizz Msg
+main : Program Never Model Msg
 main =
     H.program
         { init = init
@@ -68,44 +78,60 @@ main =
         }
 
 
-init : ( Quizz, Cmd Msg )
+init : ( Model, Cmd Msg )
 init =
-    initialQuizz ! []
+    initialModel ! []
 
 
-update : Msg -> Quizz -> ( Quizz, Cmd Msg )
-update msg quizz =
-    case msg of
-        UpdateResponse s ->
-            { quizz | currentResponse = s } ! []
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg state =
+    case state of
+        QuizzCompleted _ ->
+            state ! []
 
-        SubmitResponse r ->
-            let
-                answeredQuestion =
-                    Maybe.map (\q -> { q | response = r }) quizz.current
-            in
-                case answeredQuestion of
-                    Nothing ->
-                        quizz ! []
+        QuizzInProgress quizz ->
+            case msg of
+                UpdateResponse s ->
+                    QuizzInProgress { quizz | currentResponse = s } ! []
 
-                    Just a ->
-                        { quizz
-                            | pastQuestions = a :: quizz.pastQuestions
-                            , current = List.head quizz.nextQuestions
-                            , nextQuestions = Maybe.withDefault [] <| List.tail quizz.nextQuestions
-                        }
-                            ! []
+                SubmitResponse r ->
+                    let
+                        answered =
+                            (\q -> { q | response = r }) quizz.current
 
-        NoOp ->
-            quizz ! []
+                        answeredQuestions =
+                            answered :: quizz.pastQuestions
+                    in
+                        case quizz.nextQuestions of
+                            [] ->
+                                QuizzCompleted { answers = answeredQuestions } ! []
+
+                            q :: qs ->
+                                QuizzInProgress
+                                    { quizz
+                                        | pastQuestions = answeredQuestions
+                                        , current = q
+                                        , nextQuestions = qs
+                                    }
+                                    ! []
+
+                NoOp ->
+                    state ! []
 
 
-view : Quizz -> H.Html Msg
-view quizz =
-    H.div []
-        [ viewPastQuestions quizz.pastQuestions
-        , viewCurrentQuestion quizz
-        ]
+view : Model -> H.Html Msg
+view state =
+    case state of
+        QuizzInProgress quizz ->
+            H.div []
+                [ viewPastQuestions quizz.pastQuestions
+                , viewCurrentQuestion quizz
+                ]
+
+        QuizzCompleted quizz ->
+            H.div []
+                [ viewPastQuestions quizz.answers
+                ]
 
 
 viewPastQuestions : List Question -> H.Html Msg
@@ -128,42 +154,24 @@ viewPastQuestion question =
                     [ ( "color", "red" ), ( "font-weight", "bold" ) ]
     in
         H.div []
-            [ H.label [] [ H.text <| question.question ]
-            , H.span [ style styles ] [ H.text <| Maybe.withDefault "" question.response ]
+            [ H.div [] [ H.text <| question.question ]
+            , H.div [ style styles ] [ H.text <| Maybe.withDefault "" question.response ]
             ]
 
 
 viewCurrentQuestion : Quizz -> H.Html Msg
 viewCurrentQuestion { pastQuestions, current, nextQuestions, currentResponse } =
-    case current of
-        Nothing ->
-            H.text ""
-
-        Just q ->
-            let
-                answer =
-                    case checkResponseVsExpectation q of
-                        Unknown ->
-                            H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
-
-                        Correct ->
-                            H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
-
-                        Incorrect ->
-                            H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
-            in
-                H.div []
-                    [ H.label [] [ H.text <| q.question ]
-                    , H.input
-                        [ type_ "text"
-                        , width 20
-                        , onInput UpdateResponse
-                        , onEnter (SubmitResponse <| Just currentResponse)
-                        , value currentResponse
-                        ]
-                        []
-                    , answer
-                    ]
+    H.div []
+        [ H.label [] [ H.text <| current.question ]
+        , H.input
+            [ type_ "text"
+            , width 20
+            , onInput UpdateResponse
+            , onEnter (SubmitResponse <| Just currentResponse)
+            , value currentResponse
+            ]
+            []
+        ]
 
 
 onEnter : msg -> H.Attribute msg

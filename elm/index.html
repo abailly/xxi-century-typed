@@ -8245,54 +8245,6 @@ var _user$project$Quizz$onEnter = function (msg) {
 				_elm_lang$core$Json_Decode$succeed(msg)),
 			A2(_elm_lang$core$Json_Decode$andThen, _user$project$Quizz$is13, _elm_lang$html$Html_Events$keyCode)));
 };
-var _user$project$Quizz$update = F2(
-	function (msg, quizz) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
-			case 'UpdateResponse':
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
-						quizz,
-						{currentResponse: _p0._0}),
-					{ctor: '[]'});
-			case 'SubmitResponse':
-				var answeredQuestion = A2(
-					_elm_lang$core$Maybe$map,
-					function (q) {
-						return _elm_lang$core$Native_Utils.update(
-							q,
-							{response: _p0._0});
-					},
-					quizz.current);
-				var _p1 = answeredQuestion;
-				if (_p1.ctor === 'Nothing') {
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						quizz,
-						{ctor: '[]'});
-				} else {
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							quizz,
-							{
-								pastQuestions: {ctor: '::', _0: _p1._0, _1: quizz.pastQuestions},
-								current: _elm_lang$core$List$head(quizz.nextQuestions),
-								nextQuestions: A2(
-									_elm_lang$core$Maybe$withDefault,
-									{ctor: '[]'},
-									_elm_lang$core$List$tail(quizz.nextQuestions))
-							}),
-						{ctor: '[]'});
-				}
-			default:
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					quizz,
-					{ctor: '[]'});
-		}
-	});
 var _user$project$Quizz$Quizz = F4(
 	function (a, b, c, d) {
 		return {pastQuestions: a, current: b, nextQuestions: c, currentResponse: d};
@@ -8301,37 +8253,94 @@ var _user$project$Quizz$Question = F3(
 	function (a, b, c) {
 		return {question: a, expected: b, response: c};
 	});
-var _user$project$Quizz$initialQuizz = A4(
-	_user$project$Quizz$Quizz,
-	{ctor: '[]'},
-	_elm_lang$core$Maybe$Just(
-		A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing)),
+var _user$project$Quizz$QuizzCompleted = function (a) {
+	return {ctor: 'QuizzCompleted', _0: a};
+};
+var _user$project$Quizz$QuizzInProgress = function (a) {
+	return {ctor: 'QuizzInProgress', _0: a};
+};
+var _user$project$Quizz$initialModel = _user$project$Quizz$QuizzInProgress(
 	{
-		ctor: '::',
-		_0: A3(_user$project$Quizz$Question, 'What is your quest?', 'To seek the Holy Grail', _elm_lang$core$Maybe$Nothing),
-		_1: {ctor: '[]'}
-	},
-	'');
+		pastQuestions: {ctor: '[]'},
+		current: A3(_user$project$Quizz$Question, 'What is your name?', 'Sir Arthur', _elm_lang$core$Maybe$Nothing),
+		nextQuestions: {
+			ctor: '::',
+			_0: A3(_user$project$Quizz$Question, 'What is your quest?', 'To seek the Holy Grail', _elm_lang$core$Maybe$Nothing),
+			_1: {ctor: '[]'}
+		},
+		currentResponse: ''
+	});
 var _user$project$Quizz$init = A2(
 	_elm_lang$core$Platform_Cmd_ops['!'],
-	_user$project$Quizz$initialQuizz,
+	_user$project$Quizz$initialModel,
 	{ctor: '[]'});
+var _user$project$Quizz$update = F2(
+	function (msg, state) {
+		var _p0 = state;
+		if (_p0.ctor === 'QuizzCompleted') {
+			return A2(
+				_elm_lang$core$Platform_Cmd_ops['!'],
+				state,
+				{ctor: '[]'});
+		} else {
+			var _p3 = _p0._0;
+			var _p1 = msg;
+			switch (_p1.ctor) {
+				case 'UpdateResponse':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_user$project$Quizz$QuizzInProgress(
+							_elm_lang$core$Native_Utils.update(
+								_p3,
+								{currentResponse: _p1._0})),
+						{ctor: '[]'});
+				case 'SubmitResponse':
+					var answered = function (q) {
+						return _elm_lang$core$Native_Utils.update(
+							q,
+							{response: _p1._0});
+					}(_p3.current);
+					var answeredQuestions = {ctor: '::', _0: answered, _1: _p3.pastQuestions};
+					var _p2 = _p3.nextQuestions;
+					if (_p2.ctor === '[]') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							_user$project$Quizz$QuizzCompleted(
+								{answers: answeredQuestions}),
+							{ctor: '[]'});
+					} else {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							_user$project$Quizz$QuizzInProgress(
+								_elm_lang$core$Native_Utils.update(
+									_p3,
+									{pastQuestions: answeredQuestions, current: _p2._0, nextQuestions: _p2._1})),
+							{ctor: '[]'});
+					}
+				default:
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						state,
+						{ctor: '[]'});
+			}
+		}
+	});
 var _user$project$Quizz$Incorrect = {ctor: 'Incorrect'};
 var _user$project$Quizz$Correct = {ctor: 'Correct'};
 var _user$project$Quizz$Unknown = {ctor: 'Unknown'};
-var _user$project$Quizz$checkResponseVsExpectation = function (_p2) {
-	var _p3 = _p2;
-	var _p4 = _p3.response;
-	if (_p4.ctor === 'Nothing') {
+var _user$project$Quizz$checkResponseVsExpectation = function (_p4) {
+	var _p5 = _p4;
+	var _p6 = _p5.response;
+	if (_p6.ctor === 'Nothing') {
 		return _user$project$Quizz$Unknown;
 	} else {
-		return _elm_lang$core$Native_Utils.eq(_p4._0, _p3.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
+		return _elm_lang$core$Native_Utils.eq(_p6._0, _p5.expected) ? _user$project$Quizz$Correct : _user$project$Quizz$Incorrect;
 	}
 };
 var _user$project$Quizz$viewPastQuestion = function (question) {
 	var styles = function () {
-		var _p5 = _user$project$Quizz$checkResponseVsExpectation(question);
-		switch (_p5.ctor) {
+		var _p7 = _user$project$Quizz$checkResponseVsExpectation(question);
+		switch (_p7.ctor) {
 			case 'Unknown':
 				return {
 					ctor: '::',
@@ -8370,7 +8379,7 @@ var _user$project$Quizz$viewPastQuestion = function (question) {
 		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$label,
+				_elm_lang$html$Html$div,
 				{ctor: '[]'},
 				{
 					ctor: '::',
@@ -8380,7 +8389,7 @@ var _user$project$Quizz$viewPastQuestion = function (question) {
 			_1: {
 				ctor: '::',
 				_0: A2(
-					_elm_lang$html$Html$span,
+					_elm_lang$html$Html$div,
 					{
 						ctor: '::',
 						_0: _elm_lang$html$Html_Attributes$style(styles),
@@ -8412,148 +8421,80 @@ var _user$project$Quizz$UpdateResponse = function (a) {
 var _user$project$Quizz$SubmitResponse = function (a) {
 	return {ctor: 'SubmitResponse', _0: a};
 };
-var _user$project$Quizz$viewCurrentQuestion = function (_p6) {
-	var _p7 = _p6;
-	var _p11 = _p7.currentResponse;
-	var _p8 = _p7.current;
-	if (_p8.ctor === 'Nothing') {
-		return _elm_lang$html$Html$text('');
-	} else {
-		var _p10 = _p8._0;
-		var answer = function () {
-			var _p9 = _user$project$Quizz$checkResponseVsExpectation(_p10);
-			switch (_p9.ctor) {
-				case 'Unknown':
-					return A2(
-						_elm_lang$html$Html$span,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$style(
-								{
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
-									_1: {
-										ctor: '::',
-										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-										_1: {ctor: '[]'}
-									}
-								}),
-							_1: {ctor: '[]'}
-						},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('?'),
-							_1: {ctor: '[]'}
-						});
-				case 'Correct':
-					return A2(
-						_elm_lang$html$Html$span,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$style(
-								{
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'color', _1: 'green'},
-									_1: {
-										ctor: '::',
-										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-										_1: {ctor: '[]'}
-									}
-								}),
-							_1: {ctor: '[]'}
-						},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('Yes'),
-							_1: {ctor: '[]'}
-						});
-				default:
-					return A2(
-						_elm_lang$html$Html$span,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$style(
-								{
-									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'color', _1: 'red'},
-									_1: {
-										ctor: '::',
-										_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
-										_1: {ctor: '[]'}
-									}
-								}),
-							_1: {ctor: '[]'}
-						},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('No'),
-							_1: {ctor: '[]'}
-						});
-			}
-		}();
-		return A2(
-			_elm_lang$html$Html$div,
-			{ctor: '[]'},
-			{
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$label,
-					{ctor: '[]'},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text(_p10.question),
-						_1: {ctor: '[]'}
-					}),
-				_1: {
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$input,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$type_('text'),
-							_1: {
-								ctor: '::',
-								_0: _elm_lang$html$Html_Attributes$width(20),
-								_1: {
-									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onInput(_user$project$Quizz$UpdateResponse),
-									_1: {
-										ctor: '::',
-										_0: _user$project$Quizz$onEnter(
-											_user$project$Quizz$SubmitResponse(
-												_elm_lang$core$Maybe$Just(_p11))),
-										_1: {
-											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$value(_p11),
-											_1: {ctor: '[]'}
-										}
-									}
-								}
-							}
-						},
-						{ctor: '[]'}),
-					_1: {
-						ctor: '::',
-						_0: answer,
-						_1: {ctor: '[]'}
-					}
-				}
-			});
-	}
-};
-var _user$project$Quizz$view = function (quizz) {
+var _user$project$Quizz$viewCurrentQuestion = function (_p8) {
+	var _p9 = _p8;
+	var _p10 = _p9.currentResponse;
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _user$project$Quizz$viewPastQuestions(quizz.pastQuestions),
+			_0: A2(
+				_elm_lang$html$Html$label,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(_p9.current.question),
+					_1: {ctor: '[]'}
+				}),
 			_1: {
 				ctor: '::',
-				_0: _user$project$Quizz$viewCurrentQuestion(quizz),
+				_0: A2(
+					_elm_lang$html$Html$input,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$type_('text'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$width(20),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onInput(_user$project$Quizz$UpdateResponse),
+								_1: {
+									ctor: '::',
+									_0: _user$project$Quizz$onEnter(
+										_user$project$Quizz$SubmitResponse(
+											_elm_lang$core$Maybe$Just(_p10))),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(_p10),
+										_1: {ctor: '[]'}
+									}
+								}
+							}
+						}
+					},
+					{ctor: '[]'}),
 				_1: {ctor: '[]'}
 			}
 		});
+};
+var _user$project$Quizz$view = function (state) {
+	var _p11 = state;
+	if (_p11.ctor === 'QuizzInProgress') {
+		var _p12 = _p11._0;
+		return A2(
+			_elm_lang$html$Html$div,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _user$project$Quizz$viewPastQuestions(_p12.pastQuestions),
+				_1: {
+					ctor: '::',
+					_0: _user$project$Quizz$viewCurrentQuestion(_p12),
+					_1: {ctor: '[]'}
+				}
+			});
+	} else {
+		return A2(
+			_elm_lang$html$Html$div,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _user$project$Quizz$viewPastQuestions(_p11._0.answers),
+				_1: {ctor: '[]'}
+			});
+	}
 };
 var _user$project$Quizz$main = _elm_lang$html$Html$program(
 	{

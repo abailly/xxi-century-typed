@@ -1,4 +1,4 @@
-module Quizz exposing (main)
+module Quizz exposing (main, ResponseStatus(..), checkResponseVsExpectation, Question)
 
 import Html as H
 import Html.Attributes exposing (type_, width, style)

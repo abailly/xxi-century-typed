@@ -1,7 +1,7 @@
 module Quizz exposing (main)
 
 import Html as H
-import Html.Attributes exposing (type_, width)
+import Html.Attributes exposing (type_, width, style)
 
 
 -- * Types
@@ -51,7 +51,14 @@ update msg quizz =
 
 view : Quizz -> H.Html Msg
 view { current } =
-    H.div []
-        [ H.label [] [ H.text <| current.question ]
-        , H.input [ type_ "text", width 20 ] []
-        ]
+    let
+        answer =
+            case current.response of
+                Nothing ->
+                    H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
+    in
+        H.div []
+            [ H.label [] [ H.text <| current.question ]
+            , H.input [ type_ "text", width 20 ] []
+            , answer
+            ]

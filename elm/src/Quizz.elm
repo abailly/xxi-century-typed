@@ -56,6 +56,12 @@ view { current } =
             case current.response of
                 Nothing ->
                     H.span [ style [ ( "color", "orange" ), ( "font-weight", "bold" ) ] ] [ H.text "?" ]
+
+                Just r ->
+                    if r == expected then
+                        H.span [ style [ ( "color", "green" ), ( "font-weight", "bold" ) ] ] [ H.text "Yes" ]
+                    else
+                        H.span [ style [ ( "color", "red" ), ( "font-weight", "bold" ) ] ] [ H.text "No" ]
     in
         H.div []
             [ H.label [] [ H.text <| current.question ]

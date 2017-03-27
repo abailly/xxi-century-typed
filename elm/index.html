@@ -8119,6 +8119,55 @@ var _elm_lang$html$Html_Attributes$classList = function (list) {
 var _elm_lang$html$Html_Attributes$style = _elm_lang$virtual_dom$VirtualDom$style;
 var _user$project$Quizz$view = function (_p0) {
 	var _p1 = _p0;
+	var _p3 = _p1.current;
+	var answer = function () {
+		var _p2 = _p3.response;
+		if (_p2.ctor === 'Nothing') {
+			return A2(
+				_elm_lang$html$Html$span,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$style(
+						{
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
+							_1: {
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+								_1: {ctor: '[]'}
+							}
+						}),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('?'),
+					_1: {ctor: '[]'}
+				});
+		} else {
+			return A2(
+				_elm_lang$html$Html$span,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$style(
+						{
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'color', _1: 'orange'},
+							_1: {
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'},
+								_1: {ctor: '[]'}
+							}
+						}),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('?'),
+					_1: {ctor: '[]'}
+				});
+		}
+	}();
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
@@ -8129,7 +8178,7 @@ var _user$project$Quizz$view = function (_p0) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p1.current.question),
+					_0: _elm_lang$html$Html$text(_p3.question),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -8146,7 +8195,11 @@ var _user$project$Quizz$view = function (_p0) {
 						}
 					},
 					{ctor: '[]'}),
-				_1: {ctor: '[]'}
+				_1: {
+					ctor: '::',
+					_0: answer,
+					_1: {ctor: '[]'}
+				}
 			}
 		});
 };

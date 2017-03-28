@@ -22,10 +22,14 @@ all =
     describe "Holy Grail Test Suite"
         [ describe "Checking Answer"
             [ test "yields Unknown given no response" <|
-                assertResponseIs (Question "Foo?" "bar" Nothing) Unknown
+                assertResponseIs (updateAnswer Nothing <| question "Foo?" "bar") Unknown
             , test "yields Correct given response matches expected" <|
-                assertResponseIs (Question "Foo?" "bar" (Just "bar")) Correct
+                assertResponseIs (updateAnswer (Just "bar") <| question "Foo?" "bar") Correct
             , test "yields Incorrect given response does not match expected" <|
-                assertResponseIs (Question "Foo?" "bar" (Just "baz")) Incorrect
+                assertResponseIs (updateAnswer (Just "baz") <| question "Foo?" "bar") Incorrect
+            ]
+        , describe "Updating QCM with Answer"
+            [ test "updates question given update is a valid integer" <|
+                assertResponseIs (updateAnswer (Just "bar") <| qcm "Foo?" [ "bar", "baz" ] "bar") Correct
             ]
         ]

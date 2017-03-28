@@ -1,12 +1,13 @@
 module Main where
 
+import           Data.Text (unpack)
 import           Quizz
 
-q1 =  OpenQuestion "What is your name ?" (Open $ const True) Nothing
-q2 =  OpenQuestion "What is your quest?" (Open $ const True) Nothing
-q3 =  QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] (Closed $ Option 0) Nothing
-q4 =  QCM "What is the capital of Assyria?" [ "Babylone", "Ninive", "Ur", "Don't know" ] (Closed $ Option 1) Nothing
-q5 =  Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) (Closed $ Graded 35) Nothing
+q1 =  Question (OpenQuestion "What is your name ?" "Sir Arthur" Nothing) Just
+q2 =  Question (OpenQuestion "What is your quest?" "To seek the Holy Grail" Nothing) Just
+q3 =  Question (QCM "What is your favourite colour?" [ "blue", "yellow", "green", "Don't know"] 0 Nothing) (Just . read . unpack)
+q4 =  Question (QCM "What is the capital of Assyria?" [ "Babylone", "Ninive", "Ur", "Don't know" ] 1 Nothing) (Just . read . unpack)
+q5 =  Question (Grade "What is the air-speed velocity of an unladen swallow?" (0, 150) 35 Nothing) (Just . read . unpack)
 
 
 survey =

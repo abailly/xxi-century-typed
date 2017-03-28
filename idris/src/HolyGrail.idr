@@ -4,6 +4,7 @@ import Data.String
 import Data.Vect
 import Data.Fin
 
+
 interface Displayable d where
   total display : d -> String
   
@@ -120,7 +121,7 @@ plusOneCommutes : (n : Nat) -> (m : Nat) -> (n + S m = S n + m)
 plusOneCommutes Z     k     = Refl
 plusOneCommutes (S k) j     = 
  let inductiveHypothesis = plusOneCommutes k j in
-   rewrite inductiveHypothesis in Refl
+    rewrite inductiveHypothesis in Refl
    
 updateQuizz : (current : Question) 
            -> (q : Question) 
@@ -129,11 +130,14 @@ updateQuizz : (current : Question)
            -> (a : Answer current)
             -> Quizz (plus n (S len))
 updateQuizz {n} {len} current q qs answered a = 
-  rewrite plusOneCommutes n len in MkQuizz (MkAnswered (current ** a) :: answered) q qs
+  rewrite plusOneCommutes n len in 
+    MkQuizz (MkAnswered (current ** a) :: answered) q qs
 
-goBack : (x : Question) -> (current : Question) -> (next : Vect m Question) -> (answered : Vect len Answered) -> Quizz (S (plus len m))
+goBack : (x : Question) -> (current : Question) -> (next : Vect m Question) -> (answered : Vect len Answered)
+       -> Quizz (S (plus len m))
 goBack {m} {len} x current next answered = 
-  rewrite plusSuccRightSucc len m in MkQuizz answered x (current :: next)
+  rewrite plusSuccRightSucc len m in 
+    MkQuizz answered x (current :: next)
 
 
 parseInput : (l : List Char) -> Input

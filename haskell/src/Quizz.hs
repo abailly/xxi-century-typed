@@ -5,6 +5,12 @@ where
 
 import           Data.Text (Text, unpack)
 
+newtype Question where
+  Question :: (forall q . (Questionable q, Show q) => q ) -> Question
+
+instance Show Question where
+  show (Question q) = show q
+    
 data Quizz = Quizz { previousQuestions :: [ Question ] -- there should be a concept of answered questions...
                    , currentQuestion   :: Question
                    , nextQuestions     :: [ Question ]
@@ -24,21 +30,44 @@ instance Show Expected where
   show (Open _  ) = "Open ended"
   show (Closed r) = "Closed " ++ show r
 
-data Question = QCM { question   :: Text
-                    , qcmOptions :: [ Text ]
-                    , expected   :: Expected
-                    , response   :: Maybe Response
-                    }
-              | Grade { question   :: Text
-                      , gradeRange :: (Int, Int)
-                      , expected   :: Expected
-                      , response   :: Maybe Response
-                      }
-              | OpenQuestion { question :: Text
-                             , expected :: Expected
-                             , response :: Maybe Response
-                             }
+class Questionable q where
+  type Answer q :: *
+
+  question :: q -> Text
+  expected :: q -> Answer q
+  response :: q -> Maybe (Answer q)
+
+data QCM = QCM { _question   :: Text
+               , _qcmOptions :: [ Text ]
+               , _expected   :: Int
+               , _response   :: Maybe Int
+               }
               deriving (Show)
+
+instance Questionable QCM where
+  type Answer QCM = Int
+
+  question (QCM q _ _ _) = q
+  expected (QCM _ _ e _) = e
+  response (QCM _ _ _ r) = r
+
+data Grade = Grade { _question   :: Text
+                   , _gradeRange :: (Int, Int)
+                   , _expected   :: Expected
+                   , _response   :: Maybe Response
+                   }
+              deriving (Show)
+
+instance Questionable Grade where
+
+data OpenQuestion = OpenQuestion { _question :: Text
+                                 , _expected :: Expected
+                                 , _response :: Maybe Response
+                                 }
+                  deriving (Show)
+
+instance Questionable OpenQuestion where
+  type Answer OpenQuestion = Text
 
 data Knight = Knight { name      :: Text
                      , responses :: Question -> Maybe Response
@@ -54,11 +83,15 @@ data Fate = CanCross Knight
           | IsDoomed Knight
           deriving (Eq, Show)
 
+-- we can see here the types are not precise enough: we need to do a test at runtime
+-- through pattern matching to ensure we check the correct answer type for the given
+-- question
 isCorrectAnswer :: Question -> Bool
-isCorrectAnswer (OpenQuestion _ (Open f)   (Just (FreeText t))) = f t
-isCorrectAnswer (QCM _ _        (Closed e) (Just r@(Option _))) = e == r
-isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
-isCorrectAnswer _                                               = False
+isCorrectAnswer (Question q) = Just (expected q) == response q
+-- isCorrectAnswer (OpenQuestion _ (Open f)   (Just (FreeText t))) = f t
+-- isCorrectAnswer (QCM _ _        (Closed e) (Just r@(Option _))) = e == r
+-- isCorrectAnswer (Grade _ _      (Closed e) (Just r@(Graded _))) = e == r
+-- isCorrectAnswer _                                               = False
 
 answerQuestion :: Knight -> Question -> Quizz -> Quizz
 answerQuestion Knight{..} question quizz =

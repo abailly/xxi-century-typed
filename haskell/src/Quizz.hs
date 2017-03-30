@@ -86,7 +86,7 @@ instance Questionable OpenQuestion where
   answered open r = open { _response = r }
 
 data Knight = Knight { name      :: Text
-                     , responses :: Question -> Maybe Text
+                     , responses :: Text -> Maybe Text
                      }
 
 instance Show Knight where
@@ -105,7 +105,7 @@ answerQuestion Knight{..} quest quizz =
   update quizz quest
   where
     update :: Quizz -> Question -> Quizz
-    update Quizz{..} (Question q a) = let r = (responses quest >>= a)
+    update Quizz{..} (Question q a) = let r = responses (question q) >>= a
                                       in quizz { previousQuestions = Question (answered q r) a : previousQuestions
                                                , currentQuestion = head nextQuestions
                                                , nextQuestions = tail nextQuestions

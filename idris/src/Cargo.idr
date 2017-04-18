@@ -18,16 +18,18 @@ implementation Eq Cargo  where
 -- so we need a function (MkCargo s = MkCargo s') -> (s = s') that composed with contra gives the wanted function
 -- 
 -- under the interpretation of -> as logical implication, we have a A -> B and B -> C hence we can derive A -> C by transitivity of logical implication, which is the same as function composition
-private
-sizeInj : (MkCargo s = MkCargo s') -> (s = s')
-sizeInj Refl = Refl
 
-implementation DecEq Cargo where
-  decEq (MkCargo s) (MkCargo s') = 
-    case decEq s s' of 
-      (Yes prf)   => rewrite prf in Yes Refl
-      (No contra) => No $ contra . sizeInj
-    
+mutual
+  implementation DecEq Cargo where
+    decEq (MkCargo s) (MkCargo s') = 
+      case decEq s s' of 
+        (Yes prf)   => rewrite prf in Yes Refl
+        (No contra) => No $ contra . sizeInj
+              
+  private
+  sizeInj : (MkCargo s = MkCargo s') -> (s = s')
+  sizeInj Refl = Refl
+
 record Voyage where
   constructor MkVoyage
   capacity : Int
@@ -54,20 +56,22 @@ makeBooking' cargo@(MkCargo size) voyage@(MkVoyage capacity orderConfirmation ca
 
 ||| A proof that a cargo is confirmed for given voyage
 data HasCargo : (cargo : Cargo) -> (voyage : Voyage) -> Type where
-  CargoConfirmed : (prf : Elem cargo cargos) -> HasCargo cargo (MkVoyage cap order cargos)
+  CargoConfirmed : {auto prf : Elem cargo cargos} -> HasCargo cargo (MkVoyage cap order cargos)
 
-voyageIsEmpty : HasCargo cargo (MkVoyage capacity orderConfirmation []) -> Void
-voyageIsEmpty (CargoConfirmed prf) impossible
+mutual
+  hasCargo : (cargo : Cargo) -> (voyage : Voyage) -> Dec (HasCargo cargo voyage)
+  hasCargo cargo (MkVoyage capacity orderConfirmation []) = No voyageIsEmpty
+  hasCargo cargo (MkVoyage capacity orderConfirmation cargos) = 
+    case isElem cargo cargos of
+      (Yes prf) => Yes CargoConfirmed
+      (No contra) => No (contra . cargoConfirmed)
 
-cargoConfirmed : HasCargo cargo (MkVoyage capacity orderConfirmation cargos) -> Elem cargo cargos
-cargoConfirmed (CargoConfirmed prf) = prf
 
-hasCargo : (cargo : Cargo) -> (voyage : Voyage) -> Dec (HasCargo cargo voyage)
-hasCargo cargo (MkVoyage capacity orderConfirmation []) = No voyageIsEmpty
-hasCargo cargo (MkVoyage capacity orderConfirmation cargos) = 
-  case isElem cargo cargos of
-    (Yes prf) => Yes (CargoConfirmed prf)
-    (No contra) => No (contra . cargoConfirmed)
+  voyageIsEmpty : HasCargo cargo (MkVoyage capacity orderConfirmation []) -> Void
+  voyageIsEmpty CargoConfirmed impossible
+
+  cargoConfirmed : HasCargo cargo (MkVoyage capacity orderConfirmation cargos) -> Elem cargo cargos
+  cargoConfirmed (CargoConfirmed {prf}) = prf
 
 -- data CanBookCargo : (cargo : Cargo) -> (voyage : Voyage)  -> Type where
 --   CargoBooked : (cargo : Cargo) -> (voyage : Voyage) -> { auto prf : HasCargo cargo (cargos voyage) } -> CanBookCargo cargo voyage

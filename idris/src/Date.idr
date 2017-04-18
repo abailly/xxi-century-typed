@@ -66,6 +66,8 @@ daysInMonth October _      = 31
 daysInMonth November _     = 30
 daysInMonth December _     = 31
 
+postulate aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
+
 nextMonth : Month -> Month
 nextMonth January   = February
 nextMonth February  = March    
@@ -105,12 +107,12 @@ addOneDay (MkDate year month day) =
       -- we have prf in scope to pass down to MkDate
       MkDate year month (S day)
     Right contra => 
-          let remaining = (S day - daysInMonth month year)
-          in case month of 
+          case month of 
                   -- We need to roll by one year 
                   December => MkDate (year + 1) January 1
                   -- We need to roll by one month
-                  _        => MkDate year (nextMonth month) 1
+                  _        => let dayOne = aMonthHasOneDay (nextMonth month) year
+                              in MkDate year (nextMonth month) 1
 
 
 addDays : (d : Date)

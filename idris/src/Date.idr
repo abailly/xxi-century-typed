@@ -97,24 +97,28 @@ lteIsTotal (S k) (S j) with (lteIsTotal k j )
   | Right r = Right (LTESucc r) 
 
 
-partial
-addDays : (d : Date)
-        -> (n : Nat)
-        -> Date
-addDays d@(MkDate year mo day) n =
-  case lteIsTotal (day + n) (daysInMonth mo year) of
+addOneDay : (d : Date) -> Date
+addOneDay (MkDate year month day) = 
+  case lteIsTotal (S day) (daysInMonth month year) of
     Left prf   => 
       -- easy case: We know the added number of days fit in the month so simply add them
       -- we have prf in scope to pass down to MkDate
-      MkDate year mo (day + n)
+      MkDate year month (S day)
     Right contra => 
-          let remaining = ((day + n) - daysInMonth mo year)
-          in case mo of 
-                  -- We need to roll by one year then add the remaining number of days recursively from
-                  -- the beginning of next year
-                  December => addDays (MkDate (year + 1) January 1) remaining
-                  -- We need to roll by one month and add remaining days from beginning of next month
-                  _        => ?rollOneMonth 
+          let remaining = (S day - daysInMonth month year)
+          in case month of 
+                  -- We need to roll by one year 
+                  December => MkDate (year + 1) January 1
+                  -- We need to roll by one month
+                  _        => MkDate year (nextMonth month) 1
+
+
+addDays : (d : Date)
+        -> (n : Nat)
+        -> Date
+addDays d Z     = d
+addDays d (S k) = addDays (addOneDay d) k
+
 
 -- implementation Eq Date where
 --   (MkDate y1 m1 d1) == (MkDate y2 m2 d2) = 

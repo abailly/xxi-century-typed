@@ -130,25 +130,17 @@ addDays d Z     = d
 addDays d (S k) = addDays (addOneDay d) k
 
 
--- implementation Eq Date where
---   (MkDate y1 m1 d1) == (MkDate y2 m2 d2) = 
---     d1 == d2 && m1 == m2 && y1 == y2
+implementation Eq Date where
+  (MkDate y1 m1 d1) == (MkDate y2 m2 d2) = 
+    d1 == d2 && m1 == m2 && y1 == y2
     
--- implementation Ord Date where
---   compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
---     case compare y1 y2 of
---       EQ => case compare m1 m2 of
---                  EQ => compare d1 d2
---                  LT => LT
---                  GT => GT
---       LT => LT
---       GT => GT
+implementation Ord Date where
+  compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
+    case compare y1 y2 of
+      EQ => case compare m1 m2 of
+                 EQ => compare d1 d2
+                 LT => LT
+                 GT => GT
+      LT => LT
+      GT => GT
 
--- addDays : Date -> Nat -> Date
--- addDays (MkDate d m y) days =
---   let maxDays = daysInMonth m y
---       shiftedDays = finToNat d + days
---   in case natToFin shiftedDays (finToNat maxDays) of  
---           Nothing => ?hole_1
---           Just x  => MkDate x m y
-     

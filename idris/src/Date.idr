@@ -70,8 +70,9 @@ daysInMonth December _     = 31
 
 aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
 aMonthHasOneDay January year   = LTESucc LTEZero
-aMonthHasOneDay February year  = case daysInMonth February year of 
-                                      val => ?hole
+aMonthHasOneDay February year with (isLeapYear year)
+  | False = LTESucc LTEZero
+  | True  = LTESucc LTEZero
 aMonthHasOneDay March year     = LTESucc LTEZero
 aMonthHasOneDay April year     = LTESucc LTEZero
 aMonthHasOneDay May year       = LTESucc LTEZero

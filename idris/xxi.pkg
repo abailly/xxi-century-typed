@@ -1,6 +1,8 @@
 package xxi
 
+pkgs = contrib
+
 sourcedir = src
-modules = HolyGrail
+modules = HolyGrail, Cargo.Model
 main = quizz
 executable = quizz

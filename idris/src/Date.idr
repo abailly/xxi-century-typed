@@ -1,5 +1,7 @@
 module Date 
 
+import Decidable.Order
+
 %default total
 %access public export
 
@@ -66,7 +68,20 @@ daysInMonth October _      = 31
 daysInMonth November _     = 30
 daysInMonth December _     = 31
 
-postulate aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
+aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
+aMonthHasOneDay January year   = LTESucc LTEZero
+aMonthHasOneDay February year  = case daysInMonth February year of 
+                                      val => ?hole
+aMonthHasOneDay March year     = LTESucc LTEZero
+aMonthHasOneDay April year     = LTESucc LTEZero
+aMonthHasOneDay May year       = LTESucc LTEZero
+aMonthHasOneDay June year      = LTESucc LTEZero
+aMonthHasOneDay July year      = LTESucc LTEZero
+aMonthHasOneDay August year    = LTESucc LTEZero
+aMonthHasOneDay September year = LTESucc LTEZero
+aMonthHasOneDay October year   = LTESucc LTEZero
+aMonthHasOneDay November year  = LTESucc LTEZero
+aMonthHasOneDay December year  = LTESucc LTEZero
 
 nextMonth : Month -> Month
 nextMonth January   = February
@@ -84,34 +99,26 @@ nextMonth December  = January
 
 data Date : Type where
   MkDate : (year  : Year) -> (month : Month ) -> (day : Nat) 
-         -> { auto dayFitInMonth : Nat.LTE day (daysInMonth month year) } 
+         -> { auto dayFitInMonth : LTE day (daysInMonth month year) } 
          -> Date
 
 daysMax : (d: Date) -> Nat
 daysMax (MkDate y m _) = daysInMonth m y
 
-||| A proof that lower-than-equal is total over `Nat`
-lteIsTotal : (a : Nat) -> (b : Nat) -> Either (LTE a b) (LTE b a) 
-lteIsTotal Z     _     = Left LTEZero
-lteIsTotal _     Z     = Right LTEZero
-lteIsTotal (S k) (S j) with (lteIsTotal k j )
-  | Left l  = Left (LTESucc l)
-  | Right r = Right (LTESucc r) 
 
 
 addOneDay : (d : Date) -> Date
 addOneDay (MkDate year month day) = 
-  case lteIsTotal (S day) (daysInMonth month year) of
-    Left prf   => 
-      -- easy case: We know the added number of days fit in the month so simply add them
-      -- we have prf in scope to pass down to MkDate
+  case order {to=LTE} (S day) (daysInMonth month year) of
+    Left _  => 
+      -- easy case: simply add one day
       MkDate year month (S day)
-    Right contra => 
+    Right _ => 
           case month of 
                   -- We need to roll by one year 
                   December => MkDate (year + 1) January 1
                   -- We need to roll by one month
-                  _        => let dayOne = aMonthHasOneDay (nextMonth month) year
+                  _        => let firstDayOfMonth = aMonthHasOneDay (nextMonth month) year
                               in MkDate year (nextMonth month) 1
 
 

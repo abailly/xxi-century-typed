@@ -1,5 +1,6 @@
 module Date 
 
+import Prelude.Strings
 import Decidable.Order
 
 %default total
@@ -54,35 +55,29 @@ isLeapYear y = check4 && check100 || check400
     check400 : Bool
     check400 = modNatNZ y 400 SIsNotZ == 0
 
-daysInMonth : Month -> Year -> Nat
-daysInMonth January _      = 31
-daysInMonth February year  = if isLeapYear year then 29 else 28
-daysInMonth March _        = 31
-daysInMonth April _        = 30
-daysInMonth May _          = 31
-daysInMonth June _         = 30
-daysInMonth July _         = 31
-daysInMonth August _       = 31
-daysInMonth September _    = 30
-daysInMonth October _      = 31
-daysInMonth November _     = 30
-daysInMonth December _     = 31
+monthDuration : Month -> Year -> (days: Nat ** LTE 1 days) 
+monthDuration January _      = (31 ** LTESucc LTEZero)
+monthDuration February year  = if isLeapYear year 
+                               then (29  ** LTESucc LTEZero)
+                               else (28 ** LTESucc LTEZero)
+monthDuration March _        = (31 ** LTESucc LTEZero)
+monthDuration April _        = (30 ** LTESucc LTEZero)
+monthDuration May _          = (31 ** LTESucc LTEZero)
+monthDuration June _         = (30 ** LTESucc LTEZero)
+monthDuration July _         = (31 ** LTESucc LTEZero)
+monthDuration August _       = (31 ** LTESucc LTEZero)
+monthDuration September _    = (30 ** LTESucc LTEZero)
+monthDuration October _      = (31 ** LTESucc LTEZero)
+monthDuration November _     = (30 ** LTESucc LTEZero)
+monthDuration December _     = (31 ** LTESucc LTEZero)
 
+daysInMonth : Month -> Year -> Nat
+daysInMonth month year with (monthDuration month year) 
+  | (days ** _) = days
+  
 aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
-aMonthHasOneDay January year   = LTESucc LTEZero
-aMonthHasOneDay February year with (isLeapYear year)
-  | False = LTESucc LTEZero
-  | True  = LTESucc LTEZero
-aMonthHasOneDay March year     = LTESucc LTEZero
-aMonthHasOneDay April year     = LTESucc LTEZero
-aMonthHasOneDay May year       = LTESucc LTEZero
-aMonthHasOneDay June year      = LTESucc LTEZero
-aMonthHasOneDay July year      = LTESucc LTEZero
-aMonthHasOneDay August year    = LTESucc LTEZero
-aMonthHasOneDay September year = LTESucc LTEZero
-aMonthHasOneDay October year   = LTESucc LTEZero
-aMonthHasOneDay November year  = LTESucc LTEZero
-aMonthHasOneDay December year  = LTESucc LTEZero
+aMonthHasOneDay month year with (monthDuration month year) 
+  | (_ ** prf) = prf
 
 nextMonth : Month -> Month
 nextMonth January   = February
@@ -105,7 +100,6 @@ data Date : Type where
 
 daysMax : (d: Date) -> Nat
 daysMax (MkDate y m _) = daysInMonth m y
-
 
 
 addOneDay : (d : Date) -> Date

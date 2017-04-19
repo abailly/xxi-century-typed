@@ -96,6 +96,7 @@ nextMonth December  = January
 data Date : Type where
   MkDate : (year  : Year) -> (month : Month ) -> (day : Nat) 
          -> { auto dayFitInMonth : LTE day (daysInMonth month year) } 
+         -> { auto dayGreaterThanOne : LTE 1 day } 
          -> Date
 
 daysMax : (d: Date) -> Nat

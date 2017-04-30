@@ -40,7 +40,7 @@ drinkOne b@TwoBottles              = (verse b, OneBottle)
 drinkOne b@(MoreBottles Z )        = (verse b, TwoBottles)
 drinkOne b@(MoreBottles (S k) {p}) = (verse b, MoreBottles k { p = lteSuccLeft p })
 
-verses : { n : Nat } -> Bottles (S n) -> List String
+verses : Bottles (S n) -> List String
 verses {n = Z}     OneBottle 
                         = [verse OneBottle, verse BottlesNoMore ]
 verses {n = (S k)} x with (drinkOne x) 

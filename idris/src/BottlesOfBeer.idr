@@ -28,8 +28,8 @@ verse TwoBottles = """2 bottles of beer on the wall,
 Take one down and pass it around,
 1 bottle of beer on the wall.\n"""
 verse (MoreBottles n ) = 
-  unlines [ show n ++ " bottles of beer on the wall,"
-          , show n ++ " bottles of beer.\n" 
+  unlines [ show (n + 3) ++ " bottles of beer on the wall,"
+          , show (n + 3) ++ " bottles of beer.\n" 
           , "Take one down and pass it around," 
           , (show $ n + 2) ++ " bottles of beer on the wall.\n"
           ]

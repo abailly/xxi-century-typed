@@ -4,7 +4,7 @@ import Test exposing (..)
 import Expect
 import Fuzz exposing (list, int, tuple, string)
 import String
-import Quizz exposing (..)
+import Quizz.Types exposing (..)
 
 
 assertResponseIs : Question -> ResponseStatus -> (() -> Expect.Expectation)

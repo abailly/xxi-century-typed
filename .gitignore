@@ -11,3 +11,4 @@ gorilla-space.js
 .built
 .#*
 *.ibc
+node_modules/

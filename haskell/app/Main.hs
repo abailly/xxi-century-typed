@@ -15,5 +15,5 @@ survey =
 
 
 main :: IO ()
-main = putStrLn ""
+main = undefined
 

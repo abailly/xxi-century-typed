@@ -1,5 +1,5 @@
-module Quizz (Quizz(..), Question(..), QCM(..), OpenQuestion(..), Grade(..), Knight(..), Fate(..), Response(..),
-              Expected(..),
+{-# LANGUAGE TypeFamilyDependencies #-}
+module Quizz (Quizz(..), Question(..), QCM(..), OpenQuestion(..), Grade(..), Knight(..), Fate(..), 
               answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
@@ -17,23 +17,13 @@ data Quizz = Quizz { previousQuestions :: [ Question ] -- there should be a conc
                    }
            deriving (Show)
 
-data Response = Graded Int
-              | Option Int
-              | FreeText Text
-              deriving  (Eq, Show)
-
-data Expected =
-  Open (Text -> Bool)
-  | Closed Response
-
-instance Show Expected where
-  show (Open _  ) = "Open ended"
-  show (Closed r) = "Closed " ++ show r
+type family Answer q = a | a -> q where
+  Answer QCM = Int
+  Answer Grade = Double
+  Answer OpenQuestion = Text
 
 
 class (Eq (Answer q)) => Questionable q where
-  type Answer q :: *
-
   question :: q -> Text
   expected :: q -> Answer q
   response :: q -> Maybe (Answer q)
@@ -50,7 +40,6 @@ data QCM = QCM { _question   :: Text
               deriving (Show, Eq)
 
 instance Questionable QCM where
-  type Answer QCM = Int
   question (QCM q _ _ _) = q
   expected (QCM _ _ e _) = e
   response (QCM _ _ _ r) = r
@@ -60,13 +49,12 @@ instance Questionable QCM where
 
 data Grade = Grade { _question   :: Text
                    , _gradeRange :: (Int, Int)
-                   , _expected   :: Int
-                   , _response   :: Maybe Int
+                   , _expected   :: Double
+                   , _response   :: Maybe Double
                    }
               deriving (Show)
 
 instance Questionable Grade where
-  type Answer Grade = Int
   question (Grade q _ _ _) = q
   expected (Grade _ _ e _) = e
   response (Grade _ _ _ r) = r
@@ -79,7 +67,6 @@ data OpenQuestion = OpenQuestion { _question :: Text
                   deriving (Show)
 
 instance Questionable OpenQuestion where
-  type Answer OpenQuestion = Text
   question (OpenQuestion q _ _) = q
   expected (OpenQuestion _ e _) = e
   response (OpenQuestion _ _ r) = r

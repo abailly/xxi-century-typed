@@ -87,3 +87,7 @@ spec = describe "Minilang Core" $ do
                        (Abs (B "h1")
                          (Case [ Choice "true" Unit (Var "h1")
                                , Choice "false" Unit (Var "h0")]))))
+
+    it "parses Nat declaration" $ do
+      parseML "rec Nat : U = Sum (zero | succ Nat)"
+        `shouldBe` RDecl (B "Nat") U (Sum [Ctor "zero" Unit,Ctor "succ" (Var "Nat")])

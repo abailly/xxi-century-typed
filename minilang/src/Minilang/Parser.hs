@@ -20,6 +20,7 @@ data AST = U | Unit
          | P1 AST | P2 AST
          | Pair AST AST
          | Decl Binding AST AST
+         | RDecl Binding AST AST
          | Sum [ Ctor ]
          | Case [ Choice ]
          | Err Text
@@ -58,7 +59,12 @@ type MLParser a = Parsec String () a
 
 program
   :: MLParser AST
-program = decl
+program = rec_decl
+      <|> decl
+
+rec_decl
+  :: MLParser AST
+rec_decl = recur >> RDecl <$> binding <*> (colon *> expr) <*> (equal *> expr)
 
 decl
   :: MLParser AST
@@ -152,7 +158,7 @@ identifier = do
 unit   = string "()" *> pure Unit
 
 lambda, dot, colon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum, fun, rarrow
+  ,lpar, rpar, pipe, sum, fun, rarrow, recur
   :: MLParser ()
 lambda = char 'λ' >> pure ()
 dot    = spaces >> char '.' >> spaces >> pure ()
@@ -167,6 +173,7 @@ pi1    = string "π1" >> pure ()
 pi2    = string "π2" >> pure ()
 sum    = string "Sum" >> pure ()
 fun    = string "fun" >> pure ()
+recur  = string "rec" >> spaces >> pure ()
 sigma  = char 'Σ' >> pure ()
 equal  = char '=' >> spaces >> pure ()
 

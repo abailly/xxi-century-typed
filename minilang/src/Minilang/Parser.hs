@@ -9,6 +9,7 @@ import qualified Text.Parsec.Token     as Tokens
 
 data AST = I Integer
          | D Double
+         | Var Text
          | Err Text
   deriving (Eq, Show, Read, Generic)
 
@@ -25,6 +26,7 @@ type MLParser a = Parsec String () a
 
 parser :: MLParser AST
 parser = number
+     <|> identifier
 
 -- * Lexer
 
@@ -32,7 +34,8 @@ lexer
   :: Tokens.GenTokenParser String () Identity
 lexer = Tokens.makeTokenParser haskellDef
 
-number
+number, identifier
   :: MLParser AST
 
 number = either I D <$> Tokens.naturalOrFloat lexer
+identifier = Var . pack <$> Tokens.identifier lexer

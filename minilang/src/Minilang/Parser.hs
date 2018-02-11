@@ -20,6 +20,7 @@ data AST = U | Unit
          | Pair AST AST
          | Decl Binding AST AST
          | Sum [ Ctor ]
+         | Case [ Choice ]
          | Err Text
   deriving (Eq, Show, Read, Generic)
 
@@ -28,6 +29,9 @@ data Binding = B Text
   deriving (Eq, Show, Read, Generic)
 
 data Ctor = Ctor Text AST
+  deriving (Eq, Show, Read, Generic)
+
+data Choice = Choice Text AST AST
   deriving (Eq, Show, Read, Generic)
 
 -- | Top-level parser for MiniLang.
@@ -40,7 +44,7 @@ parseML =
 parseMLExpr
   :: Text -> AST
 parseMLExpr =
-  doParse expr
+  doParse (expr <* eof)
 
 doParse
   :: MLParser AST -> Text -> AST
@@ -66,6 +70,7 @@ expr = dependent_product
    <|> abstraction
    <|> projection
    <|> labelled_sum
+   <|> try case_match
    <|> try pair
    <|> try application
    <|> term
@@ -95,10 +100,20 @@ projection = try (P1 <$> (pi1 >> dot *> expr))
 
 labelled_sum
   :: MLParser AST
-labelled_sum = sum >> lpar *> (Sum <$> ctors) <* rpar
+labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
     ctors = sepBy ctor pipe
     ctor = Ctor <$> (pack <$> Tokens.identifier lexer) <*> (spaces *> expr <|> pure Unit)
+
+case_match
+  :: MLParser AST
+case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
+  where
+    ctors = sepBy ctor pipe
+    ctor = Choice
+           <$> (pack <$> Tokens.identifier lexer)
+           <*> (spaces *> expr <|> pure Unit)
+           <*> (rarrow *> expr)
 
 pair
   :: MLParser AST
@@ -126,7 +141,7 @@ identifier = do
 unit   = string "()" *> pure Unit
 
 lambda, dot, colon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum
+  ,lpar, rpar, pipe, sum, fun, rarrow
   :: MLParser ()
 lambda = char 'λ' >> pure ()
 dot    = spaces >> char '.' >> spaces >> pure ()
@@ -135,10 +150,12 @@ comma  = spaces >> char ',' >> spaces >> pure ()
 pipe   = spaces >> char '|' >> spaces >> pure ()
 lpar   = char '(' >> spaces >> pure ()
 rpar   = spaces >> char ')' >> pure ()
+rarrow = spaces >> string "->" >> spaces >> pure ()
 pi     = char 'Π' >> pure ()
 pi1    = string "π1" >> pure ()
 pi2    = string "π2" >> pure ()
 sum    = string "Sum" >> pure ()
+fun    = string "fun" >> pure ()
 sigma  = char 'Σ' >> pure ()
 equal  = char '=' >> spaces >> pure ()
 

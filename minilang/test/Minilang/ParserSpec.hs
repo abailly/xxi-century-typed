@@ -53,7 +53,11 @@ spec = describe "Minilang Core" $ do
       parseMLExpr "Sum(foo ()| bar Nat)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Var "Nat")]
       parseMLExpr "Sum(foo()| bar (Nat, Bool))" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Pair (Var "Nat") (Var "Bool"))]
       parseMLExpr "Sum(foo| bar)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
+      parseMLExpr "Sum  (  foo  | bar  )" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
 
+    it "parses Case choices" $ do
+      parseMLExpr "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (I 12) (Var "h1") , Choice "bar" (Var "x") (Var "h2")]
+      parseMLExpr "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Choice "foo" Unit (I 12) , Choice "bar" (Var "x") (Var "h2")]
 
   describe "Declarations" $ do
 
@@ -62,3 +66,7 @@ spec = describe "Minilang Core" $ do
         `shouldBe` Decl (B "id")
                    (Pi (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                    (Abs (B "A") (Abs (B "x") (Var "x")))
+
+    it "Bool declaration" $ do
+      parseML "Bool : U = Sum (true | false)"
+        `shouldBe` Decl (B "Bool") U (Sum [ Ctor "true" Unit, Ctor "false" Unit])

@@ -1,5 +1,6 @@
 module Minilang.Parser where
 
+import           Data.Functor          (void)
 import           Data.Functor.Identity (Identity)
 import           Data.Text             (Text, pack, unpack)
 import           GHC.Generics          (Generic)
@@ -39,7 +40,7 @@ data Choice = Choice Text AST AST
 parseML
   :: Text -> AST
 parseML =
-  doParse program
+  doParse (program <* eof)
 
 parseMLExpr
   :: Text -> AST
@@ -67,10 +68,11 @@ expr
     :: MLParser AST
 expr = dependent_product
    <|> dependent_sum
-   <|> abstraction
    <|> projection
    <|> labelled_sum
+   <|> abstraction
    <|> try case_match
+   <|> try fun_type
    <|> try pair
    <|> try application
    <|> term
@@ -80,6 +82,7 @@ term
 term = number
    <|> unit
    <|> identifier
+   <|> lpar *> expr <* rpar
 
 dependent_product
   :: MLParser AST
@@ -92,6 +95,14 @@ dependent_sum = sigma >> spaces >> (Sigma <$> binding <*> (colon *> expr) <*> (d
 abstraction
   :: MLParser AST
 abstraction = lambda >> spaces >> (Abs <$> binding <*> (dot *> expr))
+
+fun_type
+  :: MLParser AST
+fun_type = do
+  l <- term
+  r <- rarrow *> expr
+  pure $ Pi Wildcard l r
+
 
 projection
   :: MLParser AST
@@ -112,7 +123,7 @@ case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
     ctors = sepBy ctor pipe
     ctor = Choice
            <$> (pack <$> Tokens.identifier lexer)
-           <*> (spaces *> expr <|> pure Unit)
+           <*> (spaces *> term <|> pure Unit)
            <*> (rarrow *> expr)
 
 pair
@@ -150,7 +161,7 @@ comma  = spaces >> char ',' >> spaces >> pure ()
 pipe   = spaces >> char '|' >> spaces >> pure ()
 lpar   = char '(' >> spaces >> pure ()
 rpar   = spaces >> char ')' >> pure ()
-rarrow = spaces >> string "->" >> spaces >> pure ()
+rarrow = spaces >> (void (string "->") <|> void (char '→')) >> spaces >> pure ()
 pi     = char 'Π' >> pure ()
 pi1    = string "π1" >> pure ()
 pi2    = string "π2" >> pure ()

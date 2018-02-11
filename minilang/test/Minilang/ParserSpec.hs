@@ -61,12 +61,29 @@ spec = describe "Minilang Core" $ do
 
   describe "Declarations" $ do
 
-    it "generic id function" $ do
+    it "parses generic id function" $ do
       parseML "id : Π A : U . Π _ : A . A = λ A . λ x . x"
         `shouldBe` Decl (B "id")
                    (Pi (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                    (Abs (B "A") (Abs (B "x") (Var "x")))
 
-    it "Bool declaration" $ do
+    it "parses Bool declaration" $ do
       parseML "Bool : U = Sum (true | false)"
         `shouldBe` Decl (B "Bool") U (Sum [ Ctor "true" Unit, Ctor "false" Unit])
+
+    it "parses Bool elimination" $ do
+      parseML "elimBool : Π C : Bool → U . C false → C true → Π b : Bool . C b  = λ C . λ h0 . λ h1 . fun (true → h1 | false → h0)"
+        `shouldBe` Decl (B "elimBool")
+                   (Pi (B "C")
+                     (Pi Wildcard (Var "Bool") U)
+                     (Ap (Var "C")
+                      (Pi Wildcard (Var "false")
+                       (Ap (Var "C")
+                         (Pi Wildcard (Var "true")
+                           (Pi (B "b") (Var "Bool")
+                             (Ap (Var "C") (Var "b"))))))))
+                   (Abs (B "C")
+                     (Abs (B "h0")
+                       (Abs (B "h1")
+                         (Case [ Choice "true" Unit (Var "h1")
+                               , Choice "false" Unit (Var "h0")]))))

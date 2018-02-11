@@ -49,6 +49,12 @@ spec = describe "Minilang Core" $ do
     it "parse Pairing" $ do
       parseMLExpr "(abc,12)" `shouldBe` Pair (Var "abc") (I 12)
 
+    it "parses Labelled Sum" $ do
+      parseMLExpr "Sum(foo ()| bar Nat)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Var "Nat")]
+      parseMLExpr "Sum(foo()| bar (Nat, Bool))" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Pair (Var "Nat") (Var "Bool"))]
+      parseMLExpr "Sum(foo| bar)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
+
+
   describe "Declarations" $ do
 
     it "generic id function" $ do

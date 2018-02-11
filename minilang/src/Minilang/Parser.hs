@@ -10,6 +10,7 @@ import qualified Text.Parsec.Token     as Tokens
 data AST = I Integer
          | D Double
          | Var Text
+         | Ap AST AST
          | Err Text
   deriving (Eq, Show, Read, Generic)
 
@@ -24,9 +25,19 @@ parseML input =
 
 type MLParser a = Parsec String () a
 
-parser :: MLParser AST
-parser = number
-     <|> identifier
+parser
+  :: MLParser AST
+parser = try application
+     <|> term
+
+application
+  :: MLParser AST
+application = Ap <$> term <*> (spaces *> parser)
+
+term
+  :: MLParser AST
+term = number
+   <|> identifier
 
 -- * Lexer
 

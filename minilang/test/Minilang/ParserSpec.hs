@@ -12,3 +12,7 @@ spec = describe "Minilang Core" $ do
 
   it "parse Variable" $ do
     parseML "abc" `shouldBe` Var "abc"
+
+  it "parse Application" $ do
+    parseML "abc fge" `shouldBe` Ap (Var "abc") (Var "fge")
+    parseML "abc fge 12" `shouldBe` Ap (Var "abc") (Ap (Var "fge") (I 12))

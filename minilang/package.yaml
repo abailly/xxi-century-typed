@@ -1,0 +1,60 @@
+name:                minilang
+version:             0.1.0.0
+github:              https://github.com/abailly/minilang
+license:             BSD3
+author:              "Arnaud Bailly"
+maintainer:          "arnaud@aleryo.com"
+copyright:           "2018 Arnaud Bailly"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on Github at <https://github.com/githubuser/minilang#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+default-extensions:
+- DeriveGeneric
+- OverloadedStrings
+
+ghc-options: -Wall -Werror
+
+library:
+  source-dirs: src
+  dependencies:
+  - base
+  - parsec
+  - text
+
+executables:
+  minilang-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - minilang
+
+tests:
+  minilang-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - minilang
+    - hspec
+    - hspec-discover

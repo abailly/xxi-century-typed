@@ -4,7 +4,7 @@ import           Minilang.Parser
 import           Test.Hspec
 
 spec :: Spec
-spec = describe "Minilang Core" $ do
+spec = parallel $ describe "Minilang Core" $ do
 
   describe "Parsing Terms and Expressions" $ do
 

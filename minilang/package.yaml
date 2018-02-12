@@ -25,15 +25,23 @@ dependencies:
 default-extensions:
 - DeriveGeneric
 - OverloadedStrings
+- FlexibleInstances
+- MultiParamTypeClasses
+- FlexibleContexts
 
 ghc-options: -Wall -Werror
 
 library:
   source-dirs: src
+  exposed-modules:
+  - Minilang.Parser
+  - Minilang.REPL
   dependencies:
   - base
+  - mtl
   - parsec
   - text
+
 
 executables:
   minilang-exe:

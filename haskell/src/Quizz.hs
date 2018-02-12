@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
-module Quizz (Quizz(..), Question(..), QCM(..), OpenQuestion(..), Grade(..), Knight(..), Fate(..), 
+module Quizz (Quizz(..), Question(..), QCM(..), OpenQuestion(..), Grade(..), Knight(..), Fate(..),
               answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
@@ -11,7 +11,7 @@ data Question where
 instance Show Question where
   show (Question q _) = unpack $ question q
 
-data Quizz = Quizz { previousQuestions :: [ Question ] -- there should be a concept of answered questions...
+data Quizz = Quizz { previousQuestions :: [ Question ]
                    , currentQuestion   :: Question
                    , nextQuestions     :: [ Question ]
                    }

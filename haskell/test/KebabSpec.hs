@@ -34,7 +34,6 @@ main = hspec $ do
         it "double the cheese" $ do
             doubleCheese [Tomato,Cheese,Onion] `shouldBe` [Tomato, Cheese, Cheese, Onion]
 
-
 data Ingredient = Salad | Tomato | Mutton | Shrimp | Onion | Cheese
       deriving (Show, Eq)
 

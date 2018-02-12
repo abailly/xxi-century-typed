@@ -38,6 +38,7 @@ replSpec = parallel $ describe "MiniLang REPL" $ do
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =
-  bracket mkTempFile removeFile
+  bracket mkTempFile rmTempFile
   where
-    mkTempFile = mkstemp "test-repl" >>= \ (fp, h) -> hClose h >> pure fp
+    mkTempFile    = mkstemp "test-repl" >>= \ (fp, h) -> hClose h >> pure fp
+    rmTempFile fn = removeFile fn >> removeFile (fn <> ".out")

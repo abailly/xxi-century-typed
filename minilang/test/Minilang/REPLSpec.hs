@@ -27,7 +27,7 @@ replSpec = parallel $ describe "MiniLang REPL" $ do
 
     writeFile fileName "id : Π A : U . Π _ : A . A = λ A . λ x . x\n"
 
-    withFile fileName ReadMode           $ \ hin  ->
+    _ <- withFile fileName ReadMode           $ \ hin  ->
       withFile outputFileName AppendMode $ \ hout ->
       withHandles hin hout runREPL
 

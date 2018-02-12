@@ -16,16 +16,18 @@ class (Monad m) => MonadREPL m where
   input  :: m (Maybe Text)
   output :: (Show a) => a -> m ()
 
-data REPLInfo = Exiting
+data REPLResult = Exiting
+                | Parsed AST
   deriving (Eq, Show, Read)
 
 runREPL
-  :: (MonadREPL m) => m ()
+  :: (MonadREPL m) => m REPLResult
 runREPL = do
   e <- input
   case e of
-    Nothing -> output Exiting
-    Just t  -> output (parseML t)
+    Nothing -> output Exiting >> pure Exiting
+    Just t  -> let parsed = parseML t
+               in  output parsed >> pure (Parsed parsed)
 
 -- * IO REPL
 
@@ -42,7 +44,7 @@ instance MonadREPL IOREPL where
   output a = ask >>= lift . flip hPutStrLn (pack $ show a) . snd
 
 withHandles
-  :: Handle -> Handle -> IOREPL () -> IO ()
+  :: Handle -> Handle -> IOREPL a -> IO a
 withHandles hin hout act =
   runReaderT act (hin, hout)
 
@@ -61,7 +63,7 @@ instance MonadREPL (WriterT [Text] (State [Text])) where
 type InMemREPL a = (WriterT [Text] (State [Text])) a
 
 withInput
-  :: [Text] -> InMemREPL () -> [Text]
+  :: [Text] -> InMemREPL a -> [Text]
 withInput stream act =
   case runState (runWriterT act) stream of
     ((_, o), []) -> o

@@ -8622,31 +8622,30 @@ var _user$project$Quizz_View$viewPastQuestions = function (questions) {
 			_elm_lang$core$List$reverse(questions)));
 };
 var _user$project$Quizz_View$view = function (state) {
-	var _p9 = state;
-	if (_p9.ctor === 'QuizzInProgress') {
-		var _p10 = _p9._0;
-		return A2(
-			_elm_lang$html$Html$div,
-			{ctor: '[]'},
-			{
-				ctor: '::',
-				_0: _user$project$Quizz_View$viewPastQuestions(_p10.pastQuestions),
-				_1: {
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		function () {
+			var _p9 = state;
+			if (_p9.ctor === 'QuizzInProgress') {
+				var _p10 = _p9._0;
+				return {
 					ctor: '::',
-					_0: _user$project$Quizz_View$viewCurrentQuestion(_p10),
+					_0: _user$project$Quizz_View$viewPastQuestions(_p10.pastQuestions),
+					_1: {
+						ctor: '::',
+						_0: _user$project$Quizz_View$viewCurrentQuestion(_p10),
+						_1: {ctor: '[]'}
+					}
+				};
+			} else {
+				return {
+					ctor: '::',
+					_0: _user$project$Quizz_View$viewPastQuestions(_p9._0.answers),
 					_1: {ctor: '[]'}
-				}
-			});
-	} else {
-		return A2(
-			_elm_lang$html$Html$div,
-			{ctor: '[]'},
-			{
-				ctor: '::',
-				_0: _user$project$Quizz_View$viewPastQuestions(_p9._0.answers),
-				_1: {ctor: '[]'}
-			});
-	}
+				};
+			}
+		}());
 };
 var _user$project$Quizz$init = A2(
 	_elm_lang$core$Platform_Cmd_ops['!'],

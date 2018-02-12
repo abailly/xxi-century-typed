@@ -9,15 +9,14 @@ import Quizz.Types exposing (..)
 
 view : Model -> H.Html Msg
 view state =
-    case state of
-        QuizzInProgress quizz ->
-            H.div []
+    H.div [] <|
+        case state of
+            QuizzInProgress quizz ->
                 [ viewPastQuestions quizz.pastQuestions
                 , viewCurrentQuestion quizz
                 ]
 
-        QuizzCompleted quizz ->
-            H.div []
+            QuizzCompleted quizz ->
                 [ viewPastQuestions quizz.answers
                 ]
 

@@ -38,9 +38,11 @@ library:
   - Minilang.REPL
   dependencies:
   - base
+  - directory
   - mtl
   - parsec
   - text
+  - unix
 
 
 executables:

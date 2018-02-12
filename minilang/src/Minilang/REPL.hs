@@ -1,10 +1,16 @@
-
+{-# LANGUAGE TypeSynonymInstances #-}
 module Minilang.REPL where
 
+import           Control.Exception    (catch, throwIO)
+import           Control.Monad.Reader
 import           Control.Monad.State
+import           Control.Monad.Trans  (lift)
 import           Control.Monad.Writer
 import           Data.Text
+import           Data.Text.IO
 import           Minilang.Parser
+import           System.IO            (Handle)
+import           System.IO.Error      (isEOFError)
 
 class (Monad m) => MonadREPL m where
   input  :: m (Maybe Text)
@@ -21,6 +27,24 @@ runREPL = do
     Nothing -> output Exiting
     Just t  -> output (parseML t)
 
+-- * IO REPL
+
+type IOREPL = ReaderT (Handle,Handle) IO
+
+instance MonadREPL IOREPL where
+  input   = ask >>= lift . readLine . fst
+    where
+      readLine hdl = (Just <$> hGetLine hdl)
+                     `catch` ( \ e -> if isEOFError e
+                                      then pure Nothing
+                                      else throwIO e)
+
+  output a = ask >>= lift . flip hPutStrLn (pack $ show a) . snd
+
+withHandles
+  :: Handle -> Handle -> IOREPL () -> IO ()
+withHandles hin hout act =
+  runReaderT act (hin, hout)
 
 -- * Pure REPL
 

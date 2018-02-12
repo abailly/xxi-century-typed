@@ -1,0 +1,6 @@
+package xxi
+
+pkgs = contrib
+
+sourcedir = src
+modules = Quizz, Cargo.Model

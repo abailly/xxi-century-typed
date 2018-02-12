@@ -1,4 +1,4 @@
-module Date 
+module Date
 
 import Prelude.Strings
 import Decidable.Order
@@ -6,19 +6,9 @@ import Decidable.Order
 %default total
 %access public export
 
-data Month : Type where
-  January    : Month
-  February   : Month
-  March      : Month
-  April      : Month
-  May        : Month
-  June       : Month
-  July       : Month
-  August     : Month
-  September  : Month
-  October    : Month
-  November   : Month
-  December   : Month
+data Month =
+ January | February | March | April | May | June |
+ July | August | September | October | November | December
 
 toNat : Month -> Nat
 toNat January    = 1
@@ -39,7 +29,7 @@ implementation Eq Month where
 
 implementation Ord Month where
   compare m1  m2 = compare (toNat m1) (toNat m2)
-  
+
 Year : Type
 Year = Nat
 
@@ -55,9 +45,9 @@ isLeapYear y = check4 && check100 || check400
     check400 : Bool
     check400 = modNatNZ y 400 SIsNotZ == 0
 
-monthDuration : Month -> Year -> (days: Nat ** LTE 1 days) 
+monthDuration : Month -> Year -> (days: Nat ** LTE 1 days)
 monthDuration January _      = (31 ** LTESucc LTEZero)
-monthDuration February year  = if isLeapYear year 
+monthDuration February year  = if isLeapYear year
                                then (29  ** LTESucc LTEZero)
                                else (28 ** LTESucc LTEZero)
 monthDuration March _        = (31 ** LTESucc LTEZero)
@@ -72,31 +62,31 @@ monthDuration November _     = (30 ** LTESucc LTEZero)
 monthDuration December _     = (31 ** LTESucc LTEZero)
 
 daysInMonth : Month -> Year -> Nat
-daysInMonth month year with (monthDuration month year) 
+daysInMonth month year with (monthDuration month year)
   | (days ** _) = days
-  
+
 aMonthHasOneDay : (month : Month) -> (year : Year) -> LTE 1 (daysInMonth month year)
-aMonthHasOneDay month year with (monthDuration month year) 
+aMonthHasOneDay month year with (monthDuration month year)
   | (_ ** prf) = prf
 
 nextMonth : Month -> Month
 nextMonth January   = February
-nextMonth February  = March    
-nextMonth March     = April    
-nextMonth April     = May      
-nextMonth May       = June     
-nextMonth June      = July     
-nextMonth July      = August   
+nextMonth February  = March
+nextMonth March     = April
+nextMonth April     = May
+nextMonth May       = June
+nextMonth June      = July
+nextMonth July      = August
 nextMonth August    = September
-nextMonth September = October  
-nextMonth October   = November 
-nextMonth November  = December 
+nextMonth September = October
+nextMonth October   = November
+nextMonth November  = December
 nextMonth December  = January
 
 data Date : Type where
-  MkDate : (year  : Year) -> (month : Month ) -> (day : Nat) 
-         -> { auto dayFitInMonth : LTE day (daysInMonth month year) } 
-         -> { auto dayGreaterThanOne : LTE 1 day } 
+  MkDate : (year  : Year) -> (month : Month ) -> (day : Nat)
+         -> { auto dayFitInMonth : LTE day (daysInMonth month year) }
+         -> { auto dayGreaterThanOne : LTE 1 day }
          -> Date
 
 daysMax : (d: Date) -> Nat
@@ -104,14 +94,14 @@ daysMax (MkDate y m _) = daysInMonth m y
 
 
 addOneDay : (d : Date) -> Date
-addOneDay (MkDate year month day) = 
+addOneDay (MkDate year month day) =
   case order {to=LTE} (S day) (daysInMonth month year) of
-    Left _  => 
+    Left _  =>
       -- easy case: simply add one day
       MkDate year month (S day)
-    Right _ => 
-          case month of 
-                  -- We need to roll by one year 
+    Right _ =>
+          case month of
+                  -- We need to roll by one year
                   December => MkDate (year + 1) January 1
                   -- We need to roll by one month
                   _        => let firstDayOfMonth = aMonthHasOneDay (nextMonth month) year
@@ -126,9 +116,9 @@ addDays d (S k) = addDays (addOneDay d) k
 
 
 implementation Eq Date where
-  (MkDate y1 m1 d1) == (MkDate y2 m2 d2) = 
+  (MkDate y1 m1 d1) == (MkDate y2 m2 d2) =
     d1 == d2 && m1 == m2 && y1 == y2
-    
+
 implementation Ord Date where
   compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
     case compare y1 y2 of
@@ -139,3 +129,14 @@ implementation Ord Date where
       LT => LT
       GT => GT
 
+
+
+plus_commutes_rhs_1 : m = plus m 0
+
+plus_commutes : (n : Nat) -> (m : Nat) -> n + m = m + n
+plus_commutes Z m = plus_commutes_rhs_1
+plus_commutes (S k) m = ?hole1
+
+
+fun : Nat -> (DPair Bool (\b => Int)) -> Nat
+fun x (x ** pf) = ?fun_rhs_1

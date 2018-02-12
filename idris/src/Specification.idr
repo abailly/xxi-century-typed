@@ -11,7 +11,9 @@ import Date
 ||| A specification is basically a predicate that applies to some object
 interface Specification spec ty where
   validate : spec -> ty -> Bool
-      
+
+||| A invoice is a delinquent invoice iff the `currentDate` exceeds the `Invoice`s date taking into
+||| account some `gracePeriod` which depends on the customer
 record DelinquentInvoice where
   constructor MkDelinquentInvoice
   currentDate : Date
@@ -25,8 +27,7 @@ record Invoice where
   amount : Int
   dueDate : Date
   customer : Customer
-  
-  
+
 implementation Specification DelinquentInvoice Invoice where
   validate (MkDelinquentInvoice cur) (MkInvoice am due cust) = 
     cur > (due `addDays` paymentGracePeriod cust)

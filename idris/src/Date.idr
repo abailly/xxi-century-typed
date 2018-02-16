@@ -2,6 +2,7 @@ module Date
 
 import Prelude.Strings
 import Decidable.Order
+import Data.String
 
 %default total
 %access public export
@@ -100,13 +101,12 @@ addOneDay (MkDate year month day) =
       -- easy case: simply add one day
       MkDate year month (S day)
     Right _ =>
-          case month of
-                  -- We need to roll by one year
-                  December => MkDate (year + 1) January 1
-                  -- We need to roll by one month
-                  _        => let firstDayOfMonth = aMonthHasOneDay (nextMonth month) year
-                              in MkDate year (nextMonth month) 1
-
+      case month of
+        -- We need to roll by one year
+        December => MkDate (year + 1) January 1
+          -- We need to roll by one month
+        _        => let firstDayOfMonth = aMonthHasOneDay (nextMonth month) year
+                    in MkDate year (nextMonth month) 1
 
 addDays : (d : Date)
         -> (n : Nat)
@@ -114,6 +114,18 @@ addDays : (d : Date)
 addDays d Z     = d
 addDays d (S k) = addDays (addOneDay d) k
 
+lireLeJour : String -> Maybe Date
+lireLeJour jour =
+  let  j = parsePositive jour
+  in  case j of
+         Nothing  => Nothing
+         (Just x) => let j' = the Nat $ fromInteger x
+                     in case isLTE j' 28 of
+                       (Yes prf) => case isLTE 1 j' of
+                                         (Yes prf') => Just $
+                                                       MkDate  2018 February j'
+                                         (No _) => Nothing
+                       (No _)    => Nothing
 
 implementation Eq Date where
   (MkDate y1 m1 d1) == (MkDate y2 m2 d2) =
@@ -128,15 +140,3 @@ implementation Ord Date where
                  GT => GT
       LT => LT
       GT => GT
-
-
-
-plus_commutes_rhs_1 : m = plus m 0
-
-plus_commutes : (n : Nat) -> (m : Nat) -> n + m = m + n
-plus_commutes Z m = plus_commutes_rhs_1
-plus_commutes (S k) m = ?hole1
-
-
-fun : Nat -> (DPair Bool (\b => Int)) -> Nat
-fun x (x ** pf) = ?fun_rhs_1

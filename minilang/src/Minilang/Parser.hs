@@ -146,38 +146,58 @@ lexer
   :: Tokens.GenTokenParser String () Identity
 lexer = Tokens.makeTokenParser haskellDef
 
-number, identifier, unit
+number, variable, unit
   :: MLParser AST
 
 number = either I D <$> Tokens.naturalOrFloat lexer
-identifier = do
-  s <- Tokens.identifier lexer
+variable = try $ do
+  s <- identifier
   case s of
     "U"   -> pure U
-    other -> pure $ Var (pack other)
-unit   = string "()" *> pure Unit
+    other -> pure $ Var other
+unit   = string "()" *> pure Unit <?> "unit"
+
+identifier :: MLParser Text
+identifier = do
+  i <- pack <$> ident <* spaces
+  if isReserved i
+    then fail (unpack i ++ " is a keyword")
+    else pure i
+  where
+    ident = do
+      c  <- letter
+      cs <- many alphaNum
+      pure (c:cs)
+
+isReserved :: Text -> Bool
+isReserved "λ"   = True
+isReserved "Π"   = True
+isReserved "π1"  = True
+isReserved "π2"  = True
+isReserved "Sum" = True
+isReserved "fun" = True
+isReserved "rec" = True
+isReserved "Σ"   = True
+isReserved _     = False
 
 lambda, dot, colon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum, fun, rarrow, recur
+  ,lpar, rpar, pipe, sum, fun, rarrow, recur, spaces1
   :: MLParser ()
-lambda = char 'λ' >> pure ()
-dot    = spaces >> char '.' >> spaces >> pure ()
-colon  = spaces >> char ':' >> spaces >> pure ()
-comma  = spaces >> char ',' >> spaces >> pure ()
-pipe   = spaces >> char '|' >> spaces >> pure ()
-lpar   = char '(' >> spaces >> pure ()
-rpar   = spaces >> char ')' >> pure ()
-rarrow = spaces >> (void (string "->") <|> void (char '→')) >> spaces >> pure ()
-pi     = char 'Π' >> pure ()
-pi1    = string "π1" >> pure ()
-pi2    = string "π2" >> pure ()
-sum    = string "Sum" >> pure ()
-fun    = string "fun" >> pure ()
-recur  = string "rec" >> spaces >> pure ()
-sigma  = char 'Σ' >> pure ()
-equal  = char '=' >> spaces >> pure ()
-
-binding
-  :: MLParser Binding
-binding = string "_" *> pure Wildcard
-  <|> B . pack <$> Tokens.identifier lexer
+lambda = char 'λ' >> spaces >> pure () <?> "lambda"
+dot    = char '.' >> spaces >> pure () <?> "dot"
+colon  = char ':' >> spaces >> pure () <?> "colon"
+comma  = char ',' >> spaces >> pure () <?> "comma"
+pipe   = char '|' >> spaces >> pure () <?> "pipe"
+lpar   = char '(' >> spaces >> pure () <?> "left parenthesis"
+rpar   = char ')' >> spaces >> pure () <?> "right parenthesis"
+rarrow = (void (string "->") <|> void (char '→')) >> spaces >>
+         (getInput >>= \ s -> trace s $ pure ()) <?> "right arrow"
+pi     = char 'Π' >> spaces >> pure ()  <?> "Pi"
+pi1    = string "π1"  >> spaces >> pure () <?> "Pi.1"
+pi2    = string "π2"  >> spaces >> pure () <?> "Pi.2"
+sum    = string "Sum" >> spaces >> pure () <?> "Sum"
+fun    = string "fun" >> spaces >> pure () <?> "fun"
+recur  = string "rec" >> spaces >> pure ()  <?> "rec"
+sigma  = char 'Σ' >> spaces >> pure ()  <?> "Sigma"
+equal  = char '=' >> spaces >> pure ()  <?> "equal"
+spaces1 = skipMany1 space <?> "spaces"

@@ -6,10 +6,12 @@ import           Data.Text             (Text, pack, unpack)
 import           GHC.Generics          (Generic)
 import           Prelude               hiding (pi, sum)
 import           Text.Parsec
+import           Text.Parsec.Char      (alphaNum)
 import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
 
-data AST = U | Unit
+data AST = U  -- universe
+         | Unit
          | I Integer
          | D Double
          | Var Text
@@ -23,18 +25,19 @@ data AST = U | Unit
          | RDecl Binding AST AST
          | Sum [ Ctor ]
          | Case [ Choice ]
-         | Err Text
-  deriving (Eq, Show, Read, Generic)
+         | Err ParseError
+  deriving (Eq, Show, Generic)
 
-data Binding = B Text
+data Binding = Pat Binding Binding
+             | B Text
              | Wildcard
   deriving (Eq, Show, Read, Generic)
 
 data Ctor = Ctor Text AST
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Generic)
 
 data Choice = Choice Text AST AST
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Generic)
 
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
@@ -51,7 +54,7 @@ parseMLExpr =
 doParse
   :: MLParser AST -> Text -> AST
 doParse parser input =
-  either (Err . pack . show) id $ runParser parser () "" (unpack input)
+  either Err id $ runParser parser () "" (unpack input)
 
 -- * Parser
 
@@ -72,43 +75,51 @@ decl = Decl <$> binding <*> (colon *> expr) <*> (equal *> expr)
 
 expr
     :: MLParser AST
-expr = dependent_product
-   <|> dependent_sum
-   <|> projection
-   <|> labelled_sum
-   <|> abstraction
+expr = (abstraction <?> "abstraction")
+   <|> (dependent_product <?> "dependent product")
+   <|> (dependent_sum  <?> "dependent sum")
+   <|> (projection  <?> "projection")
+   <|> (labelled_sum  <?> "labelled sum")
    <|> try case_match
    <|> try fun_type
    <|> try pair
    <|> try application
-   <|> term
+   <|> (term  <?> "term")
+   <?> "expression"
 
 term
   :: MLParser AST
-term = number
-   <|> unit
-   <|> identifier
-   <|> lpar *> expr <* rpar
+term = (number  <?> "number")
+   <|> (try unit  <?> "unit")
+   <|> (variable <?> "identifier")
+   <|> (lpar *> expr <* rpar <?> "subexpression")
 
 dependent_product
   :: MLParser AST
-dependent_product = pi >> spaces >> (Pi <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_product = pi >> (Pi <$> binding <*> (colon *> expr) <*> (dot *> expr))
 
 dependent_sum
   :: MLParser AST
-dependent_sum = sigma >> spaces >> (Sigma <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_sum = sigma >> (Sigma <$> binding <*> (colon *> expr) <*> (dot *> expr))
 
 abstraction
   :: MLParser AST
-abstraction = lambda >> spaces >> (Abs <$> binding <*> (dot *> expr))
+abstraction = lambda >> (Abs <$> binding <*> (dot *> expr))
 
 fun_type
   :: MLParser AST
 fun_type = do
-  l <- term
-  r <- rarrow *> expr
+  l <- try application <|> term
+  r <- (rarrow *> expr <?> "right-hand side of function type")
+
   pure $ Pi Wildcard l r
 
+application
+  :: MLParser AST
+application = (do
+  l <- term
+  r <- try application <|> term
+  pure $ Ap l r) <?> "application"
 
 projection
   :: MLParser AST
@@ -120,25 +131,30 @@ labelled_sum
 labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
     ctors = sepBy ctor pipe
-    ctor = Ctor <$> (pack <$> Tokens.identifier lexer) <*> (spaces *> expr <|> pure Unit)
+    ctor = Ctor <$> identifier <*> (expr <|> pure Unit)
 
 case_match
   :: MLParser AST
 case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
+             <?> "case match"
   where
     ctors = sepBy ctor pipe
     ctor = Choice
-           <$> (pack <$> Tokens.identifier lexer)
-           <*> (spaces *> term <|> pure Unit)
+           <$> identifier
+           <*> (term <|> pure Unit)
            <*> (rarrow *> expr)
 
 pair
   :: MLParser AST
-pair = lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar
+pair = (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
+       <?> "pair"
 
-application
-  :: MLParser AST
-application = Ap <$> term <*> (spaces *> expr)
+binding
+  :: MLParser Binding
+binding = (string "_" >> spaces *> pure Wildcard <?> "wildcard")
+  <|> (B <$> identifier <?> "variable")
+  <|> (lpar *> (Pat <$> binding <*> (comma *> binding)) <* rpar <?> "pattern")
+  <?> "binding"
 
 -- * Lexer
 
@@ -190,8 +206,7 @@ comma  = char ',' >> spaces >> pure () <?> "comma"
 pipe   = char '|' >> spaces >> pure () <?> "pipe"
 lpar   = char '(' >> spaces >> pure () <?> "left parenthesis"
 rpar   = char ')' >> spaces >> pure () <?> "right parenthesis"
-rarrow = (void (string "->") <|> void (char '→')) >> spaces >>
-         (getInput >>= \ s -> trace s $ pure ()) <?> "right arrow"
+rarrow = (void (string "->") <|> void (char '→')) >> spaces >> pure () <?> "right arrow"
 pi     = char 'Π' >> spaces >> pure ()  <?> "Pi"
 pi1    = string "π1"  >> spaces >> pure () <?> "Pi.1"
 pi2    = string "π2"  >> spaces >> pure () <?> "Pi.2"

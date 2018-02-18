@@ -41,6 +41,7 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parse Dependent Sum" $ do
       parseMLExpr "Σ abc : U . abc" `shouldBe` Sigma (B "abc") U (Var "abc")
       parseMLExpr "Σabc:   U. abc" `shouldBe` Sigma (B "abc") U (Var "abc")
+      parseMLExpr "Σ x : V . T x → V" `shouldBe` Sigma (B "x") (Var "V") (Pi Wildcard (Ap (Var "T") (Var "x")) (Var "V"))
 
     it "parse Projections" $ do
       parseMLExpr "π1.abc" `shouldBe` P1 (Var "abc")
@@ -59,6 +60,10 @@ spec = parallel $ describe "Minilang Core" $ do
       parseMLExpr "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (I 12) (Var "h1") , Choice "bar" (Var "x") (Var "h2")]
       parseMLExpr "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Choice "foo" Unit (I 12) , Choice "bar" (Var "x") (Var "h2")]
 
+    it "parses Pattern" $ do
+      parseMLExpr "λ (abc, xyz) . abc" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
+      parseMLExpr "Π (abc, xyz): U . abc" `shouldBe` Pi (Pat (B "abc") (B "xyz")) U (Var "abc")
+
   describe "Declarations" $ do
 
     it "parses generic id function" $ do
@@ -76,12 +81,12 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` Decl (B "elimBool")
                    (Pi (B "C")
                      (Pi Wildcard (Var "Bool") U)
-                     (Ap (Var "C")
-                      (Pi Wildcard (Var "false")
-                       (Ap (Var "C")
-                         (Pi Wildcard (Var "true")
-                           (Pi (B "b") (Var "Bool")
-                             (Ap (Var "C") (Var "b"))))))))
+                     (Pi Wildcard
+                       (Ap (Var "C") (Var "false"))
+                       (Pi Wildcard
+                         (Ap (Var "C") (Var "true"))
+                         (Pi (B "b") (Var "Bool")
+                           (Ap (Var "C") (Var "b"))))))
                    (Abs (B "C")
                      (Abs (B "h0")
                        (Abs (B "h1")
@@ -91,3 +96,10 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parses Nat declaration" $ do
       parseML "rec Nat : U = Sum (zero | succ Nat)"
         `shouldBe` RDecl (B "Nat") U (Sum [Ctor "zero" Unit,Ctor "succ" (Var "Nat")])
+
+    it "parses recursive-inductive universe def" $ do
+      parseML "rec(V,T) : ΣX:U.X -> U = Sum(nat | pi(Σ x : V . T x → V))"
+        `shouldBe` RDecl (Pat (B "V") (B "T"))
+                   (Sigma (B "X") U (Pi Wildcard (Var "X") U)) (Sum [Ctor "nat" Unit,Ctor "pi" (Sigma (B "x") (Var "V") (Pi Wildcard (Ap (Var "T") (Var "x")) (Var "V")))])
+--      parseML "rec(V,T) : ΣX:U.X -> U = fun(nat → Nat | pi (x, f ) → Π y : T x . T (f y))"
+--      parseML "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)), fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)), U)"

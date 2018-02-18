@@ -38,6 +38,7 @@ library:
   - Minilang.REPL
   dependencies:
   - base
+  - containers
   - directory
   - mtl
   - parsec

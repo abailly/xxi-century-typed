@@ -57,8 +57,8 @@ spec = parallel $ describe "Minilang Core" $ do
       parseMLExpr "Sum  (  foo  | bar  )" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
 
     it "parses Case choices" $ do
-      parseMLExpr "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (I 12) (Var "h1") , Choice "bar" (Var "x") (Var "h2")]
-      parseMLExpr "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Choice "foo" Unit (I 12) , Choice "bar" (Var "x") (Var "h2")]
+      parseMLExpr "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (Abs (C $ I 12) (Var "h1")) , Choice "bar" (Abs (B "x") (Var "h2"))]
+      parseMLExpr "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (Abs Wildcard (I 12)) , Choice "bar" (Abs (B "x") (Var "h2"))]
 
     it "parses Pattern" $ do
       parseMLExpr "λ (abc, xyz) . abc" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
@@ -90,16 +90,29 @@ spec = parallel $ describe "Minilang Core" $ do
                    (Abs (B "C")
                      (Abs (B "h0")
                        (Abs (B "h1")
-                         (Case [ Choice "true" Unit (Var "h1")
-                               , Choice "false" Unit (Var "h0")]))))
+                         (Case [ Choice "true" (Abs Wildcard (Var "h1"))
+                               , Choice "false" (Abs Wildcard (Var "h0"))]))))
 
     it "parses Nat declaration" $ do
       parseML "rec Nat : U = Sum (zero | succ Nat)"
         `shouldBe` RDecl (B "Nat") U (Sum [Ctor "zero" Unit,Ctor "succ" (Var "Nat")])
 
     it "parses recursive-inductive universe def" $ do
-      parseML "rec(V,T) : ΣX:U.X -> U = Sum(nat | pi(Σ x : V . T x → V))"
-        `shouldBe` RDecl (Pat (B "V") (B "T"))
-                   (Sigma (B "X") U (Pi Wildcard (Var "X") U)) (Sum [Ctor "nat" Unit,Ctor "pi" (Sigma (B "x") (Var "V") (Pi Wildcard (Ap (Var "T") (Var "x")) (Var "V")))])
---      parseML "rec(V,T) : ΣX:U.X -> U = fun(nat → Nat | pi (x, f ) → Π y : T x . T (f y))"
---      parseML "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)), fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)), U)"
+      parseML "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
+       `shouldBe` RDecl (Pat (B "V") (B "T"))
+                  (Sigma (B "X") U
+                   (Pi Wildcard (Var "X") U))
+                  (Pair
+                   (Sum [ Ctor "nat" Unit
+                        , Ctor "pi" (Sigma (B "x") (Var "V")
+                                     (Pi Wildcard
+                                      (Ap (Var "T") (Var "x"))
+                                      (Var "V")))
+                        ])
+                    (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
+                          , Choice "pi" (Abs (Pat (B "x") (B "f"))
+                                         (Pi (B "y")
+                                          (Ap (Var "T") (Var "x"))
+                                          (Ap (Var "T") (Ap (Var "f")
+                                                         (Var "y")))))
+                          ]))

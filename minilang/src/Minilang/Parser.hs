@@ -30,13 +30,15 @@ data AST = U  -- universe
 
 data Binding = Pat Binding Binding
              | B Text
+             | C AST
+               -- ^A Constant
              | Wildcard
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Generic)
 
 data Ctor = Ctor Text AST
   deriving (Eq, Show, Generic)
 
-data Choice = Choice Text AST AST
+data Choice = Choice Text AST
   deriving (Eq, Show, Generic)
 
 -- | Top-level parser for MiniLang.
@@ -84,7 +86,7 @@ expr = (abstraction <?> "abstraction")
    <|> try fun_type
    <|> try pair
    <|> try application
-   <|> (term  <?> "term")
+   <|> (try term  <?> "term")
    <?> "expression"
 
 term
@@ -141,8 +143,9 @@ case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
     ctors = sepBy ctor pipe
     ctor = Choice
            <$> identifier
-           <*> (term <|> pure Unit)
-           <*> (rarrow *> expr)
+           <*> (Abs
+                <$> (binding <|> pure Wildcard)
+                <*> (rarrow *> expr))
 
 pair
   :: MLParser AST
@@ -153,6 +156,7 @@ binding
   :: MLParser Binding
 binding = (string "_" >> spaces *> pure Wildcard <?> "wildcard")
   <|> (B <$> identifier <?> "variable")
+  <|> (C <$> number <?> "constant")
   <|> (lpar *> (Pat <$> binding <*> (comma *> binding)) <* rpar <?> "pattern")
   <?> "binding"
 

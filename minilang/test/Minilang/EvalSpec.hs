@@ -7,8 +7,6 @@ import           Test.Hspec
 spec :: Spec
 spec = parallel $ describe "Expressions Evaluator" $ do
 
-  let emptyEnv = Env mempty
-
   it "evaluates constants to themselves" $ do
     eval (I 12) emptyEnv `shouldBe` EI 12
     eval (D 12) emptyEnv `shouldBe` ED 12
@@ -21,3 +19,15 @@ spec = parallel $ describe "Expressions Evaluator" $ do
   it "evaluates abstraction to a closure" $ do
     eval (Abs (B "foo") (Var "foo")) emptyEnv
       `shouldBe` EAbs (Cl (B "foo") (Var "foo") emptyEnv)
+
+  it "evaluates product type" $ do
+    eval (Pi (B "foo") U (Var "bar")) emptyEnv
+      `shouldBe` EPi EU (Cl (B "foo") (Var "bar") emptyEnv)
+
+  it "evaluates sum type" $ do
+    eval (Sigma (B "foo") U (Var "bar")) emptyEnv
+      `shouldBe` ESig EU (Cl (B "foo") (Var "bar") emptyEnv)
+
+  it "evaluates Application of a function" $ do
+    eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
+      `shouldBe` EI 12

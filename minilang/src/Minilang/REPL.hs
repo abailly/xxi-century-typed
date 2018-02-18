@@ -18,7 +18,7 @@ class (Monad m) => MonadREPL m where
 
 data REPLResult = Exiting
                 | Parsed AST
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show)
 
 runREPL
   :: (MonadREPL m) => m REPLResult
@@ -56,7 +56,6 @@ instance MonadREPL (WriterT [Text] (State [Text])) where
     case ins of
       []     -> pure Nothing
       (t:ts) -> put ts >> pure (Just t)
-
 
   output t = tell [pack $ show t]
 

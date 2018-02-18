@@ -28,6 +28,16 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Sigma (B "foo") U (Var "bar")) emptyEnv
       `shouldBe` ESig EU (Cl (B "foo") (Var "bar") emptyEnv)
 
+  it "evaluates projections" $ do
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
+                   (B "y") (ENeut $ Gen 2)
+
+    eval (P1 (Pair (Var "x") (Var "y"))) extended
+      `shouldBe` ENeut (Gen 1)
+
+    eval (P2 (Pair (Var "x") (Var "y"))) extended
+      `shouldBe` ENeut (Gen 2)
+
   it "evaluates Application of a function" $ do
     eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
       `shouldBe` EI 12

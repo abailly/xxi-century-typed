@@ -32,6 +32,8 @@ data FunClos = Cl Binding AST Env | ClComp FunClos Name
 data Neutral = Gen Int
              | NP1 Neutral
              | NP2 Neutral
+             | NCase SumClos Neutral
+             | NAp Neutral Value
   deriving (Eq, Show)
 
 eval
@@ -55,8 +57,13 @@ eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in 
 
 
 app :: Value -> Value -> Value
-app (EAbs f@Cl{}) v = inst f v
-app _ _             = undefined
+app (EAbs f@Cl{})     v          = inst f v
+app c@(ECase (cs,ρ)) (ECtor n v) = app (eval m ρ) v
+  where
+    Choice _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $ choose cs n
+app (ECase s)        (ENeut k)   = ENeut $ NCase s k
+app (ENeut k)        v           = ENeut $ NAp k v
+app l r             = error $ "don't know how to apply " ++ show l ++ " to "++ show r
 
 inst :: FunClos -> Value -> Value
 inst (Cl b e ρ)   v = eval e (ExtendPat ρ b v)

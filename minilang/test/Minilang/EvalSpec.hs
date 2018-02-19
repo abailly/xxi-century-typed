@@ -1,5 +1,6 @@
 module Minilang.EvalSpec where
 
+import           Control.Exception
 import           Minilang.Eval
 import           Minilang.Parser
 import           Test.Hspec
@@ -41,6 +42,32 @@ spec = parallel $ describe "Expressions Evaluator" $ do
   it "evaluates Application of a function" $ do
     eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
       `shouldBe` EI 12
+
+  it "evaluates Application of a choice to a unary ctor" $ do
+    eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x"))
+                   , Choice "B" (Abs Wildcard (D 13))
+                   ])
+           (Ctor "A" (D 14))) emptyEnv
+      `shouldBe` ED 14
+
+  it "raises error when evaluates Application of a choice without matching ctor" $ do
+    evaluate (eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x"))
+                             , Choice "B" (Abs Wildcard (D 13))
+                             ])
+                     (Ctor "C" (D 14))) emptyEnv)
+      `shouldThrow` anyException
+
+  it "evaluates application of choice to neutral value as neutral" $ do
+    let extended = ExtendPat emptyEnv (B "x") (ENeut $ Gen 1)
+    eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x")) ])
+           (Var "x")) extended
+      `shouldBe` ENeut (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (Gen 1))
+
+  it "evaluates application of neutral to value as neutral" $ do
+    let extended = ExtendPat emptyEnv (B "x") (ENeut $ Gen 1)
+    eval (Ap (Var "x") (I 12)) extended
+      `shouldBe` ENeut (NAp (Gen 1) (EI 12))
+
 
   it "evaluates Constructor expression" $ do
     eval (Ctor "foo" (I 12)) emptyEnv

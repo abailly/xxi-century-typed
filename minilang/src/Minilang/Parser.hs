@@ -39,6 +39,12 @@ data Binding = Pat Binding Binding
 data Choice = Choice Text AST
   deriving (Eq, Show, Generic)
 
+choose :: [ Choice ] -> Text -> Maybe Choice
+choose (c@(Choice t _):cs) n
+  | t == n    = Just c
+  | otherwise = choose cs n
+choose [] _ = Nothing
+
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
 parseML

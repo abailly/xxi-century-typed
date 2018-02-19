@@ -41,3 +41,27 @@ spec = parallel $ describe "Expressions Evaluator" $ do
   it "evaluates Application of a function" $ do
     eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
       `shouldBe` EI 12
+
+  it "evaluates Constructor expression" $ do
+    eval (Ctor "foo" (I 12)) emptyEnv
+      `shouldBe` ECtor "foo" (EI 12)
+
+  it "evaluates case match" $ do
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
+                   (B "y") (ENeut $ Gen 2)
+
+    eval (Case [ Choice "foo" (Abs (C $ I 12) (Var "x"))
+               , Choice "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
+               ])
+      extended `shouldBe` ECase ([ Choice "foo" (Abs (C $ I 12) (Var "x"))
+                                 , Choice "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
+                                 ]
+                                , extended)
+
+  it "evaluates Sum definition" $ do
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
+                   (B "y") (ENeut $ Gen 2)
+
+    eval (Sum [ Choice "true" Unit, Choice "false" Unit])
+      extended `shouldBe` ESum ([ Choice "true" Unit, Choice "false" Unit]
+                                , extended)

@@ -17,13 +17,14 @@ data AST = U  -- universe
          | Var Text
          | Ap AST AST
          | Abs Binding AST
+         | Ctor Text AST
          | Pi Binding AST AST
          | Sigma Binding AST AST
          | P1 AST | P2 AST
          | Pair AST AST
          | Decl Binding AST AST
          | RDecl Binding AST AST
-         | Sum [ Ctor ]
+         | Sum [ Choice ]
          | Case [ Choice ]
          | Err ParseError
   deriving (Eq, Show, Generic)
@@ -33,9 +34,6 @@ data Binding = Pat Binding Binding
              | C AST
                -- ^A Constant
              | Wildcard
-  deriving (Eq, Show, Generic)
-
-data Ctor = Ctor Text AST
   deriving (Eq, Show, Generic)
 
 data Choice = Choice Text AST
@@ -94,6 +92,7 @@ term
 term = (number  <?> "number")
    <|> (try unit  <?> "unit")
    <|> (variable <?> "identifier")
+   <|> (ctor <?> "constructor")
    <|> (lpar *> expr <* rpar <?> "subexpression")
 
 dependent_product
@@ -121,7 +120,9 @@ application
 application = (do
   l <- term
   r <- try application <|> term
-  pure $ Ap l r) <?> "application"
+  pure $ case l of
+           Ctor n _ -> Ctor n r
+           _        -> Ap l r) <?> "application"
 
 projection
   :: MLParser AST
@@ -132,16 +133,16 @@ labelled_sum
   :: MLParser AST
 labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
-    ctors = sepBy ctor pipe
-    ctor = Ctor <$> identifier <*> (expr <|> pure Unit)
+    ctors = sepBy clause pipe
+    clause = Choice <$> identifier <*> (expr <|> pure Unit)
 
 case_match
   :: MLParser AST
 case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
              <?> "case match"
   where
-    ctors = sepBy ctor pipe
-    ctor = Choice
+    ctors = sepBy clause pipe
+    clause = Choice
            <$> identifier
            <*> (Abs
                 <$> (binding <|> pure Wildcard)
@@ -166,16 +167,20 @@ lexer
   :: Tokens.GenTokenParser String () Identity
 lexer = Tokens.makeTokenParser haskellDef
 
-number, variable, unit
+number, variable, unit, ctor
   :: MLParser AST
 
 number = either I D <$> Tokens.naturalOrFloat lexer
+
 variable = try $ do
   s <- identifier
   case s of
     "U"   -> pure U
     other -> pure $ Var other
+
 unit   = string "()" *> pure Unit <?> "unit"
+
+ctor = char '$' >> Ctor <$> identifier <*> pure Unit
 
 identifier :: MLParser Text
 identifier = do

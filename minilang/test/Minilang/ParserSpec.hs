@@ -47,14 +47,17 @@ spec = parallel $ describe "Minilang Core" $ do
       parseMLExpr "π1.abc" `shouldBe` P1 (Var "abc")
       parseMLExpr "π2.abc" `shouldBe` P2 (Var "abc")
 
+    it "parse Constructor application" $ do
+      parseMLExpr "$c1 abc" `shouldBe` Ctor "c1" (Var "abc")
+
     it "parse Pairing" $ do
       parseMLExpr "(abc,12)" `shouldBe` Pair (Var "abc") (I 12)
 
     it "parses Labelled Sum" $ do
-      parseMLExpr "Sum(foo ()| bar Nat)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Var "Nat")]
-      parseMLExpr "Sum(foo()| bar (Nat, Bool))" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" (Pair (Var "Nat") (Var "Bool"))]
-      parseMLExpr "Sum(foo| bar)" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
-      parseMLExpr "Sum  (  foo  | bar  )" `shouldBe` Sum [ Ctor "foo" Unit , Ctor "bar" Unit]
+      parseMLExpr "Sum(foo ()| bar Nat)" `shouldBe` Sum [ Choice "foo" Unit , Choice "bar" (Var "Nat")]
+      parseMLExpr "Sum(foo()| bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" Unit , Choice "bar" (Pair (Var "Nat") (Var "Bool"))]
+      parseMLExpr "Sum(foo| bar)" `shouldBe` Sum [ Choice "foo" Unit , Choice "bar" Unit]
+      parseMLExpr "Sum  (  foo  | bar  )" `shouldBe` Sum [ Choice "foo" Unit , Choice "bar" Unit]
 
     it "parses Case choices" $ do
       parseMLExpr "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (Abs (C $ I 12) (Var "h1")) , Choice "bar" (Abs (B "x") (Var "h2"))]
@@ -74,7 +77,7 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses Bool declaration" $ do
       parseML "Bool : U = Sum (true | false)"
-        `shouldBe` Decl (B "Bool") U (Sum [ Ctor "true" Unit, Ctor "false" Unit])
+        `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" Unit, Choice "false" Unit])
 
     it "parses Bool elimination" $ do
       parseML "elimBool : Π C : Bool → U . C false → C true → Π b : Bool . C b  = λ C . λ h0 . λ h1 . fun (true → h1 | false → h0)"
@@ -95,7 +98,7 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses Nat declaration" $ do
       parseML "rec Nat : U = Sum (zero | succ Nat)"
-        `shouldBe` RDecl (B "Nat") U (Sum [Ctor "zero" Unit,Ctor "succ" (Var "Nat")])
+        `shouldBe` RDecl (B "Nat") U (Sum [Choice "zero" Unit,Choice "succ" (Var "Nat")])
 
     it "parses recursive-inductive universe def" $ do
       parseML "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
@@ -103,8 +106,8 @@ spec = parallel $ describe "Minilang Core" $ do
                   (Sigma (B "X") U
                    (Pi Wildcard (Var "X") U))
                   (Pair
-                   (Sum [ Ctor "nat" Unit
-                        , Ctor "pi" (Sigma (B "x") (Var "V")
+                   (Sum [ Choice "nat" Unit
+                        , Choice "pi" (Sigma (B "x") (Var "V")
                                      (Pi Wildcard
                                       (Ap (Var "T") (Var "x"))
                                       (Var "V")))

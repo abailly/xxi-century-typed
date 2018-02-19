@@ -15,13 +15,18 @@ emptyEnv = EmptyEnv
 data Value = EI Integer | ED Double
            | EU | EUnit
            | EPair Value Value
+           | ECtor Name Value
            | EAbs FunClos
            | EPi Value FunClos
            | ESig Value FunClos
            | ENeut Neutral
+           | ECase SumClos
+           | ESum SumClos
   deriving (Eq, Show)
 
-data FunClos = Cl Binding AST Env
+type SumClos = ( [ Choice ], Env)
+
+data FunClos = Cl Binding AST Env | ClComp FunClos Name
   deriving (Eq, Show)
 
 data Neutral = Gen Int
@@ -43,7 +48,10 @@ eval (Ap u v)      ρ = app (eval u ρ) (eval v ρ)
 eval (Var x)       ρ = rho ρ x
 eval (P1 e)        ρ = p1 (eval e ρ)
 eval (P2 e)        ρ = p2 (eval e ρ)
-eval e             ρ       = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
+eval (Case cs)     ρ = ECase (cs,ρ)
+eval (Sum cs)      ρ = ESum (cs,ρ)
+eval (Ctor n e)    ρ = ECtor n (eval e ρ)
+eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
 
 
 app :: Value -> Value -> Value
@@ -51,7 +59,8 @@ app (EAbs f@Cl{}) v = inst f v
 app _ _             = undefined
 
 inst :: FunClos -> Value -> Value
-inst (Cl b e ρ) v = eval e (ExtendPat ρ b v)
+inst (Cl b e ρ)   v = eval e (ExtendPat ρ b v)
+inst (ClComp f c) v = inst f (ECtor c v)
 
 p1 :: Value -> Value
 p1 (ENeut k)   = ENeut $ NP1 k

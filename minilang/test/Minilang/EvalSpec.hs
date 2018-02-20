@@ -68,7 +68,6 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Ap (Var "x") (I 12)) extended
       `shouldBe` ENeut (NAp (Gen 1) (EI 12))
 
-
   it "evaluates Constructor expression" $ do
     eval (Ctor "foo" (I 12)) emptyEnv
       `shouldBe` ECtor "foo" (EI 12)

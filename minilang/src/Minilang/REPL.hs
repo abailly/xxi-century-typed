@@ -26,7 +26,7 @@ runREPL = do
   e <- input
   case e of
     Nothing -> output Exiting >> pure Exiting
-    Just t  -> let parsed = parseML t
+    Just t  -> let parsed = parseProgram t
                in  output parsed >> pure (Parsed parsed)
 
 -- * IO REPL

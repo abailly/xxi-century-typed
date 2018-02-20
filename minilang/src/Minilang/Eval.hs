@@ -12,16 +12,21 @@ data Env = EmptyEnv
 emptyEnv :: Env
 emptyEnv = EmptyEnv
 
-data Value = EI Integer | ED Double
-           | EU | EUnit
-           | EPair Value Value
-           | ECtor Name Value
+-- should probably be possible to have a single AST structure
+-- shared by all stages and indexed with a result type, so that
+-- we can add whatever specialised information we need
+data Value = EU
+           | EUnit
+           | EI Integer
+           | ED Double
+           | ENeut Neutral
            | EAbs FunClos
+           | ECtor Name Value
            | EPi Value FunClos
            | ESig Value FunClos
-           | ENeut Neutral
-           | ECase SumClos
+           | EPair Value Value
            | ESum SumClos
+           | ECase SumClos
   deriving (Eq, Show)
 
 type SumClos = ( [ Choice ], Env)
@@ -56,7 +61,8 @@ eval (Ctor n e)    ρ = ECtor n (eval e ρ)
 eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
 
 
-app :: Value -> Value -> Value
+app
+  :: Value -> Value -> Value
 app (EAbs f@Cl{})     v          = inst f v
 app c@(ECase (cs,ρ)) (ECtor n v) = app (eval m ρ) v
   where
@@ -65,30 +71,36 @@ app (ECase s)        (ENeut k)   = ENeut $ NCase s k
 app (ENeut k)        v           = ENeut $ NAp k v
 app l r             = error $ "don't know how to apply " ++ show l ++ " to "++ show r
 
-inst :: FunClos -> Value -> Value
+inst
+  :: FunClos -> Value -> Value
 inst (Cl b e ρ)   v = eval e (ExtendPat ρ b v)
 inst (ClComp f c) v = inst f (ECtor c v)
 
-p1 :: Value -> Value
+p1
+  :: Value -> Value
 p1 (ENeut k)   = ENeut $ NP1 k
 p1 (EPair x _) = x
 p1 v           = error $ "don't know how to apply first projection to value " ++ show v
 
-p2 :: Value -> Value
+p2
+  :: Value -> Value
 p2 (ENeut k)   = ENeut $ NP2 k
 p2 (EPair _ y) = y
 p2 v           = error $ "don't know how to apply first projection to value " ++ show v
 
-rho :: Env -> Name -> Value
+rho
+  :: Env -> Name -> Value
 rho EmptyEnv x = error $ "name " ++ show x ++ " is not defined in empty environment"
 rho (ExtendPat ρ b v) x
   | x `inPat` b = proj x b v
   | otherwise   = rho ρ x
 
-inPat :: Name -> Binding -> Bool
+inPat
+  :: Name -> Binding -> Bool
 inPat x (B p') | x == p' = True
 inPat _ _      = False
 
-proj :: Name -> Binding -> Value -> Value
+proj
+  :: Name -> Binding -> Value -> Value
 proj _ (B _) v = v
 proj _ _ _     = undefined

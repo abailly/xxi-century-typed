@@ -14,18 +14,20 @@ data AST = U  -- universe
          | Unit
          | I Integer
          | D Double
-         | Var Text
-         | Ap AST AST
          | Abs Binding AST
          | Ctor Text AST
          | Pi Binding AST AST
          | Sigma Binding AST AST
-         | P1 AST | P2 AST
          | Pair AST AST
-         | Decl Binding AST AST
-         | RDecl Binding AST AST
          | Sum [ Choice ]
          | Case [ Choice ]
+         | Var Text
+         | Ap AST AST
+         | P1 AST
+         | P2 AST
+         | Decl Binding AST AST
+         | RDecl Binding AST AST
+         | Decls [ AST ]
          | Err ParseError
   deriving (Eq, Show, Generic)
 
@@ -45,12 +47,17 @@ choose (c@(Choice t _):cs) n
   | otherwise = choose cs n
 choose [] _ = Nothing
 
+parseProgram
+  :: Text -> AST
+parseProgram =
+  doParse (program <* eof)
+
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
-parseML
+parseDecl
   :: Text -> AST
-parseML =
-  doParse (program <* eof)
+parseDecl =
+  doParse (single_decl <* eof)
 
 parseMLExpr
   :: Text -> AST
@@ -68,8 +75,12 @@ type MLParser a = Parsec String () a
 
 program
   :: MLParser AST
-program = rec_decl
-      <|> decl
+program = Decls <$> sepBy single_decl scolon
+
+single_decl
+  :: MLParser AST
+single_decl = rec_decl
+              <|> decl
 
 rec_decl
   :: MLParser AST
@@ -211,12 +222,13 @@ isReserved "rec" = True
 isReserved "Σ"   = True
 isReserved _     = False
 
-lambda, dot, colon, pi, sigma, equal, pi1, pi2, comma
+lambda, dot, colon, scolon, pi, sigma, equal, pi1, pi2, comma
   ,lpar, rpar, pipe, sum, fun, rarrow, recur, spaces1
   :: MLParser ()
 lambda = char 'λ' >> spaces >> pure () <?> "lambda"
 dot    = char '.' >> spaces >> pure () <?> "dot"
 colon  = char ':' >> spaces >> pure () <?> "colon"
+scolon = char ';' >> spaces >> pure () <?> "colon"
 comma  = char ',' >> spaces >> pure () <?> "comma"
 pipe   = char '|' >> spaces >> pure () <?> "pipe"
 lpar   = char '(' >> spaces >> pure () <?> "left parenthesis"

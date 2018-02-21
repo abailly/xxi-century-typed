@@ -8,6 +8,8 @@ import           Control.Monad.Trans  (lift)
 import           Control.Monad.Writer
 import           Data.Text
 import           Data.Text.IO
+import           Minilang.Eval
+import           Minilang.Normalize
 import           Minilang.Parser
 import           System.IO            (Handle)
 import           System.IO.Error      (isEOFError)
@@ -16,18 +18,18 @@ class (Monad m) => MonadREPL m where
   input  :: m (Maybe Text)
   output :: (Show a) => a -> m ()
 
-data REPLResult = Exiting
-                | Parsed AST
+data REPLResult a = Exiting
+                  | Parsed a
   deriving (Eq, Show)
 
 runREPL
-  :: (MonadREPL m) => m REPLResult
+  :: (MonadREPL m) => m (REPLResult Normal)
 runREPL = do
   e <- input
   case e of
-    Nothing -> output Exiting >> pure Exiting
-    Just t  -> let parsed = parseProgram t
-               in  output parsed >> pure (Parsed parsed)
+    Nothing -> output (Exiting :: REPLResult Normal) >> pure Exiting
+    Just t  -> let normal = normalize 0 $ flip eval emptyEnv $  parseProgram t
+               in  output normal >> pure (Parsed normal)
 
 -- * IO REPL
 

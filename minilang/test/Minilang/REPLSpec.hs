@@ -15,26 +15,26 @@ spec = parallel $ describe "MiniLang REPL" $ do
 
   it "evaluates MiniLang terms read from pure Monad" $ do
     let
-      out = withInput ["id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"] runREPL
+      out = withInput ["id : Π A : U . Π _ : A . A = λ A . λ x . x; id Nat 12"] runREPL
 
     out `shouldBe`
-      ["Def (Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))) Unit"]
+      ["NI 12"]
 
   around withTempFile $
     it "evaluates single MiniLang term read from IO" $ \ fileName -> do
     let
       outputFileName = fileName <> ".out"
 
-    writeFile fileName "id : Π A : U . Π _ : A . A = λ A . λ x . x; ()\n"
+    writeFile fileName "id : Π A : U . Π _ : A . A = λ A . λ x . x; id Nat 12"
 
-    _ <- withFile fileName ReadMode           $ \ hin  ->
+    _ <- withFile fileName ReadMode      $ \ hin  ->
       withFile outputFileName AppendMode $ \ hout ->
       withHandles hin hout runREPL
 
     out <- readFile outputFileName
 
     out `shouldBe`
-      "Def (Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))) Unit\n"
+      "NI 12\n"
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =

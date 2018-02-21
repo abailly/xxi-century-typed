@@ -36,6 +36,7 @@ library:
   exposed-modules:
   - Minilang.Parser
   - Minilang.Eval
+  - Minilang.Normalize
   - Minilang.REPL
   dependencies:
   - base

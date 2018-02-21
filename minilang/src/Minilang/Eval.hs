@@ -9,16 +9,14 @@ type Name = Text
 
 data Env = EmptyEnv
          | ExtendPat Env Binding Value
-         | ExtendDecl Env Binding AST AST
-         | ExtendRDecl Env Binding AST AST
+         | ExtendDecl Env Decl
   deriving (Eq, Show)
 
 emptyEnv :: Env
 emptyEnv = EmptyEnv
 
 extend :: Decl -> Env -> Env
-extend (Decl b a m) e  = ExtendDecl e b a m
-extend (RDecl b a m) e = ExtendRDecl e b a m
+extend = flip ExtendDecl
 
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that
@@ -106,10 +104,10 @@ rho EmptyEnv x = error $ "name " ++ show x ++ " is not defined in empty environm
 rho (ExtendPat ρ b v) x
   | x `inPat` b = proj x b v
   | otherwise   = rho ρ x
-rho (ExtendDecl ρ b _a m) x
+rho (ExtendDecl ρ (Decl b _a m)) x
   | x `inPat` b = proj x b (eval m ρ)
   | otherwise   = rho ρ x
-rho ρ'@(ExtendRDecl ρ b _a m) x
+rho ρ'@(ExtendDecl ρ (RDecl b _a m)) x
   | x `inPat` b = proj x b (eval m ρ')
   | otherwise   = rho ρ x
 

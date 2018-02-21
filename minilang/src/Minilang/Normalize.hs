@@ -14,15 +14,17 @@ data Normal = NAbs NVar Normal
             | NI Integer
             | ND Double
             | NCtor Name Normal
-            | NSum SumClos
-            | NCase SumClos
+            | NSum NSumClos
+            | NFun NSumClos
   deriving (Eq, Show)
+
+type NSumClos = ( [ Choice ], NEnv)
 
 data NNeutral = NNV NVar
               | NNAp NNeutral Normal
               | NNPi1 NNeutral
               | NNPi2 NNeutral
-              | NNCase SumClos NNeutral
+              | NNCase NSumClos NNeutral
   deriving (Eq,Show)
 
 data NEnv = NEmptyEnv
@@ -47,5 +49,13 @@ instance Normalize Value Normal where
   normalize n v     = error $ "don't know how to normalize_" <> show n <> " value " <> show v
 
 instance Normalize Neutral NNeutral where
-  normalize _ (NV x) = NNV x
-  normalize n v      = error $ "don't know how to normalize_" <> show n <> " neutral " <> show v
+  normalize _ (NV x)          = NNV x
+  normalize n (NAp k v)       = NNAp (normalize n k) (normalize n v)
+  normalize n (NP1 k)         = NNPi1 (normalize n k)
+  normalize n (NP2 k)         = NNPi2 (normalize n k)
+  normalize n (NCase (s,ρ) k) = NNCase (s, normalize n ρ) (normalize n k)
+
+instance Normalize Env NEnv where
+  normalize _ EmptyEnv          = NEmptyEnv
+  normalize n (ExtendPat ρ p v) = NExtendEnv (normalize n ρ) p (normalize n v)
+  normalize n (ExtendDecl ρ d)  = NExtendDecl (normalize n ρ) d

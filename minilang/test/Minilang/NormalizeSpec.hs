@@ -25,3 +25,26 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes abstraction" $ do
     normalize 0 (EAbs (Cl (B "x") (Var "x") EmptyEnv))
       `shouldBe` NAbs (NVar 0) (NNeut (NNV (NVar 0)))
+
+  it "normalizes application" $ do
+    normalize 1 (NAp (NV $ NVar 0) (EI 12))
+      `shouldBe` (NNAp (NNV $ NVar 0) (NI 12))
+
+  it "normalizes Projections" $ do
+    normalize 1 (NP1 (NV $ NVar 0))
+      `shouldBe` (NNPi1 (NNV $ NVar 0))
+    normalize 1 (NP2 (NV $ NVar 0))
+      `shouldBe` (NNPi2 (NNV $ NVar 0))
+
+  it "normalizes case neutral application with env" $ do
+    let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
+
+    normalize 0 (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+      `shouldBe` NNCase ( [Choice "A" (Abs (B "x") (Var "x"))]
+                        , NExtendEnv NEmptyEnv (B "x") (NNeut (NNV (NVar 1)))
+                        ) (NNV (NVar 1))
+
+
+  it "normalizes env with declaration" $ do
+    normalize 0 (ExtendDecl emptyEnv (Decl (B "x") U Unit))
+      `shouldBe` NExtendDecl NEmptyEnv (Decl (B "x") U Unit)

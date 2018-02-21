@@ -135,9 +135,13 @@ application
 application = (do
   l <- term
   r <- try application <|> term
-  pure $ case l of
-           Ctor n _ -> Ctor n r
-           _        -> Ap l r) <?> "application"
+  pure $
+    case l of
+      Ctor n _ -> Ctor n r
+      _        -> invertSpine $ Ap l r) <?> "application"
+  where
+    invertSpine (Ap l (Ap l' r)) = Ap (invertSpine $ Ap l l') r
+    invertSpine e                = e
 
 projection
   :: MLParser AST

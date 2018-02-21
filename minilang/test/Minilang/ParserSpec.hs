@@ -25,9 +25,13 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parse Unit" $ do
       parseProgram "()" `shouldBe` Unit
 
-    it "parse Application" $ do
+    it "parse Application" $
       parseProgram "abc fge" `shouldBe` Ap (Var "abc") (Var "fge")
-      parseProgram "abc fge 12" `shouldBe` Ap (Var "abc") (Ap (Var "fge") (I 12))
+
+    it "parse application as left-associative" $ do
+      parseProgram "abc fge 12" `shouldBe` parseProgram "(abc fge) 12"
+      parseProgram "abc fge 12 k" `shouldBe` parseProgram "((abc fge) 12) k"
+      parseProgram "abc fge 12 k bool" `shouldBe` parseProgram "(((abc fge) 12) k) bool"
 
     it "parse Abstraction" $ do
       parseProgram "λ abc . abc" `shouldBe` Abs (B "abc") (Var "abc")
@@ -114,10 +118,11 @@ spec = parallel $ describe "Minilang Core" $ do
                         ])
                     (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
                           , Choice "pi" (Abs (Pat (B "x") (B "f"))
-                                         (Pi (B "y")
-                                          (Ap (Var "T") (Var "x"))
-                                          (Ap (Var "T") (Ap (Var "f")
-                                                         (Var "y")))))
+                                          (Pi (B "y")
+                                            (Ap (Var "T") (Var "x"))
+                                            (Ap
+                                              (Ap (Var "T") (Var "f"))
+                                              (Var "y"))))
                           ]))
 
     it "parses a program" $ do

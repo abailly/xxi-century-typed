@@ -35,6 +35,7 @@ library:
   source-dirs: src
   exposed-modules:
   - Minilang.Parser
+  - Minilang.Eval
   - Minilang.REPL
   dependencies:
   - base
@@ -55,7 +56,9 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - base
     - minilang
+    - text
 
 tests:
   minilang-test:
@@ -66,6 +69,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - base
+    - directory
     - minilang
     - hspec
     - hspec-discover
+    - text
+    - unix

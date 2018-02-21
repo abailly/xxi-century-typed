@@ -10,22 +10,22 @@ import           System.IO         (IOMode (..), hClose, withFile)
 import           System.Posix.Temp (mkstemp)
 import           Test.Hspec
 
-replSpec :: Spec
-replSpec = parallel $ describe "MiniLang REPL" $ do
+spec :: Spec
+spec = parallel $ describe "MiniLang REPL" $ do
 
   it "evaluates MiniLang terms read from pure Monad" $ do
     let
-      out = withInput ["id : Π A : U . Π _ : A . A = λ A . λ x . x"] runREPL
+      out = withInput ["id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"] runREPL
 
     out `shouldBe`
-      ["Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))"]
+      ["Def (Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))) Unit"]
 
   around withTempFile $
     it "evaluates single MiniLang term read from IO" $ \ fileName -> do
     let
       outputFileName = fileName <> ".out"
 
-    writeFile fileName "id : Π A : U . Π _ : A . A = λ A . λ x . x\n"
+    writeFile fileName "id : Π A : U . Π _ : A . A = λ A . λ x . x; ()\n"
 
     _ <- withFile fileName ReadMode           $ \ hin  ->
       withFile outputFileName AppendMode $ \ hout ->
@@ -34,7 +34,7 @@ replSpec = parallel $ describe "MiniLang REPL" $ do
     out <- readFile outputFileName
 
     out `shouldBe`
-      "Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))\n"
+      "Def (Decl (B \"id\") (Pi (B \"A\") U (Pi Wildcard (Var \"A\") (Var \"A\"))) (Abs (B \"A\") (Abs (B \"x\") (Var \"x\")))) Unit\n"
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =

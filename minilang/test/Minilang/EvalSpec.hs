@@ -91,3 +91,11 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Sum [ Choice "true" Unit, Choice "false" Unit])
       extended `shouldBe` ESum ([ Choice "true" Unit, Choice "false" Unit]
                                 , extended)
+
+  it "evaluates declaration continuation in extended env" $ do
+    eval (Def (Decl (B "id")
+               (Pi  (B "A") U (Pi Wildcard (Var "A") (Var "A")))
+               (Abs (B "A") (Abs (B "x") (Var "x"))))
+           (Ap (Ap (Var "id") U) (I 12))) emptyEnv
+      `shouldBe`
+           EI 12

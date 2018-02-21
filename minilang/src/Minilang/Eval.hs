@@ -7,10 +7,15 @@ type Name = Text
 
 data Env = EmptyEnv
          | ExtendPat Env Binding Value
+         | ExtendDecl Env Binding AST AST
   deriving (Eq, Show)
 
 emptyEnv :: Env
 emptyEnv = EmptyEnv
+
+extend :: Decl -> Env -> Env
+extend (Decl b a m) e = ExtendDecl e b a m
+extend _            _ = undefined
 
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that
@@ -58,6 +63,7 @@ eval (P2 e)        ρ = p2 (eval e ρ)
 eval (Case cs)     ρ = ECase (cs,ρ)
 eval (Sum cs)      ρ = ESum (cs,ρ)
 eval (Ctor n e)    ρ = ECtor n (eval e ρ)
+eval (Def d m)     ρ = eval m (extend d ρ)
 eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
 
 
@@ -93,6 +99,9 @@ rho
 rho EmptyEnv x = error $ "name " ++ show x ++ " is not defined in empty environment"
 rho (ExtendPat ρ b v) x
   | x `inPat` b = proj x b v
+  | otherwise   = rho ρ x
+rho (ExtendDecl ρ b _a m) x
+  | x `inPat` b = proj x b (eval m ρ)
   | otherwise   = rho ρ x
 
 inPat

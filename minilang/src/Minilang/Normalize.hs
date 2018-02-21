@@ -1,6 +1,5 @@
 module Minilang.Normalize where
 
-import           Data.Monoid     ((<>))
 import           Minilang.Eval
 import           Minilang.Parser
 
@@ -46,7 +45,14 @@ instance Normalize Value Normal where
     where
       x_n = NVar n
   normalize n (ENeut k)   = NNeut (normalize n k)
-  normalize n v     = error $ "don't know how to normalize_" <> show n <> " value " <> show v
+  normalize n (EPi t g)   = NPi x_n (normalize n t) (normalize (n+1) $ inst g (ENeut $ NV x_n))
+    where
+      x_n = NVar n
+  normalize n (ESig t g)   = NSig x_n (normalize n t) (normalize (n+1) $ inst g (ENeut $ NV x_n))
+    where
+      x_n = NVar n
+  normalize n (ESum (s,ρ)) = NSum (s, normalize n ρ)
+  normalize n (ECase(s,ρ)) = NFun (s, normalize n ρ)
 
 instance Normalize Neutral NNeutral where
   normalize _ (NV x)          = NNV x

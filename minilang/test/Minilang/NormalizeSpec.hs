@@ -48,3 +48,23 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes env with declaration" $ do
     normalize 0 (ExtendDecl emptyEnv (Decl (B "x") U Unit))
       `shouldBe` NExtendDecl NEmptyEnv (Decl (B "x") U Unit)
+
+  it "normalizes Pi expression" $ do
+    let extended = ExtendPat emptyEnv (B "bar") (EI 12)
+    normalize 0 (EPi EU (Cl (B "foo") (Var "bar") extended))
+      `shouldBe` NPi (NVar 0) NU (NI 12)
+
+  it "normalizes Sigma expression" $ do
+    let extended = ExtendPat emptyEnv (B "bar") (EI 12)
+    normalize 0 (ESig EU (Cl (B "foo") (Var "bar") extended))
+      `shouldBe` NSig (NVar 0) NU (NI 12)
+
+  it "normalizes Sum definitions" $ do
+    normalize 0 (ESum ([ Choice "true" Unit, Choice "false" Unit]
+                     , emptyEnv))
+      `shouldBe` NSum ([ Choice "true" Unit, Choice "false" Unit], NEmptyEnv)
+
+  it "normalizes Case expressions" $ do
+    normalize 0 (ECase ([ Choice "true" Unit, Choice "false" Unit]
+                     , emptyEnv))
+      `shouldBe` NFun ([ Choice "true" Unit, Choice "false" Unit], NEmptyEnv)

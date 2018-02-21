@@ -1,5 +1,6 @@
 module Minilang.Parser where
 
+import           Data.Either           (fromRight)
 import           Data.Functor          (void)
 import           Data.Functor.Identity (Identity)
 import           Data.Text             (Text, pack, unpack)
@@ -25,10 +26,12 @@ data AST = U  -- universe
          | Ap AST AST
          | P1 AST
          | P2 AST
-         | Decl Binding AST AST
-         | RDecl Binding AST AST
-         | Decls [ AST ]
+         | Def Decl AST
          | Err ParseError
+  deriving (Eq, Show, Generic)
+
+data Decl = Decl Binding AST AST
+          | RDecl Binding AST AST
   deriving (Eq, Show, Generic)
 
 data Binding = Pat Binding Binding
@@ -47,22 +50,17 @@ choose (c@(Choice t _):cs) n
   | otherwise = choose cs n
 choose [] _ = Nothing
 
+-- | Top-level parser for MiniLang.
+-- Reads a /MiniLang/ expression and returns its AST.
 parseProgram
   :: Text -> AST
 parseProgram =
-  doParse (program <* eof)
-
--- | Top-level parser for MiniLang.
--- Reads a /MiniLang/ expression and returns its AST.
-parseDecl
-  :: Text -> AST
-parseDecl =
-  doParse (single_decl <* eof)
-
-parseMLExpr
-  :: Text -> AST
-parseMLExpr =
   doParse (expr <* eof)
+
+parseDecl
+  :: Text -> Decl
+parseDecl input =
+  fromRight (Decl Wildcard Unit Unit) $ runParser (single_decl <* eof) () "" (unpack input)
 
 doParse
   :: MLParser AST -> Text -> AST
@@ -73,36 +71,36 @@ doParse parser input =
 
 type MLParser a = Parsec String () a
 
-program
+expr
+    :: MLParser AST
+expr = (try def <?> "declaration")
+  <|> (abstraction <?> "abstraction")
+  <|> (dependent_product <?> "dependent product")
+  <|> (dependent_sum  <?> "dependent sum")
+  <|> (projection  <?> "projection")
+  <|> (labelled_sum  <?> "labelled sum")
+  <|> try case_match
+  <|> try fun_type
+  <|> try pair
+  <|> try application
+  <|> (try term  <?> "term")
+  <?> "expression"
+
+def
   :: MLParser AST
-program = Decls <$> sepBy single_decl scolon
+def = Def <$> single_decl <*> (scolon *> expr)
 
 single_decl
-  :: MLParser AST
-single_decl = rec_decl
-              <|> decl
+  :: MLParser Decl
+single_decl = (rec_decl <|> decl)
 
 rec_decl
-  :: MLParser AST
+  :: MLParser Decl
 rec_decl = recur >> RDecl <$> binding <*> (colon *> expr) <*> (equal *> expr)
 
 decl
-  :: MLParser AST
+  :: MLParser Decl
 decl = Decl <$> binding <*> (colon *> expr) <*> (equal *> expr)
-
-expr
-    :: MLParser AST
-expr = (abstraction <?> "abstraction")
-   <|> (dependent_product <?> "dependent product")
-   <|> (dependent_sum  <?> "dependent sum")
-   <|> (projection  <?> "projection")
-   <|> (labelled_sum  <?> "labelled sum")
-   <|> try case_match
-   <|> try fun_type
-   <|> try pair
-   <|> try application
-   <|> (try term  <?> "term")
-   <?> "expression"
 
 term
   :: MLParser AST

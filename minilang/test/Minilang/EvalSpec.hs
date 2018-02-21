@@ -43,6 +43,17 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
       `shouldBe` EI 12
 
+  it "evaluates Application of a function with pattern" $ do
+    eval (Ap (Abs (Pat (B "x") (B "y"))
+               (Var "x")) (Pair (I 12) (I 14))) emptyEnv
+      `shouldBe` EI 12
+    eval (Ap (Abs (Pat (B "x") (B "y"))
+               (Var "y")) (Pair (I 12) (I 14))) emptyEnv
+      `shouldBe` EI 14
+    eval (Ap (Abs (Pat (B "x") (Pat (B "y") (B "z")))
+               (Var "y")) (Pair (I 12) (Pair (I 13) (I 14)))) emptyEnv
+      `shouldBe` EI 13
+
   it "evaluates Application of a choice to a unary ctor" $ do
     eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x"))
                    , Choice "B" (Abs Wildcard (D 13))

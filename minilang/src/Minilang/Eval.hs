@@ -1,6 +1,8 @@
 module Minilang.Eval where
 
-import           Data.Text       (Text)
+import           Control.Applicative ((<|>))
+import           Data.Maybe          (fromJust)
+import           Data.Text           (Text)
 import           Minilang.Parser
 
 type Name = Text
@@ -110,10 +112,18 @@ rho ρ'@(ExtendRDecl ρ b _a m) x
 
 inPat
   :: Name -> Binding -> Bool
-inPat x (B p') | x == p' = True
-inPat _ _      = False
+inPat x (B p')
+  | x == p'                     = True
+inPat x (Pat p p')
+  | x `inPat` p' || x `inPat` p = True
+inPat _ _                       = False
 
 proj
   :: Name -> Binding -> Value -> Value
-proj _ (B _) v = v
-proj _ _ _     = undefined
+proj nam bnd val = fromJust $ proj' nam bnd val
+  where
+    proj' n (B n')      v
+      | n == n'                     = Just v
+      | otherwise                   = Nothing
+    proj' n (Pat b b') (EPair v v') = proj' n b v <|> proj' n b' v'
+    proj' _ _ _                     = undefined

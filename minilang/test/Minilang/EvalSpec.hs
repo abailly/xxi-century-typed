@@ -30,14 +30,14 @@ spec = parallel $ describe "Expressions Evaluator" $ do
       `shouldBe` ESig EU (Cl (B "foo") (Var "bar") emptyEnv)
 
   it "evaluates projections" $ do
-    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
-                   (B "y") (ENeut $ Gen 2)
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
+                   (B "y") (ENeut $ NV $ NVar  2)
 
     eval (P1 (Pair (Var "x") (Var "y"))) extended
-      `shouldBe` ENeut (Gen 1)
+      `shouldBe` ENeut (NV $ NVar  1)
 
     eval (P2 (Pair (Var "x") (Var "y"))) extended
-      `shouldBe` ENeut (Gen 2)
+      `shouldBe` ENeut (NV $ NVar  2)
 
   it "evaluates Application of a function" $ do
     eval (Ap (Abs (B "x") (Var "x")) (I 12)) emptyEnv
@@ -69,23 +69,23 @@ spec = parallel $ describe "Expressions Evaluator" $ do
       `shouldThrow` anyException
 
   it "evaluates application of choice to neutral value as neutral" $ do
-    let extended = ExtendPat emptyEnv (B "x") (ENeut $ Gen 1)
+    let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
     eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x")) ])
            (Var "x")) extended
-      `shouldBe` ENeut (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (Gen 1))
+      `shouldBe` ENeut (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
 
   it "evaluates application of neutral to value as neutral" $ do
-    let extended = ExtendPat emptyEnv (B "x") (ENeut $ Gen 1)
+    let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
     eval (Ap (Var "x") (I 12)) extended
-      `shouldBe` ENeut (NAp (Gen 1) (EI 12))
+      `shouldBe` ENeut (NAp (NV $ NVar  1) (EI 12))
 
   it "evaluates Constructor expression" $ do
     eval (Ctor "foo" (I 12)) emptyEnv
       `shouldBe` ECtor "foo" (EI 12)
 
   it "evaluates case match" $ do
-    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
-                   (B "y") (ENeut $ Gen 2)
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
+                   (B "y") (ENeut $ NV $ NVar  2)
 
     eval (Case [ Choice "foo" (Abs (C $ I 12) (Var "x"))
                , Choice "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
@@ -96,8 +96,8 @@ spec = parallel $ describe "Expressions Evaluator" $ do
                                 , extended)
 
   it "evaluates Sum definition" $ do
-    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ Gen 1))
-                   (B "y") (ENeut $ Gen 2)
+    let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
+                   (B "y") (ENeut $ NV $ NVar  2)
 
     eval (Sum [ Choice "true" Unit, Choice "false" Unit])
       extended `shouldBe` ESum ([ Choice "true" Unit, Choice "false" Unit]

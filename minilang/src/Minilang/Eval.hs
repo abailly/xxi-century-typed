@@ -42,7 +42,10 @@ type SumClos = ( [ Choice ], Env)
 data FunClos = Cl Binding AST Env | ClComp FunClos Name
   deriving (Eq, Show)
 
-data Neutral = Gen Int
+newtype NVar = NVar Int
+  deriving (Eq, Show)
+
+data Neutral = NV NVar
              | NP1 Neutral
              | NP2 Neutral
              | NCase SumClos Neutral

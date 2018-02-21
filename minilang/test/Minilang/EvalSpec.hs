@@ -101,11 +101,19 @@ spec = parallel $ describe "Expressions Evaluator" $ do
            EI 12
 
   it "evaluates recursive declaration continuation in extended env" $ do
-    eval (Def (RDecl (B "Nat") U (Sum [ Choice "zero" Unit
-                                      , Choice "succ" (Var "Nat")]))
-           (Ap (Case [ Choice "zero" (Abs Wildcard (Ctor "zero" Unit))
-                     , Choice "succ" (Abs (B "x") (Ctor "succ" (Var "x")))
-                     ])
-             (Ctor "succ" (Ctor "zero" Unit))
-           )) emptyEnv
+    eval (Def (RDecl (B "add")
+                (Pi Wildcard (Var "Nat") (Pi Wildcard (Var "Nat") (Var "Nat")))
+                (Abs (B "x")
+                  (Case [ Choice "zero" (Abs Wildcard (Var "x"))
+                        , Choice "succ" (Abs (B "y1")
+                                          (Ctor "succ"
+                                            (Ap (Ap (Var "add")
+                                                  (Var "x"))
+                                              (Var "y1"))))
+                        ])))
+           (Ap
+             (Ap (Var "add")
+              (Ctor "succ" (Ctor "zero" Unit)))
+             (Ctor "succ" (Ctor "zero" Unit)))
+         ) emptyEnv
       `shouldBe`  ECtor "succ" (ECtor "succ" (ECtor "zero" EUnit))

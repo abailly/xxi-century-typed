@@ -15,7 +15,7 @@ lookupType :: Name -> Context -> Value
 lookupType x (Context γ x' t)
   | x == x'               = t
   | otherwise             = lookupType x γ
-lookupType x EmptyContext = error $ "cannot find " <> show x <> " in typing context"
+lookupType x EmptyContext = error $ "cannot find " <> show x <> " in empty context"
 
 
 bindType :: Binding -> Value -> Value -> Context -> Context
@@ -82,6 +82,9 @@ check l (Pair m n)   (ESig t g)    ρ γ =
   check l m t ρ γ && check l n (inst g (eval m ρ)) ρ γ
 check _ Unit     EUnit _  _ = True
 check _ Unit     EU    _  _ = True
+check l (Case cs) (EPi (ESum (cs', ν)) g) ρ γ =
+  length cs == length cs' &&
+  all (\ (Choice c_i m_i,Choice c_i' a_i) -> c_i == c_i' && check l m_i (EPi (eval a_i ν) (ClComp g c_i)) ρ γ) (zip cs cs')
 check l (Sum cs) EU    ρ  γ =
   all (\ (Choice _ a) -> check l a EU ρ γ) cs
 check l (Sigma p a b) EU ρ  γ =
@@ -90,7 +93,18 @@ check l (Sigma p a b) EU ρ  γ =
     x_l = ENeut $ NV $ NVar l
     ρ_1 = ExtendPat ρ p x_l
     γ_1 = bindType p (eval a ρ) x_l γ
-
+check l (Pi p a b) EU ρ  γ =
+  check l a EU  ρ γ  && check (l+1) b EU ρ_1 γ_1
+  where
+    x_l = ENeut $ NV $ NVar l
+    ρ_1 = ExtendPat ρ p x_l
+    γ_1 = bindType p (eval a ρ) x_l γ
+check l (Abs p m) (EPi t g) ρ γ =
+  check (l+1) m (inst g x_l) ρ_1 γ_1
+  where
+    x_l = ENeut $ NV $ NVar l
+    ρ_1 = ExtendPat ρ p x_l
+    γ_1 = bindType p t x_l γ
 check l m t ρ γ =
   if normalize l t == (normalize l t' :: Normal)
   then True
@@ -103,5 +117,11 @@ check l m t ρ γ =
 
 checkI
   :: Int -> AST -> Env -> Context -> Value
-checkI _ (Var x) _ γ = lookupType x γ
+checkI _ (Var x)  _ γ = lookupType x γ
+checkI l (Ap m n) ρ γ =
+  if   check l n t ρ γ
+  then inst g (eval n ρ)
+  else error $  "[" <> show l <> "] type of " <> show n <> " is not " <> show t <> " in env " <> show ρ <> " and context " <> show γ
+  where
+    EPi t g = checkI l m ρ γ
 checkI l e ρ γ = error $  "[" <> show l <> "] cannot infer type of " <> show e <> " in env " <> show ρ <> " and context " <> show γ

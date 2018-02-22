@@ -45,35 +45,28 @@ spec = parallel $ describe "Type Checker" $ do
 
     describe "Check a declaration is correct" $ do
 
-      it "checks a simple declaration is correct given env and empty context" $ do
-        let
-          ρ = ExtendDecl EmptyEnv (Decl (B "Bool") U (Sum [ Choice "true" Unit, Choice "false" Unit]))
-          γ = Context EmptyContext "Bool" (ESum ([ Choice "true" Unit, Choice "false" Unit], EmptyEnv))
-          γ' = checkD 0 (Decl (B "x") (Var "Bool") (Ctor "true" Unit)) ρ γ
-
-        lookupType "x" γ' `shouldBe` ESum ([Choice "true" Unit,Choice "false" Unit], EmptyEnv)
-
       it "checks a recursive declaration is correct given env and empty context" $ do
         let
-          ρ = ExtendDecl EmptyEnv (RDecl (B "Nat") U (Sum [Choice "zero" Unit,Choice "succ" (Var "Nat")]))
+          γ  = checkD 0 (RDecl (B "Nat") U (Sum [Choice "zero" Unit, Choice "succ" (Var "Nat")]))
+               EmptyEnv EmptyContext
           γ' = checkD 0 (RDecl (Pat (B "V") (B "T"))
-                       (Sigma (B "X") U
-                        (Pi Wildcard (Var "X") U))
-                       (Pair
-                        (Sum [ Choice "nat" Unit
-                             , Choice "pi" (Sigma (B "x") (Var "V")
-                                            (Pi Wildcard
-                                             (Ap (Var "T") (Var "x"))
-                                             (Var "V")))
-                             ])
-                        (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
-                              , Choice "pi" (Abs (Pat (B "x") (B "f"))
-                                             (Pi (B "y")
-                                              (Ap (Var "T") (Var "x"))
-                                              (Ap
-                                                (Var "T")
-                                                (Ap (Var "f")
-                                                  (Var "y")))))
-                              ]))) ρ EmptyContext
+                         (Sigma (B "X") U
+                          (Pi Wildcard (Var "X") U))
+                         (Pair
+                          (Sum [ Choice "nat" Unit
+                               , Choice "pi" (Sigma (B "x") (Var "V")
+                                              (Pi Wildcard
+                                               (Ap (Var "T") (Var "x"))
+                                               (Var "V")))
+                               ])
+                          (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
+                                , Choice "pi" (Abs (Pat (B "x") (B "f"))
+                                               (Pi (B "y")
+                                                (Ap (Var "T") (Var "x"))
+                                                (Ap
+                                                 (Var "T")
+                                                 (Ap (Var "f")
+                                                   (Var "y")))))
+                                ]))) EmptyEnv γ
 
-        lookupType "V" γ' `shouldBe` EUnit
+        lookupType "V" γ' `shouldBe` EU

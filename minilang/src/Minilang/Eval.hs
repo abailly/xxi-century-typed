@@ -125,7 +125,7 @@ proj
 proj nam bnd val = fromJust $ proj' nam bnd val
   where
     proj' n (B n')     v
-      | n == n'                     = Just v
-      | otherwise                   = Nothing
-    proj' n (Pat b b') v = proj' n b (p1 v) <|> proj' n b' (p2 v)
+      | n == n'           = Just v
+      | otherwise         = Nothing
+    proj' n (Pat b b') v  = proj' n b (p1 v) <|> proj' n b' (p2 v)
     proj' _ _ _                     = error $ "don't know how to project " <> show nam <> " to " <> show val <> " in " <> show bnd

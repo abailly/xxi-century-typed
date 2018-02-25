@@ -37,11 +37,14 @@ library:
   - Minilang.Parser
   - Minilang.Eval
   - Minilang.Normalize
+  - Minilang.Type
   - Minilang.REPL
   dependencies:
   - base
   - containers
+  - concurrency
   - directory
+  - exceptions
   - mtl
   - parsec
   - text

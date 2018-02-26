@@ -12,6 +12,7 @@ import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
 
 data AST = U  -- universe
+         | One
          | Unit
          | I Integer
          | D Double
@@ -106,6 +107,7 @@ term
   :: MLParser AST
 term = (number  <?> "number")
    <|> (try unit  <?> "unit")
+   <|> (try one  <?> "one")
    <|> (variable <?> "identifier")
    <|> (ctor <?> "constructor")
    <|> (lpar *> expr <* rpar <?> "subexpression")
@@ -153,7 +155,7 @@ labelled_sum
 labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
     ctors = sepBy clause pipe
-    clause = Choice <$> identifier <*> (expr <|> pure Unit)
+    clause = Choice <$> identifier <*> (expr <|> pure One)
 
 case_match
   :: MLParser AST
@@ -186,7 +188,7 @@ lexer
   :: Tokens.GenTokenParser String () Identity
 lexer = Tokens.makeTokenParser haskellDef
 
-number, variable, unit, ctor
+number, variable, unit, ctor, one
   :: MLParser AST
 
 number = either I D <$> Tokens.naturalOrFloat lexer
@@ -198,6 +200,8 @@ variable = try $ do
     other -> pure $ Var other
 
 unit   = string "()" *> pure Unit <?> "unit"
+
+one = string "[]" *> pure One <?>  "One"
 
 ctor = char '$' >> Ctor <$> identifier <*> pure Unit
 

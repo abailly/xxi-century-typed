@@ -10,6 +10,7 @@ data Normal = NAbs NVar Normal
             | NPair Normal Normal
             | NSig NVar Normal Normal
             | NUnit
+            | NOne
             | NI Integer
             | ND Double
             | NCtor Name Normal
@@ -36,6 +37,7 @@ class Normalize val norm where
 
 instance Normalize Value Normal where
   normalize _ EUnit       = NUnit
+  normalize _ EOne        = NOne
   normalize _ EU          = NU
   normalize _ (EI i)      = NI i
   normalize _ (ED d)      = ND d

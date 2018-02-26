@@ -13,6 +13,7 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (D 12) emptyEnv `shouldBe` ED 12
     eval U      emptyEnv `shouldBe` EU
     eval Unit   emptyEnv `shouldBe` EUnit
+    eval One    emptyEnv `shouldBe` EOne
 
   it "evaluates pairs to pairs of values" $ do
     eval (Pair (D 12) Unit) emptyEnv `shouldBe` EPair (ED 12) EUnit

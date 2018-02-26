@@ -11,7 +11,15 @@ type Name = Text
 data Env = EmptyEnv
          | ExtendPat Env Binding Value
          | ExtendDecl Env Decl
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Env where
+  show e = "{ " <> show' e <> " }"
+    where
+      show' EmptyEnv          = "∅"
+      show' (ExtendPat ρ b v) = show b  <> " ↦ " <> show v <> ", " <> show' ρ
+      show' (ExtendDecl ρ (Decl b t m))  = show b  <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
+      show' (ExtendDecl ρ (RDecl b t m))  = show b  <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
 
 emptyEnv :: Env
 emptyEnv = EmptyEnv
@@ -24,6 +32,7 @@ extend = flip ExtendDecl
 -- we can add whatever specialised information we need
 data Value = EU
            | EUnit
+           | EOne
            | EI Integer
            | ED Double
            | ENeut Neutral
@@ -57,6 +66,7 @@ eval (I n)         _ = EI n
 eval (D d)         _ = ED d
 eval U             _ = EU
 eval Unit          _ = EUnit
+eval One           _ = EOne
 eval (Pair a b)    ρ = EPair (eval a ρ) (eval b ρ)
 eval (Abs p e)     ρ = EAbs $ Cl p e ρ
 eval (Pi p t e)    ρ = EPi (eval t ρ) $ Cl p e ρ

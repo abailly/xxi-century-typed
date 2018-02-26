@@ -58,7 +58,14 @@ printEvent e = let lvl = getLevel e
 
 data Context = EmptyContext
              | Context Context Name Value
-  deriving (Eq,Show)
+  deriving (Eq)
+
+
+instance Show Context where
+  show e = "[ " <> show' e <> " ]"
+    where
+      show' EmptyContext    = "∅"
+      show' (Context γ n v) = show n <> " ↦ " <> show v <> ", " <> show' γ
 
 lookupType
   :: (TypeChecker tc)
@@ -197,7 +204,7 @@ instance HasLevel CheckEvent where
   getLevel (CheckedHasType _ _ l _ _ )  = l
 
 instance Displayable CheckEvent where
-  display (CheckingHasType e v _ _ _ ) = "checking type of " <> show e <> " is " <> show v
+  display (CheckingHasType e v _ ρ γ ) = "checking type of " <> show e <> " is " <> show v <> " in env " <> show ρ <> " and context " <> show γ
   display (CheckedHasType e v _ _ _ )  = "checked type of " <> show e <> " is " <> show v
 
 checkingHasType
@@ -228,9 +235,9 @@ check l a@(Pair m n)   ty@(ESig t g)    ρ γ = do
   check l n (inst g (eval m ρ)) ρ γ
   checkedHasType a ty l ρ γ
 
-check l Unit     EUnit ρ  γ = checkedHasType Unit EUnit l ρ γ
+check l Unit     EOne  ρ  γ = checkedHasType Unit EOne l ρ γ
 
-check l Unit     EU    ρ  γ = checkedHasType Unit EU l ρ γ
+check l One      EU    ρ  γ = checkedHasType One EU l ρ γ
 
 check l a@(Case cs) ty@(EPi (ESum (cs', ν)) g) ρ γ = do
   checkingHasType a ty l ρ γ

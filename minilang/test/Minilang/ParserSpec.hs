@@ -171,3 +171,11 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` "Π abc : U . abc"
       show (pretty (parseProgram "λ abc . π1.(abc,feg)") )
         `shouldBe` "λ abc . π1.(abc, feg)"
+      show (pretty (parseProgram "λ (abc, (x,y)) . π1.($true, $false)") )
+        `shouldBe` "λ (abc, (x, y)) . π1.($true, $false)"
+
+    it "pretty prints declarations" $ do
+      show (pretty (parseProgram "id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()") )
+        `shouldBe` "id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()"
+      show (pretty (parseProgram "rec Nat : U = Sum (zero | succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
+        `shouldBe` "rec Nat : U = Sum(zero| succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()"

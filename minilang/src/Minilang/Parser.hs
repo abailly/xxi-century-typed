@@ -42,6 +42,7 @@ data Binding = Pat Binding Binding
              | Wildcard
   deriving (Eq, Show, Generic)
 
+
 data Choice = Choice Text AST
   deriving (Eq, Show, Generic)
 

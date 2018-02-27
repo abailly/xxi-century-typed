@@ -1,6 +1,7 @@
 module Minilang.ParserSpec where
 
 import           Minilang.Parser
+import           Minilang.Pretty
 import           Test.Hspec
 
 spec :: Spec
@@ -25,6 +26,9 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parse Unit" $ do
       parseProgram "()" `shouldBe` Unit
 
+    it "parse One" $ do
+      parseProgram "[]" `shouldBe` One
+
     it "parse Application" $
       parseProgram "abc fge" `shouldBe` Ap (Var "abc") (Var "fge")
 
@@ -32,6 +36,7 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram "abc fge 12" `shouldBe` parseProgram "(abc fge) 12"
       parseProgram "abc fge 12 k" `shouldBe` parseProgram "((abc fge) 12) k"
       parseProgram "abc fge 12 k bool" `shouldBe` parseProgram "(((abc fge) 12) k) bool"
+      parseProgram "abc fge 12 (k bool)" `shouldBe` parseProgram "(((abc fge) 12) (k bool))"
 
     it "parse Abstraction" $ do
       parseProgram "λ abc . abc" `shouldBe` Abs (B "abc") (Var "abc")
@@ -158,3 +163,11 @@ spec = parallel $ describe "Minilang Core" $ do
                            (Pi (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                            (Abs (B "A") (Abs (B "x") (Var "x"))))
                       Unit))
+
+  describe "Pretty-printing Expressions" $ do
+
+    it "pretty prints simple expressions" $ do
+      show (pretty (parseProgram "Π abc : U . abc") )
+        `shouldBe` "Π abc : U . abc"
+      show (pretty (parseProgram "λ abc . π1.(abc,feg)") )
+        `shouldBe` "λ abc . π1.(abc, feg)"

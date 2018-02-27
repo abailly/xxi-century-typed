@@ -47,6 +47,7 @@ library:
   - exceptions
   - mtl
   - parsec
+  - prettyprinter
   - text
   - unix
 

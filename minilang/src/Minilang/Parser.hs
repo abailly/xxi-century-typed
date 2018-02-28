@@ -136,15 +136,16 @@ fun_type = do
 application
   :: MLParser AST
 application = (do
-  l <- term
-  r <- try application <|> term
+  l    <- term
+  r:rs <- many1 term
   pure $
     case l of
       Ctor n _ -> Ctor n r
-      _        -> invertSpine $ Ap l r) <?> "application"
+      _        -> app l (r:rs)) <?> "application"
   where
-    invertSpine (Ap l (Ap l' r)) = Ap (invertSpine $ Ap l l') r
-    invertSpine e                = e
+    app l []     = l
+    app l [r]    = Ap l r
+    app l (r:rs) = app (Ap l r) rs
 
 projection
   :: MLParser AST

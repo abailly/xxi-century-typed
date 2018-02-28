@@ -35,6 +35,7 @@ library:
   source-dirs: src
   exposed-modules:
   - Minilang.Parser
+  - Minilang.Pretty
   - Minilang.Eval
   - Minilang.Normalize
   - Minilang.Type

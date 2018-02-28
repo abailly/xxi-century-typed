@@ -33,10 +33,13 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram "abc fge" `shouldBe` Ap (Var "abc") (Var "fge")
 
     it "parse application as left-associative" $ do
-      parseProgram "abc fge 12" `shouldBe` parseProgram "(abc fge) 12"
+      parseProgram "abc fge 12" `shouldBe` (Ap (Ap (Var "abc") (Var "fge")) (I 12))
       parseProgram "abc fge 12 k" `shouldBe` parseProgram "((abc fge) 12) k"
       parseProgram "abc fge 12 k bool" `shouldBe` parseProgram "(((abc fge) 12) k) bool"
-      parseProgram "abc fge 12 (k bool)" `shouldBe` parseProgram "(((abc fge) 12) (k bool))"
+      parseProgram "abc (fge 12)" `shouldBe` (Ap (Var "abc") (Ap (Var "fge") (I 12)))
+      parseProgram "(g n1) (natrec C a g n1)"
+        `shouldBe` (Ap (Ap (Var "g") (Var "n1"))
+                     (Ap (Ap (Ap (Ap (Var "natrec")  (Var "C")) (Var "a")) (Var "g")) (Var "n1")))
 
     it "parse Abstraction" $ do
       parseProgram "λ abc . abc" `shouldBe` Abs (B "abc") (Var "abc")
@@ -125,9 +128,8 @@ spec = parallel $ describe "Minilang Core" $ do
                           , Choice "pi" (Abs (Pat (B "x") (B "f"))
                                           (Pi (B "y")
                                             (Ap (Var "T") (Var "x"))
-                                            (Ap
-                                              (Ap (Var "T") (Var "f"))
-                                              (Var "y"))))
+                                            (Ap (Var "T")
+                                              (Ap (Var "f") (Var "y")))))
                           ]))
 
     it "parses natRec " $ do
@@ -152,8 +154,12 @@ spec = parallel $ describe "Minilang Core" $ do
                       (Abs (B "g")
                        (Case [Choice "zero" (Abs Wildcard (Var "a"))
                              ,Choice "succ" (Abs (B "n1")
-                                             (Ap (Ap (Ap (Ap (Ap (Ap (Var "g") (Var "n1")) (Var "natrec"))
-                                                          (Var "C")) (Var "a")) (Var "g")) (Var "n1")))])))))
+                                             (Ap (Ap (Var "g") (Var "n1"))
+                                               (Ap (Ap (Ap (Ap (Var "natrec")
+                                                            (Var "C"))
+                                                         (Var "a"))
+                                                     (Var "g"))
+                                                 (Var "n1"))))])))))
                    Unit)
 
     it "parses a program" $ do
@@ -176,6 +182,8 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "pretty prints declarations" $ do
       show (pretty (parseProgram "id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()") )
-        `shouldBe` "id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()"
+        `shouldBe` "id : Π A : U . A → A = λ A . λ x . x ;\n()"
       show (pretty (parseProgram "rec Nat : U = Sum (zero | succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
-        `shouldBe` "rec Nat : U = Sum(zero| succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()"
+        `shouldBe` "rec Nat : U = Sum(zero| succ Nat) ;\nid : Π A : U . A → A = λ A . λ x . x ;\n()"
+      show (pretty (parseProgram "rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . fun (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
+        `shouldBe` "rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C $succ n) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"

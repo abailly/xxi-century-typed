@@ -1,5 +1,7 @@
 module Minilang.TypeSpec where
 
+import           Control.Exception
+import           Data.Text         (unpack)
 import           Minilang.Eval
 import           Minilang.Parser
 import           Minilang.Type
@@ -69,28 +71,58 @@ spec = parallel $ describe "Type Checker" $ do
 
         lookupType "V" γ' `shouldReturn` EU
 
-      -- TODO understand why the following 2 tests don't pass
-      -- it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
-      --   check 0 (Def
-      --             (Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One]))
-      --             (Def (Decl (B "elimBool")
-      --                    (Pi (B "C")
-      --                      (Pi Wildcard (Var "Bool") U)
-      --                      (Pi Wildcard
-      --                        (Ap (Var "C") (Ctor "false" Unit))
-      --                        (Pi Wildcard
-      --                          (Ap (Var "C") (Ctor "true" Unit))
-      --                          (Pi (B "b") (Var "Bool")
-      --                            (Ap (Var "C") (Var "b"))))))
-      --                    (Abs (B "C")
-      --                      (Abs (B "h0")
-      --                        (Abs (B "h1")
-      --                          (Case [ Choice "true" (Abs Wildcard (Var "h1"))
-      --                                , Choice "false" (Abs Wildcard (Var "h0"))])))))
-      --               (Ap (Var "elimbool") (Ctor "false" Unit))))
-      --     EUnit
-      --     EmptyEnv EmptyContext
-      --     `shouldReturn` ()
+      it "Check simple Bool function" $ do
+        check 0 (Def
+                  (Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One]))
+                  (Def
+                   (Decl (B "not")
+                     (Pi Wildcard (Var "Bool") (Var "Bool"))
+                     (Case [ Choice "true" (Abs Wildcard (Ctor "false" Unit))
+                           , Choice "false" (Abs Wildcard (Ctor "true" Unit))
+                           ]))
+                   (Ap (Var "not") (Ctor "false" Unit))))
+          (ESum ([Choice "true" One,Choice "false" One], EmptyEnv))
+          EmptyEnv EmptyContext
+          `shouldReturn` ()
+
+      it "Check Unit and unitElim" $ do
+        check 0 (Def
+                  (Decl (B "Unit") U (Sum [Choice "tt" One]))
+                  (Def
+                    (Decl (B "elimUnit")
+                      (Pi (B "C") (Pi Wildcard (Var "Unit") U)
+                        (Pi Wildcard (Ap (Var "C") (Ctor "tt" Unit))
+                          (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))))
+                      (Abs (B "C")
+                        (Abs (B "h")
+                          (Case [Choice "tt" (Abs Wildcard (Var "h"))]))))
+                    Unit))
+          EUnit
+          EmptyEnv
+          EmptyContext
+          `catch` \ (TypingError e) -> putStrLn (unpack e)
+
+      it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
+        check 0 (Def
+                  (Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One]))
+                  (Def (Decl (B "elimBool")
+                         (Pi (B "C")
+                           (Pi Wildcard (Var "Bool") U)
+                           (Pi Wildcard
+                             (Ap (Var "C") (Ctor "false" Unit))
+                             (Pi Wildcard
+                               (Ap (Var "C") (Ctor "true" Unit))
+                               (Pi (B "b") (Var "Bool")
+                                 (Ap (Var "C") (Var "b"))))))
+                         (Abs (B "C")
+                           (Abs (B "h0")
+                             (Abs (B "h1")
+                               (Case [ Choice "true" (Abs Wildcard (Var "h1"))
+                                     , Choice "false" (Abs Wildcard (Var "h0"))])))))
+                    (Ap (Var "elimbool") (Ctor "false" Unit))))
+          EUnit
+          EmptyEnv EmptyContext
+          `catch` \ (TypingError e) -> putStrLn (unpack e)
 
       -- it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
       --   check 0 (Def

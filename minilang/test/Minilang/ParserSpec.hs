@@ -170,6 +170,10 @@ spec = parallel $ describe "Minilang Core" $ do
                            (Abs (B "A") (Abs (B "x") (Var "x"))))
                       Unit))
 
+    it "" $ do
+      parseProgram "Unit : U = Sum (tt); elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . fun (tt -> h); ()"
+        `shouldBe` (Def (Decl (B "Unit") U (Sum [Choice "tt" One])) (Def (Decl (B "elimUnit") (Pi (B "C") (Pi Wildcard (Var "Unit") U) (Pi Wildcard (Ap (Var "C") (Ctor "tt" Unit)) (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x"))))) (Abs (B "C") (Abs (B "h") (Case [Choice "tt" (Abs Wildcard (Var "h"))])))) Unit))
+
   describe "Pretty-printing Expressions" $ do
 
     it "pretty prints simple expressions" $ do
@@ -186,4 +190,4 @@ spec = parallel $ describe "Minilang Core" $ do
       show (pretty (parseProgram "rec Nat : U = Sum (zero | succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
         `shouldBe` "rec Nat : U = Sum(zero| succ Nat) ;\nid : Π A : U . A → A = λ A . λ x . x ;\n()"
       show (pretty (parseProgram "rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . fun (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
-        `shouldBe` "rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C $succ n) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
+        `shouldBe` "rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C $succ n) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"

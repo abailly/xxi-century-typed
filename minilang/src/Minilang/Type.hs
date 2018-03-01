@@ -7,6 +7,7 @@ import           Data.Text           (Text, pack)
 import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser
+import           Minilang.Pretty
 
 -- * Typing
 
@@ -99,7 +100,7 @@ instance HasLevel CheckDEvent where
   getLevel (BoundType _ _ _ l _)  = l
 
 instance Displayable CheckDEvent where
-  display (CheckingDecl d _ _ _) = "checking declaration " <> show d
+  display (CheckingDecl d _ _ _) = "checking declaration " <> show (pretty d)
   display (BoundType b v _ _ _)  = "bound " <> show b <> " to " <> show v
 
 
@@ -150,8 +151,8 @@ instance HasLevel CheckTEvent where
   getLevel (CheckedIsType _ l _ _ )  = l
 
 instance Displayable CheckTEvent where
-  display (CheckingIsType e _ _ _ ) = "checking typeness " <> show e
-  display (CheckedIsType e _ _ _ )  = "checked typeness " <> show e
+  display (CheckingIsType e _ _ _ ) = "checking typeness " <> show (pretty e)
+  display (CheckedIsType e _ _ _ )  = "checked typeness " <> show (pretty e)
 
 checkingIsType
   :: (TypeChecker tc)
@@ -204,8 +205,8 @@ instance HasLevel CheckEvent where
   getLevel (CheckedHasType _ _ l _ _ )  = l
 
 instance Displayable CheckEvent where
-  display (CheckingHasType e v _ ρ γ ) = "checking type of " <> show e <> " is " <> show v <> " in env " <> show ρ <> " and context " <> show γ
-  display (CheckedHasType e v _ _ _ )  = "checked type of " <> show e <> " is " <> show v
+  display (CheckingHasType e v _ ρ γ ) = "checking type of " <> show (pretty e) <> " is " <> show (pretty v) <> " in env " <> show (pretty ρ) <> " and context " <> show γ
+  display (CheckedHasType e v _ _ _ )  = "checked type of " <> show (pretty e) <> " is " <> show (pretty v)
 
 checkingHasType
   :: (TypeChecker tc)
@@ -241,9 +242,11 @@ check l One      EU    ρ  γ = checkedHasType One EU l ρ γ
 
 check l a@(Case cs) ty@(EPi (ESum (cs', ν)) g) ρ γ = do
   checkingHasType a ty l ρ γ
-  when (length cs /= length cs') $ throwM $ typingError ("number of ctors in case " <> show cs <> " must be same than number in " <> show cs')
+  when (length cs /= length cs') $
+    throwM $ typingError ("number of ctors in case " <> show cs <> " must be same than number in " <> show cs')
   forM_ (zip cs cs') $ \ (Choice c_i m_i, Choice c_i' a_i) -> do
-    when (c_i /= c_i') $ throwM $ typingError ("order of ctors in case must be the same same as in definition, found " <> show c_i <> ", expected " <> show c_i')
+    when (c_i /= c_i') $
+      throwM $ typingError ("order of ctors in case must be the same same as in definition, found " <> show c_i <> ", expected " <> show c_i')
     check l m_i (EPi (eval a_i ν) (ClComp g c_i)) ρ γ
   checkedHasType a ty l ρ γ
 
@@ -276,10 +279,14 @@ check l a@(Def d m) t ρ γ = do
 check l m t ρ γ = do
   checkingHasType m t l ρ γ
   t' <- checkI l m ρ γ
-  when (normalize l t /= (normalize l t' :: Normal)) $ throwM $
+  let
+    norm  = normalize l t :: Normal
+    norm' = normalize l t' :: Normal
+  when (norm /= norm') $ throwM $
     typingError $ "[" <> show l <> "] expr " <> show m <>
-    " does not have type "<> show t <>
-    ", failed to normalize with " <> show t' <>
+    " does not have type "<> show (pretty t) <>
+    ", failed to equate normalization " <> show norm <> " with " <> show norm' <>
+    ", inferred type is " <> show (pretty t') <>
     " in env " <> show ρ <> " and context " <> show γ
   checkedHasType m t l ρ γ
 
@@ -310,9 +317,9 @@ instance HasLevel CheckIEvent where
   getLevel (InferredType _ _ l _ _ )    = l
 
 instance Displayable CheckIEvent where
-  display (InferringType e _ _ _)      = "inferring type of " <> show e
+  display (InferringType e _ _ _)      = "inferring type of " <> show (pretty e)
   display (ResolvingVariable n _ _ _ ) = "resolving " <> show n
-  display (InferredType e v _ _ _ )    = "inferred type of " <> show e <> " is " <> show v
+  display (InferredType e v _ _ _ )    = "inferred type of " <> show (pretty e) <> " is " <> show (pretty v)
 
 inferringType
   :: (TypeChecker tc)
@@ -346,4 +353,4 @@ checkI l a@(Ap m n) ρ γ = do
   inferredType a l ρ γ v
 
 checkI l e ρ γ =
-  throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show e <> " in env " <> show ρ <> " and context " <> show γ
+  throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show γ

@@ -8,6 +8,8 @@ import           Minilang.Parser
 
 type Name = Text
 
+-- ** Evaluation Environment
+
 data Env = EmptyEnv
          | ExtendPat Env Binding Value
          | ExtendDecl Env Decl
@@ -26,6 +28,12 @@ emptyEnv = EmptyEnv
 
 extend :: Decl -> Env -> Env
 extend = flip ExtendDecl
+
+-- ** Typing Context
+
+data Context = EmptyContext
+             | Context Context Name Value
+  deriving (Eq, Show)
 
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that

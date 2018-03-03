@@ -19,7 +19,6 @@ class (Monad tc, MonadThrow tc) =>  TypeChecker tc where
   -- | Emit an `Event` corresponding to some stage of the type-checker
   emit :: Event -> tc ()
 
-
 data Event = CheckD CheckDEvent
            | CheckT CheckTEvent
            | Check  CheckEvent
@@ -57,17 +56,6 @@ printEvent e = let lvl = getLevel e
 
 -- * Typing Context
 
-data Context = EmptyContext
-             | Context Context Name Value
-  deriving (Eq)
-
-
-instance Show Context where
-  show e = "[ " <> show' e <> " ]"
-    where
-      show' EmptyContext    = "∅"
-      show' (Context γ n v) = show n <> " ↦ " <> show v <> ", " <> show' γ
-
 lookupType
   :: (TypeChecker tc)
   => Name -> Context -> tc Value
@@ -85,7 +73,7 @@ bindType Wildcard  _          _ γ = pure γ
 bindType (Pat x y) (ESig t g) v γ = do
   γ1 <- bindType x t (p1 v) γ
   bindType y (inst g (p1 v)) (p2 v) γ1
-bindType p     t v  γ             = throwM $ typingError $ "don't know how to bind " <> show p <> " to type " <> show t <> " and value " <> show v <> " in context "<> show γ
+bindType p     t v  γ             = throwM $ typingError $ "don't know how to bind " <> show (pretty p) <> " to type " <> show (pretty t) <> " and value " <> show (pretty v) <> " in context "<> show (pretty γ)
 
 -- * Typing Judgments
 
@@ -101,7 +89,7 @@ instance HasLevel CheckDEvent where
 
 instance Displayable CheckDEvent where
   display (CheckingDecl d _ _ _) = "checking declaration " <> show (pretty d)
-  display (BoundType b v _ _ _)  = "bound " <> show b <> " to " <> show v
+  display (BoundType b v _ _ _)  = "bound " <> show (pretty b) <> " to " <> show (pretty v)
 
 
 checkingDecl
@@ -205,7 +193,7 @@ instance HasLevel CheckEvent where
   getLevel (CheckedHasType _ _ l _ _ )  = l
 
 instance Displayable CheckEvent where
-  display (CheckingHasType e v _ ρ γ ) = "checking type of " <> show (pretty e) <> " is " <> show (pretty v) <> " in env " <> show (pretty ρ) <> " and context " <> show γ
+  display (CheckingHasType e v _ ρ γ ) = "checking type of " <> show (pretty e) <> " is " <> show (pretty v) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
   display (CheckedHasType e v _ _ _ )  = "checked type of " <> show (pretty e) <> " is " <> show (pretty v)
 
 checkingHasType
@@ -287,7 +275,7 @@ check l m t ρ γ = do
     " does not have type "<> show (pretty t) <>
     ", failed to equate normalization " <> show norm <> " with " <> show norm' <>
     ", inferred type is " <> show (pretty t') <>
-    " in env " <> show ρ <> " and context " <> show γ
+    " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
   checkedHasType m t l ρ γ
 
 
@@ -353,4 +341,4 @@ checkI l a@(Ap m n) ρ γ = do
   inferredType a l ρ γ v
 
 checkI l e ρ γ =
-  throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show γ
+  throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)

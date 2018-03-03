@@ -7,6 +7,7 @@ import           Data.Text.Prettyprint.Doc
 import           Minilang.Eval
 import           Minilang.Parser
 
+
 -- * Pretty-Printing
 
 -- ** Expressions
@@ -93,3 +94,12 @@ instance Pretty Env where
       pretty' (ExtendPat ρ b v)            = pretty b  <> " ↦ " <> pretty v <> ", " <> pretty' ρ
       pretty' (ExtendDecl ρ (Decl b t m))  = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
       pretty' (ExtendDecl ρ (RDecl b t m)) = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
+
+
+-- ** Context
+
+instance Pretty Context where
+  pretty env = braces (pretty' env)
+    where
+      pretty' EmptyContext    = "∅"
+      pretty' (Context γ n v) = pretty n <> " ↦ " <> pretty v <> ", " <> pretty' γ

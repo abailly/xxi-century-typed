@@ -46,6 +46,7 @@ library:
   - concurrency
   - directory
   - exceptions
+  - haskeline
   - mtl
   - parsec
   - prettyprinter

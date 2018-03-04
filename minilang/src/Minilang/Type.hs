@@ -273,8 +273,8 @@ check l m t ρ γ = do
   when (norm /= norm') $ throwM $
     typingError $ "[" <> show l <> "] expr " <> show m <>
     " does not have type "<> show (pretty t) <>
-    ", failed to equate normalization " <> show norm <> " with " <> show norm' <>
     ", inferred type is " <> show (pretty t') <>
+    ", failed to equate normalization " <> show (pretty norm) <> " with " <> show (pretty norm') <>
     " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
   checkedHasType m t l ρ γ
 

@@ -5,6 +5,7 @@ where
 
 import           Data.Text.Prettyprint.Doc
 import           Minilang.Eval
+import           Minilang.Normalize
 import           Minilang.Parser
 
 
@@ -20,7 +21,7 @@ instance Pretty AST where
   pretty (D d)             = pretty d
   pretty (Abs p e)         = "λ" <+> pretty p <+> "." <+> pretty e
   pretty (Ctor n Unit)     = "$" <> pretty n
-  pretty (Ctor n e)        = "$" <> pretty n <+> pretty e
+  pretty (Ctor n e)        = parens ("$" <> pretty n <+> pretty e)
   pretty (Pi Wildcard t e) = pretty t <+> "→" <+> pretty e
   pretty (Pi p t e)        = "Π" <+> pretty p <+> ":" <+> pretty t <+> "." <+> pretty e
   pretty (Sigma p t e)     = "Σ" <+> pretty p <+> ":" <+> pretty t <+> "." <+> pretty e
@@ -84,6 +85,40 @@ instance  Pretty Neutral where
   pretty (NP2 nt)          = "π2." <> pretty nt
   pretty (NCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
   pretty (NAp nt v)        = parens (pretty nt <+> pretty v)
+
+-- ** Normal Forms
+
+instance Pretty Normal where
+  pretty (NAbs v nf)   = "λ" <+> pretty v <+> "." <+> pretty nf
+  pretty (NPi v t e)   = "Π" <+> pretty v <+> ":" <+> pretty t <+> "." <+> pretty e
+  pretty (NSig v t e)  = "Σ" <+> pretty v <+> ":" <+> pretty t <+> "." <+> pretty e
+  pretty NU            = "U"
+  pretty (NNeut nt)    = pretty nt
+  pretty (NPair l r)   = parens (pretty l <> "," <+> pretty r)
+  pretty NUnit         = "()"
+  pretty NOne          = "[]"
+  pretty (NI i)        = pretty i
+  pretty (ND d)        = pretty d
+  pretty (NCtor n nf)  = parens ("$" <> pretty n <+> pretty nf)
+  pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
+  pretty (NFun (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
+
+
+instance  Pretty NNeutral where
+  pretty (NNV x)            = pretty x
+  pretty (NNPi1 nt)          = "π1." <> pretty nt
+  pretty (NNPi2 nt)          = "π2." <> pretty nt
+  pretty (NNCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
+  pretty (NNAp nt v)        = parens (pretty nt <+> pretty v)
+
+
+instance Pretty NEnv where
+  pretty env = braces (pretty' env)
+    where
+      pretty' NEmptyEnv                     = "∅"
+      pretty' (NExtendEnv ρ b v)            = pretty b  <> " ↦ " <> pretty v <> ", " <> pretty' ρ
+      pretty' (NExtendDecl ρ (Decl b t m))  = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
+      pretty' (NExtendDecl ρ (RDecl b t m)) = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
 
 -- ** Environment
 

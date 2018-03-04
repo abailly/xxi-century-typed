@@ -100,7 +100,7 @@ spec = parallel $ describe "Type Checker" $ do
           EUnit
           EmptyEnv
           EmptyContext
-          `catch` \ (TypingError e) -> putStrLn (unpack e)
+          `catch` \ ex@(TypingError e) -> putStrLn (unpack e) >> throw ex
 
       it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
         check 0 (Def

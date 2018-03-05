@@ -25,6 +25,12 @@ data Event = CheckD CheckDEvent
            | CheckI CheckIEvent
   deriving (Eq, Show)
 
+instance Displayable Event where
+  display (CheckD e) = display e
+  display (CheckT e) = display e
+  display (Check  e) = display e
+  display (CheckI e) = display e
+
 data TypingError = TypingError Text
   deriving (Eq, Show)
 
@@ -121,7 +127,9 @@ checkD l d@(RDecl p a m) ρ γ = do
   checkT l a ρ γ
   γ_1 <- bindType p t x_l γ
   check (l+1) m t ρ_1 γ_1
-  bindType p t v γ
+  γ' <- bindType p t v γ
+  boundType p t v l γ'
+  pure γ'
   where
     x_l = ENeut $ NV $ NVar l
     t   = eval a ρ
@@ -165,7 +173,7 @@ checkT l e@(Pi p a b)    ρ γ = do
   checkDependentT l p a b ρ γ
   checkedIsType e l ρ γ
 
-checkT l U             ρ γ = checkedIsType U l ρ γ
+checkT l U             ρ γ = checkingIsType U l ρ γ >> checkedIsType U l ρ γ
 checkT l a             ρ γ = do
   checkingIsType a l ρ γ
   check l a EU ρ γ
@@ -224,9 +232,9 @@ check l a@(Pair m n)   ty@(ESig t g)    ρ γ = do
   check l n (inst g (eval m ρ)) ρ γ
   checkedHasType a ty l ρ γ
 
-check l Unit     EOne  ρ  γ = checkedHasType Unit EOne l ρ γ
+check l Unit     EOne  ρ  γ = checkingHasType Unit EOne l ρ γ >> checkedHasType Unit EOne l ρ γ
 
-check l One      EU    ρ  γ = checkedHasType One EU l ρ γ
+check l One      EU    ρ  γ = checkingHasType One EU l ρ γ >> checkedHasType One EU l ρ γ
 
 check l a@(Case cs) ty@(EPi (ESum (cs', ν)) g) ρ γ = do
   checkingHasType a ty l ρ γ

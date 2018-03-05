@@ -99,6 +99,7 @@ instance Pretty Normal where
   pretty NOne          = "[]"
   pretty (NI i)        = pretty i
   pretty (ND d)        = pretty d
+  pretty (NCtor n NUnit) = "$" <> pretty n
   pretty (NCtor n nf)  = parens ("$" <> pretty n <+> pretty nf)
   pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
   pretty (NFun (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)

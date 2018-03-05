@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# OPTIONS_GHC "-fno-warn-orphans" #-}
@@ -13,7 +14,7 @@ import           Control.Monad.Catch.Pure                (CatchT (..))
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans                     (lift)
-import           Data.Text
+import           Data.Text                               hiding (replicate)
 import           Data.Text.IO
 import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
@@ -134,8 +135,9 @@ withHandles hin hout =
 
 -- * Haskeline REPL
 
-data ConsoleEnv = ConsoleEnv { rho'   :: Env
-                             , gamma' :: Context
+data ConsoleEnv = ConsoleEnv { rho'      :: Env
+                             , gamma'    :: Context
+                             , curIndent :: Int
                              }
 
 newtype Haskeline a = Haskeline { runHaskeline :: StateT ConsoleEnv (InputT IO) a }
@@ -166,11 +168,29 @@ instance MonadThrow Haskeline where
   throwM e = throw e
 
 instance TypeChecker Haskeline where
-  emit = liftIO . emit
+  emit e = get >>= hoist . (printE e) >>= put
+
+printE
+  :: Event -> ConsoleEnv -> InputT IO ConsoleEnv
+printE e env@ConsoleEnv{..} =
+  let
+    prefix depth = replicate (2 * depth) ' ' <> display e
+    doPrint depth = void (getInputLineWithInitial (prefix depth) ("", ""))
+  in
+    case e of
+      (CheckD CheckingDecl{})      -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
+      (CheckD BoundType{})         -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
+      (CheckT CheckingIsType{})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
+      (CheckT CheckedIsType {})    -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
+      (Check  CheckingHasType{})   -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
+      (Check  CheckedHasType{} )   -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
+      (CheckI InferringType {})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
+      (CheckI ResolvingVariable{}) -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
+      (CheckI InferredType{})      -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
 
 withTerminal :: IO ()
 withTerminal =
-  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) (ConsoleEnv EmptyEnv EmptyContext)
+  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) (ConsoleEnv EmptyEnv EmptyContext 0)
   where
     settings = defaultSettings { historyFile = Just "~/.minilang.history" }
 

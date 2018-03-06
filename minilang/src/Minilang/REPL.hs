@@ -126,7 +126,7 @@ instance (MonadCatch m) => MonadCatch (CONSOLE m)  where
   CONSOLE m `catch` f = CONSOLE $ m `catch` \ e -> runConsole (f e)
 
 instance TypeChecker (CONSOLE IO) where
-  emit = lift . emit
+  emit = const $ pure()
 
 withHandles
   :: Handle -> Handle -> IO ()
@@ -135,9 +135,10 @@ withHandles hin hout =
 
 -- * Haskeline REPL
 
-data ConsoleEnv = ConsoleEnv { rho'      :: Env
-                             , gamma'    :: Context
-                             , curIndent :: Int
+data ConsoleEnv = ConsoleEnv { rho'          :: Env
+                             , gamma'        :: Context
+                             , curIndent     :: Int
+                             , stepTypeCheck :: Bool
                              }
 
 newtype Haskeline a = Haskeline { runHaskeline :: StateT ConsoleEnv (InputT IO) a }
@@ -177,7 +178,8 @@ printE e env@ConsoleEnv{..} =
     prefix depth = replicate (2 * depth) ' ' <> display e
     doPrint depth = void (getInputLineWithInitial (prefix depth) ("", ""))
   in
-    case e of
+    if stepTypeCheck
+    then case e of
       (CheckD CheckingDecl{})      -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
       (CheckD BoundType{})         -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
       (CheckT CheckingIsType{})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
@@ -187,10 +189,11 @@ printE e env@ConsoleEnv{..} =
       (CheckI InferringType {})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
       (CheckI ResolvingVariable{}) -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
       (CheckI InferredType{})      -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
+    else pure env
 
 withTerminal :: IO ()
 withTerminal =
-  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) (ConsoleEnv EmptyEnv EmptyContext 0)
+  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) (ConsoleEnv EmptyEnv EmptyContext 0 False)
   where
     settings = defaultSettings { historyFile = Just "~/.minilang.history" }
 

@@ -65,6 +65,9 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parse Pairing" $ do
       parseProgram "(abc,12)" `shouldBe` Pair (Var "abc") (I 12)
 
+    it "parses Constructor w/ Pairing" $ do
+      parseProgram "$foo (abc,12)" `shouldBe` (Ctor "foo" (Pair (Var "abc") (I 12)))
+
     it "parses Labelled Sum" $ do
       parseProgram "Sum(foo []| bar Nat)" `shouldBe` Sum [ Choice "foo" One , Choice "bar" (Var "Nat")]
       parseProgram "Sum(foo[]| bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" One , Choice "bar" (Pair (Var "Nat") (Var "Bool"))]
@@ -190,4 +193,4 @@ spec = parallel $ describe "Minilang Core" $ do
       show (pretty (parseProgram "rec Nat : U = Sum (zero | succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
         `shouldBe` "rec Nat : U = Sum(zero| succ Nat) ;\nid : Π A : U . A → A = λ A . λ x . x ;\n()"
       show (pretty (parseProgram "rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . fun (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
-        `shouldBe` "rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C $succ n) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
+        `shouldBe` "rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"

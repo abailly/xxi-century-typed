@@ -84,6 +84,7 @@ expr = (try def <?> "declaration")
   <|> try case_match
   <|> try fun_type
   <|> try pair
+  <|> (ctor_expr <?> "constructor")
   <|> try application
   <|> (try term  <?> "term")
   <?> "expression"
@@ -109,8 +110,8 @@ term
 term = (number  <?> "number")
    <|> (try unit  <?> "unit")
    <|> (try one  <?> "one")
+   <|> (try ctor  <?> "ctor")
    <|> (variable <?> "identifier")
-   <|> (ctor <?> "constructor")
    <|> (lpar *> expr <* rpar <?> "subexpression")
 
 dependent_product
@@ -132,6 +133,13 @@ fun_type = do
   r <- (rarrow *> expr <?> "right-hand side of function type")
 
   pure $ Pi Wildcard l r
+
+ctor_expr
+  :: MLParser AST
+ctor_expr = do
+  Ctor c _ <- ctor
+  e <- option Unit expr
+  pure $ Ctor c e
 
 application
   :: MLParser AST

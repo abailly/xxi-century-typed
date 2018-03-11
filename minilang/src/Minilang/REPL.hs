@@ -7,7 +7,6 @@
 
 module Minilang.REPL where
 
-import           Control.Arrow                           ((&&&))
 import           Control.Exception                       (throw)
 import           Control.Monad.Catch
 import           Control.Monad.Catch.Pure                (CatchT (..))
@@ -36,17 +35,13 @@ import           Text.Parsec                             (runParser)
 
 
 class (Monad m) => MonadREPL m where
-  -- | Clears the current environment for this session and initializes with
-  -- `EmptyEnv` and `EmptyContext`
-  clear  :: m ()
-
   -- | Returns the current environment for this session
   -- Environment is made of an `Env`ironment binding names to `Decl`arations
   -- and typing `Context` binding names to `Value`s denoting evaluated types.
-  getEnv :: m (Env, Context)
+  getEnv :: m REPLEnv
 
   -- | Updates the current environment for this session.
-  setEnv :: Env -> Context -> m ()
+  setEnv :: REPLEnv -> m ()
 
   -- | Handle some input, parsing, typechecking and possibly evaluating it.
   input  :: m In
@@ -57,9 +52,30 @@ class (Monad m) => MonadREPL m where
   -- | Prompt for some input
   prompt :: m ()
 
+
+-- | REPL state
+data REPLEnv = REPLEnv { rho           :: Env
+                       , gamma         :: Context
+                       , curIndent     :: Int
+                       , stepTypeCheck :: Bool
+                       , debugParser   :: Bool
+                       }
+
+initialREPL :: REPLEnv
+initialREPL = REPLEnv EmptyEnv EmptyContext 0 False False
+
 -- | Input
 data In = EOF
         | In Text
+        | Com Command
+        -- ^A REPL command
+
+data Command = ClearEnv
+             | DumpEnv
+             | Set Flag
+
+data Flag = StepTypeChecker Bool
+          | DebugParser Bool
 
 -- | Run a REPL session
 runREPL
@@ -70,54 +86,65 @@ runREPL = go
       prompt
       raw <- input
       case raw of
-        EOF -> output "Bye!"
-        In txt ->
-          case runParser single_decl (ParserState False) "" (unpack txt) of
-            Right dec -> do
-              let
-                (sym, typ) = case dec of
-                               Decl b t _  -> (b,t)
-                               RDecl b t _ -> (b,t)
-              (ρ, γ) <- getEnv
-              (do
-                  γ' <- checkD 0 dec ρ γ
-                  let ρ' = extend dec ρ
-                  setEnv ρ' γ'
-                  output (renderStrict $ layoutPretty defaultLayoutOptions $ "defined " <> pretty sym <> " : " <> pretty typ))
-                `catch` \ (TypingError err) -> output err
-              go
-            Left _ ->
-              case runParser expr (ParserState False) "" (unpack txt) of
-                Left err   -> output (pack $ show err) >> go
-                Right e -> do
-                  (ρ, γ) <- getEnv
-                  (do
-                      t <- checkI 0 e ρ γ
-                      let v = eval e ρ
-                      output (renderStrict $ layoutPretty defaultLayoutOptions $ (pretty v <> "::" <> pretty t)))
-                    `catch` \ (TypingError err) -> output err
-                  go
+        EOF     -> output "Bye!"
+        In txt  -> handleUserInput txt >> go
+        Com cmd -> handleCommand cmd >> go
 
+handleUserInput
+  :: (TypeChecker m, MonadCatch m, MonadREPL m)
+  => Text -> m ()
+handleUserInput txt =
+  case runParser single_decl (ParserState False) "" (unpack txt) of
+    Right dec -> do
+      let
+        (sym, typ) = case dec of
+                       Decl b t _  -> (b,t)
+                       RDecl b t _ -> (b,t)
+      e@REPLEnv{rho=ρ,gamma=γ} <- getEnv
+      (do
+          γ' <- checkD 0 dec ρ γ
+          let ρ' = extend dec ρ
+          setEnv (e { rho = ρ', gamma = γ' })
+          output (renderStrict $ layoutPretty defaultLayoutOptions $ "defined " <> pretty sym <> " : " <> pretty typ))
+        `catch` \ (TypingError err) -> output err
+    Left _ ->
+      case runParser expr (ParserState False) "" (unpack txt) of
+        Left err   -> output (pack $ show err)
+        Right e -> do
+          REPLEnv{rho=ρ,gamma=γ} <- getEnv
+          (do
+              t <- checkI 0 e ρ γ
+              let v = eval e ρ
+              output (renderStrict $ layoutPretty defaultLayoutOptions $ (pretty v <> "::" <> pretty t)))
+            `catch` \ (TypingError err) -> output err
+
+handleCommand
+  :: (TypeChecker m, MonadCatch m, MonadREPL m)
+  => Command -> m ()
+handleCommand ClearEnv = getEnv >>= \e -> setEnv (e { rho = EmptyEnv, gamma =  EmptyContext })
+handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
+  output (renderStrict $ layoutPretty defaultLayoutOptions $ "Environment: " <> pretty rho)
+  output (renderStrict $ layoutPretty defaultLayoutOptions $ "Context: " <> pretty gamma)
+handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
+handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 
 
 -- * IO REPL
 
-data REPLEnv = REPLEnv { inputHandle  :: Handle
-                       , outputHandle :: Handle
-                       , rho          :: Env
-                       , gamma        :: Context
-                       }
+data IOEnv = IOEnv { inputHandle  :: Handle
+                   , outputHandle :: Handle
+                   , repl         :: REPLEnv
+                   }
 
-newtype CONSOLE m a = CONSOLE { runConsole :: StateT REPLEnv m a }
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadState REPLEnv)
+newtype CONSOLE m a = CONSOLE { runConsole :: StateT IOEnv m a }
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadState IOEnv)
 
 instance MonadREPL (CONSOLE IO) where
-  input      = get >>= lift . (\ h -> (In <$> hGetLine h) `catch` \ (isEOFError -> True) -> pure EOF) . inputHandle
-  output a   = get >>= lift . flip hPutStrLn a . outputHandle
-  prompt     = get >>= lift . (\ h -> hPutStr h "λΠ> " >> hFlush h) . outputHandle
-  clear      = modify $ \ e  -> e { rho = EmptyEnv, gamma = EmptyContext }
-  getEnv     = get >>= pure . (rho &&& gamma)
-  setEnv ρ γ = modify $ \ e -> e { rho = ρ, gamma = γ }
+  input     = get >>= lift . (\ h -> (In <$> hGetLine h) `catch` \ (isEOFError -> True) -> pure EOF) . inputHandle
+  output a  = get >>= lift . flip hPutStrLn a . outputHandle
+  prompt    = get >>= lift . (\ h -> hPutStr h "λΠ> " >> hFlush h) . outputHandle
+  getEnv    = get >>= pure . repl
+  setEnv e' = modify $ \ e -> e { repl = e' }
 
 instance (MonadThrow m) => MonadThrow (CONSOLE m)  where
   throwM = lift . throwM
@@ -131,30 +158,24 @@ instance TypeChecker (CONSOLE IO) where
 withHandles
   :: Handle -> Handle -> IO ()
 withHandles hin hout =
-  evalStateT (runConsole runREPL) (REPLEnv hin hout EmptyEnv EmptyContext)
+  evalStateT (runConsole runREPL) (IOEnv hin hout initialREPL)
 
 -- * Haskeline REPL
 
-data ConsoleEnv = ConsoleEnv { rho'          :: Env
-                             , gamma'        :: Context
-                             , curIndent     :: Int
-                             , stepTypeCheck :: Bool
-                             }
 
-newtype Haskeline a = Haskeline { runHaskeline :: StateT ConsoleEnv (InputT IO) a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadState ConsoleEnv)
+newtype Haskeline a = Haskeline { runHaskeline :: StateT REPLEnv (InputT IO) a }
+  deriving (Functor, Applicative, Monad, MonadIO, MonadState REPLEnv)
 
 hoist :: InputT IO a -> Haskeline a
 hoist m = Haskeline $ StateT $ \ s -> m >>= \ a -> pure (a,s)
 
 instance MonadREPL Haskeline where
-  input      = maybe EOF (In . pack) <$> hoist (getInputLineWithInitial "λΠ> " ("",""))
-  output     = hoist . outputStrLn . unpack
-  prompt     = pure ()
+  input  = maybe EOF (In . pack) <$> hoist (getInputLineWithInitial "λΠ> " ("",""))
+  output = hoist . outputStrLn . unpack
+  prompt = pure ()
 
-  clear      = modify $ \ e  -> e { rho' = EmptyEnv, gamma' = EmptyContext }
-  getEnv     = get >>= pure . (rho' &&& gamma')
-  setEnv ρ γ = modify $ \ e -> e { rho' = ρ, gamma' = γ }
+  getEnv = get
+  setEnv = put
 
 instance MonadThrow (InputT IO) where
   throwM = Exc.throwIO
@@ -172,8 +193,8 @@ instance TypeChecker Haskeline where
   emit e = get >>= hoist . (printE e) >>= put
 
 printE
-  :: Event -> ConsoleEnv -> InputT IO ConsoleEnv
-printE e env@ConsoleEnv{..} =
+  :: Event -> REPLEnv -> InputT IO REPLEnv
+printE e env@REPLEnv{..} =
   let
     prefix depth = replicate (2 * depth) ' ' <> display e
     doPrint depth = void (getInputLineWithInitial (prefix depth) ("", ""))
@@ -193,7 +214,7 @@ printE e env@ConsoleEnv{..} =
 
 withTerminal :: IO ()
 withTerminal =
-  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) (ConsoleEnv EmptyEnv EmptyContext 0 False)
+  runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) initialREPL
   where
     settings = defaultSettings { historyFile = Just "~/.minilang.history" }
 
@@ -201,8 +222,7 @@ withTerminal =
 
 data PureEnv = PureEnv { inputText  :: [Text]
                        , outputText :: [Text]
-                       , env        :: Env
-                       , context    :: Context
+                       , pureREPL   :: REPLEnv
                        }
 
 newtype PureREPL a = PureREPL { runPure :: CatchT (State PureEnv) a }
@@ -215,11 +235,10 @@ instance MonadREPL PureREPL where
       []     -> pure EOF
       (t:ts) -> modify (\ e -> e { inputText = ts }) >> pure (In t)
 
-  output t = modify $ \ e -> e { outputText = t : outputText e }
-  prompt     = pure ()
-  clear      = modify $ \ e  -> e { env = EmptyEnv, context = EmptyContext }
-  getEnv     = get >>= pure . (env &&& context)
-  setEnv ρ γ = modify $ \ e -> e { env = ρ, context = γ }
+  output t  = modify $ \ e -> e { outputText = t : outputText e }
+  prompt    = pure ()
+  getEnv    = get >>= pure . pureREPL
+  setEnv e' = modify $ \ e -> e { pureREPL = e' }
 
 
 instance MonadThrow PureREPL where
@@ -231,4 +250,4 @@ instance TypeChecker PureREPL where
 withInput
   :: [Text] -> [Text]
 withInput stream =
-  outputText $ execState (runCatchT (runPure runREPL)) (PureEnv stream [] EmptyEnv EmptyContext)
+  outputText $ execState (runCatchT (runPure runREPL)) (PureEnv stream [] initialREPL)

@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
@@ -93,25 +94,24 @@ runREPL = go
 handleUserInput
   :: (TypeChecker m, MonadCatch m, MonadREPL m)
   => Text -> m ()
-handleUserInput txt =
-  case runParser single_decl (ParserState False) "" (unpack txt) of
+handleUserInput txt = do
+  env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+  case runParser single_decl (ParserState debugParser) "" (unpack txt) of
     Right dec -> do
       let
         (sym, typ) = case dec of
                        Decl b t _  -> (b,t)
                        RDecl b t _ -> (b,t)
-      e@REPLEnv{rho=ρ,gamma=γ} <- getEnv
       (do
           γ' <- checkD 0 dec ρ γ
           let ρ' = extend dec ρ
-          setEnv (e { rho = ρ', gamma = γ' })
+          setEnv (env { rho = ρ', gamma = γ' })
           output (renderStrict $ layoutPretty defaultLayoutOptions $ "defined " <> pretty sym <> " : " <> pretty typ))
         `catch` \ (TypingError err) -> output err
     Left _ ->
-      case runParser expr (ParserState False) "" (unpack txt) of
+      case runParser expr (ParserState debugParser) "" (unpack txt) of
         Left err   -> output (pack $ show err)
         Right e -> do
-          REPLEnv{rho=ρ,gamma=γ} <- getEnv
           (do
               t <- checkI 0 e ρ γ
               let v = eval e ρ
@@ -170,12 +170,30 @@ hoist :: InputT IO a -> Haskeline a
 hoist m = Haskeline $ StateT $ \ s -> m >>= \ a -> pure (a,s)
 
 instance MonadREPL Haskeline where
-  input  = maybe EOF (In . pack) <$> hoist (getInputLineWithInitial "λΠ> " ("",""))
+  input  = do
+    i <- hoist (getInputLineWithInitial "λΠ> " ("",""))
+    case i of
+      Nothing          -> pure EOF
+      Just (pack -> t) -> pure $ interpret t
   output = hoist . outputStrLn . unpack
   prompt = pure ()
 
   getEnv = get
   setEnv = put
+
+interpret
+  :: Text -> In
+interpret ":q"           = EOF
+interpret ":quit"        = EOF
+interpret ":e"           = Com DumpEnv
+interpret ":env"         = Com DumpEnv
+interpret ":c"           = Com ClearEnv
+interpret ":clear"       = Com ClearEnv
+interpret ":set step"    = Com $ Set $ StepTypeChecker True
+interpret ":unset step"  = Com $ Set $ StepTypeChecker False
+interpret ":set debug"   = Com $ Set $ DebugParser True
+interpret ":unset debug" = Com $ Set $ DebugParser False
+interpret t              = In t
 
 instance MonadThrow (InputT IO) where
   throwM = Exc.throwIO

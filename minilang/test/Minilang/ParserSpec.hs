@@ -95,6 +95,12 @@ spec = parallel $ describe "Minilang Core" $ do
       parseDecl "Bool : U = Sum (true | false)"
         `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One])
 
+    it "parses some declaration" $ do
+      parseProgram False "x : Unit -> [] = fun (tt -> ());()"
+        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+                        (Case [ Choice "tt" (Abs Wildcard Unit)])
+                       ) Unit
+
     it "parses Bool elimination" $ do
       parseDecl "elimBool : Π C : Bool → U . C false → C true → Π b : Bool . C b  = λ C . λ h0 . λ h1 . fun (true → h1 | false → h0)"
         `shouldBe` Decl (B "elimBool")

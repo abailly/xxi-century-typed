@@ -49,16 +49,7 @@ class Displayable e where
 
 -- | Basic event output to IO
 instance TypeChecker IO where
-  emit (CheckD e) = printEvent e
-  emit (CheckT e) = printEvent e
-  emit (Check e)  = printEvent e
-  emit (CheckI e) = printEvent e
-
-printEvent
-  :: (HasLevel e, Displayable e, Show e)
-  => e -> IO ()
-printEvent e = let lvl = getLevel e
-               in  putStr (concat $ replicate lvl " ") >> putStrLn (display e)
+  emit _ = pure ()
 
 -- * Typing Context
 

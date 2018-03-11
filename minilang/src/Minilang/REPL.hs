@@ -72,7 +72,7 @@ runREPL = go
       case raw of
         EOF -> output "Bye!"
         In txt ->
-          case runParser single_decl () "" (unpack txt) of
+          case runParser single_decl (ParserState False) "" (unpack txt) of
             Right dec -> do
               let
                 (sym, typ) = case dec of
@@ -87,7 +87,7 @@ runREPL = go
                 `catch` \ (TypingError err) -> output err
               go
             Left _ ->
-              case runParser expr () "" (unpack txt) of
+              case runParser expr (ParserState False) "" (unpack txt) of
                 Left err   -> output (pack $ show err) >> go
                 Right e -> do
                   (ρ, γ) <- getEnv

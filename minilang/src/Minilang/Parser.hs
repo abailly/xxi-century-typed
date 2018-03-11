@@ -3,7 +3,9 @@ module Minilang.Parser where
 import           Data.Either           (fromRight)
 import           Data.Functor          (void)
 import           Data.Functor.Identity (Identity)
+import           Data.Monoid           ((<>))
 import           Data.Text             (Text, pack, unpack)
+import qualified Debug.Trace
 import           GHC.Generics          (Generic)
 import           Prelude               hiding (pi, sum)
 import           Text.Parsec
@@ -55,27 +57,38 @@ choose [] _ = Nothing
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
 parseProgram
-  :: Text -> AST
-parseProgram =
+  :: Bool -> Text -> AST
+parseProgram False =
   doParse (expr <* eof)
+parseProgram True =
+  debugParse (expr <* eof)
 
 parseDecl
   :: Text -> Decl
 parseDecl input =
-  fromRight (Decl Wildcard Unit Unit) $ runParser (single_decl <* eof) () "" (unpack input)
+  fromRight (Decl Wildcard Unit Unit) $ runParser (single_decl <* eof) (ParserState False) "" (unpack input)
 
 doParse
   :: MLParser AST -> Text -> AST
 doParse parser input =
-  either Err id $ runParser parser () "" (unpack input)
+  either Err id $ runParser parser (ParserState False) "" (unpack input)
+
+debugParse
+  :: MLParser AST -> Text -> AST
+debugParse parser input =
+  either Err id $ runParser parser (ParserState True) "" (unpack input)
 
 -- * Parser
 
-type MLParser a = Parsec String () a
+data ParserState = ParserState { debugParser :: Bool }
+  deriving (Eq, Show)
+
+type MLParser a = Parsec String ParserState a
 
 expr
     :: MLParser AST
-expr = (try def <?> "declaration")
+expr = debug "expr:" (
+       (try def <?> "declaration")
   <|> (abstraction <?> "abstraction")
   <|> (dependent_product <?> "dependent product")
   <|> (dependent_sum  <?> "dependent sum")
@@ -87,48 +100,55 @@ expr = (try def <?> "declaration")
   <|> (ctor_expr <?> "constructor")
   <|> try application
   <|> (try term  <?> "term")
-  <?> "expression"
+  <?> "expression")
+
+debug :: String -> MLParser a -> MLParser a
+debug lbl act = do
+  isDebug <- debugParser <$> getState
+  if isDebug
+    then getInput >>= \ s -> Debug.Trace.trace (lbl <> " :: " <> take 15 s <> (if length s > 15 then " ..." else "")) act
+    else act
 
 def
   :: MLParser AST
-def = Def <$> single_decl <*> (scolon *> expr)
+def = debug "definition" $ Def <$> single_decl <*> (scolon *> expr)
 
 single_decl
   :: MLParser Decl
-single_decl = (rec_decl <|> decl)
+single_decl = debug "declaration" $ (rec_decl <|> decl)
 
 rec_decl
   :: MLParser Decl
-rec_decl = recur >> RDecl <$> binding <*> (colon *> expr) <*> (equal *> expr)
+rec_decl = debug "recursive declaration" $ ((recur >> RDecl <$> binding <*> (colon *> expr) <*> (equal *> expr)) <?> "recursive declaration")
 
 decl
   :: MLParser Decl
-decl = Decl <$> binding <*> (colon *> expr) <*> (equal *> expr)
+decl = debug "simple declaration" $ ((Decl <$> binding <*> (colon *> expr) <*> (equal *> expr)) <?> "declaration")
 
 term
   :: MLParser AST
-term = (number  <?> "number")
+term = debug "term" ((number  <?> "number")
    <|> (try unit  <?> "unit")
    <|> (try one  <?> "one")
    <|> (try ctor  <?> "ctor")
    <|> (variable <?> "identifier")
-   <|> (lpar *> expr <* rpar <?> "subexpression")
+   <|> (lpar *> expr <* rpar <?> "subexpression"))
 
 dependent_product
   :: MLParser AST
-dependent_product = pi >> (Pi <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_product = debug "dependent product" $ pi >> (Pi <$> binding <*> (colon *> expr) <*> (dot *> expr))
 
 dependent_sum
   :: MLParser AST
-dependent_sum = sigma >> (Sigma <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_sum = debug "dependent sum" $ sigma >> (Sigma <$> binding <*> (colon *> expr) <*> (dot *> expr))
 
 abstraction
   :: MLParser AST
-abstraction = lambda >> (Abs <$> binding <*> (dot *> expr))
+abstraction = debug "abstraction" $ lambda >> (Abs <$> binding <*> (dot *> expr))
 
 fun_type
   :: MLParser AST
-fun_type = do
+fun_type = debug "function type" $ do
   l <- try application <|> term
   r <- (rarrow *> expr <?> "right-hand side of function type")
 
@@ -136,20 +156,20 @@ fun_type = do
 
 ctor_expr
   :: MLParser AST
-ctor_expr = do
+ctor_expr = debug "constructor" $ do
   Ctor c _ <- ctor
   e <- option Unit expr
   pure $ Ctor c e
 
 application
   :: MLParser AST
-application = (do
+application = debug "application" $ ((do
   l    <- term
   r:rs <- many1 term
   pure $
     case l of
       Ctor n _ -> Ctor n r
-      _        -> app l (r:rs)) <?> "application"
+      _        -> app l (r:rs)) <?> "application")
   where
     app l []     = l
     app l [r]    = Ap l r
@@ -186,16 +206,16 @@ pair = (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
 
 binding
   :: MLParser Binding
-binding = (string "_" >> spaces *> pure Wildcard <?> "wildcard")
+binding = debug "binding" ((string "_" >> spaces *> pure Wildcard <?> "wildcard")
   <|> (B <$> identifier <?> "variable")
   <|> (C <$> number <?> "constant")
   <|> (lpar *> (Pat <$> binding <*> (comma *> binding)) <* rpar <?> "pattern")
-  <?> "binding"
+  <?> "binding")
 
 -- * Lexer
 
 lexer
-  :: Tokens.GenTokenParser String () Identity
+  :: Tokens.GenTokenParser String ParserState Identity
 lexer = Tokens.makeTokenParser haskellDef
 
 number, variable, unit, ctor, one
@@ -209,14 +229,14 @@ variable = try $ do
     "U"   -> pure U
     other -> pure $ Var other
 
-unit   = string "()" *> pure Unit <?> "unit"
+unit   = string "()" >> spaces *> pure Unit <?> "unit"
 
-one = string "[]" *> pure One <?>  "One"
+one = string "[]" >> spaces *> pure One <?>  "One"
 
 ctor = char '$' >> Ctor <$> identifier <*> pure Unit
 
 identifier :: MLParser Text
-identifier = do
+identifier = debug "identifier" $ do
   i <- pack <$> ident <* spaces
   if isReserved i
     then fail (unpack i ++ " is a keyword")

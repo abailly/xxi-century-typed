@@ -33,7 +33,7 @@ instance Pretty AST where
   pretty (P1 e)            = "π1." <> pretty e
   pretty (P2 e)            = "π2." <> pretty e
   pretty (Def d e)         = pretty d <+> ";" <> hardline <> pretty e
-  pretty (Err _)           = undefined
+  pretty (Err t)           = pretty (show t)
 
 instance Pretty Decl where
   pretty (Decl p t e)  = pretty p <+> ":" <+> pretty t <+> "=" <+> pretty e

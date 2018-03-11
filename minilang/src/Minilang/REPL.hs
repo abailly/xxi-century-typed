@@ -15,7 +15,7 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans                     (lift)
 import           Data.Text                               hiding (replicate)
-import           Data.Text.IO
+import           Data.Text.IO                            as Text
 import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
 import           Minilang.Eval                           hiding (rho)
@@ -53,6 +53,8 @@ class (Monad m) => MonadREPL m where
   -- | Prompt for some input
   prompt :: m ()
 
+  -- | Read given file
+  load :: FilePath -> m Text
 
 -- | REPL state
 data REPLEnv = REPLEnv { rho           :: Env
@@ -74,6 +76,7 @@ data In = EOF
 data Command = ClearEnv
              | DumpEnv
              | Set Flag
+             | Load FilePath
 
 data Flag = StepTypeChecker Bool
           | DebugParser Bool
@@ -125,6 +128,20 @@ handleCommand ClearEnv = getEnv >>= \e -> setEnv (e { rho = EmptyEnv, gamma =  E
 handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
   output (renderStrict $ layoutPretty defaultLayoutOptions $ "Environment: " <> pretty rho)
   output (renderStrict $ layoutPretty defaultLayoutOptions $ "Context: " <> pretty gamma)
+handleCommand (Load file) = do
+  t <- load file
+  env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+  case runParser program (ParserState debugParser) "" (unpack t) of
+    Left err   -> output (pack $ show err)
+    Right e -> do
+      (do
+          (ρ',γ') <- loadProgram e ρ γ
+          setEnv (env { rho = ρ', gamma = γ' }))
+        `catch` \ (TypingError err) -> output err
+
+
+
+
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 
@@ -145,6 +162,7 @@ instance MonadREPL (CONSOLE IO) where
   prompt    = get >>= lift . (\ h -> hPutStr h "λΠ> " >> hFlush h) . outputHandle
   getEnv    = get >>= pure . repl
   setEnv e' = modify $ \ e -> e { repl = e' }
+  load      = lift . Text.readFile
 
 instance (MonadThrow m) => MonadThrow (CONSOLE m)  where
   throwM = lift . throwM
@@ -177,23 +195,26 @@ instance MonadREPL Haskeline where
       Just (pack -> t) -> pure $ interpret t
   output = hoist . outputStrLn . unpack
   prompt = pure ()
+  load   = hoist . lift . Text.readFile
 
   getEnv = get
   setEnv = put
 
 interpret
   :: Text -> In
-interpret ":q"           = EOF
-interpret ":quit"        = EOF
-interpret ":e"           = Com DumpEnv
-interpret ":env"         = Com DumpEnv
-interpret ":c"           = Com ClearEnv
-interpret ":clear"       = Com ClearEnv
-interpret ":set step"    = Com $ Set $ StepTypeChecker True
-interpret ":unset step"  = Com $ Set $ StepTypeChecker False
-interpret ":set debug"   = Com $ Set $ DebugParser True
-interpret ":unset debug" = Com $ Set $ DebugParser False
-interpret t              = In t
+interpret ":q"                        = EOF
+interpret ":quit"                     = EOF
+interpret ":e"                        = Com DumpEnv
+interpret ":env"                      = Com DumpEnv
+interpret ":c"                        = Com ClearEnv
+interpret ":clear"                    = Com ClearEnv
+interpret ":set step"                 = Com $ Set $ StepTypeChecker True
+interpret ":unset step"               = Com $ Set $ StepTypeChecker False
+interpret ":set debug"                = Com $ Set $ DebugParser True
+interpret ":unset debug"              = Com $ Set $ DebugParser False
+interpret (unpack -> (':':'l':' ':file)) = Com $ Load file
+interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load file
+interpret t                           = In t
 
 instance MonadThrow (InputT IO) where
   throwM = Exc.throwIO
@@ -257,7 +278,7 @@ instance MonadREPL PureREPL where
   prompt    = pure ()
   getEnv    = get >>= pure . pureREPL
   setEnv e' = modify $ \ e -> e { pureREPL = e' }
-
+  load      = undefined
 
 instance MonadThrow PureREPL where
   throwM e = throw e

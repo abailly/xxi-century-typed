@@ -341,3 +341,20 @@ checkI l a@(Ap m n) ρ γ = do
 
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
+
+
+-- * Programs
+
+-- | Top-level evaluator
+-- Load an AST into given `Env` and `Context`, returning an extended
+-- `Env` and `Context` with declarations bound
+loadProgram
+  :: (TypeChecker tc)
+  => AST -> Env -> Context -> tc (Env, Context)
+loadProgram (Def d r) ρ γ = do
+  γ' <- checkD 0 d ρ γ
+  let ρ' = extend d ρ
+  loadProgram r ρ' γ'
+loadProgram e ρ γ = do
+  check 0 e EOne ρ γ
+  pure (ρ,γ)

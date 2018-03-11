@@ -59,9 +59,9 @@ choose [] _ = Nothing
 parseProgram
   :: Bool -> Text -> AST
 parseProgram False =
-  doParse (expr <* eof)
+  doParse program
 parseProgram True =
-  debugParse (expr <* eof)
+  debugParse program
 
 parseDecl
   :: Text -> Decl
@@ -84,6 +84,10 @@ data ParserState = ParserState { debugParser :: Bool }
   deriving (Eq, Show)
 
 type MLParser a = Parsec String ParserState a
+
+program
+  :: MLParser AST
+program = expr <* eof
 
 expr
     :: MLParser AST

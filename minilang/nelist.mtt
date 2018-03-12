@@ -1,0 +1,7 @@
+rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A));
+elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a)) -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b =
+           λ A . λ  C . λ  h0 . λ h1 . fun (S a -> h0 a | C a -> h1 a) ;
+
+select : NEList Bool -> U = fun (S _ -> Unit | C _ -> Unit);
+
+elimNEList Bool select (λ _ . $tt) (λ _. $tt) ($S $true)

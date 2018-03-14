@@ -99,43 +99,44 @@ spec = parallel $ describe "Type Checker" $ do
 
       -- TODO following tests are failing due to unknown issue in type checker algorithm
 
-      -- it "Check Unit and unitElim" $ do
-      --   check 0 (Def
-      --             (Decl (B "Unit") U (Sum [Choice "tt" One]))
-      --             (Def
-      --               (Decl (B "elimUnit")
-      --                 (Pi (B "C") (Pi Wildcard (Var "Unit") U)
-      --                   (Pi Wildcard (Ap (Var "C") (Ctor "tt" Unit))
-      --                     (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))))
-      --                 (Abs (B "C")
-      --                   (Abs (B "h")
-      --                     (Case [Choice "tt" (Abs Wildcard (Var "h"))]))))
-      --               Unit))
-      --     EUnit
-      --     EmptyEnv
-      --     EmptyContext
-      --     `catch` \ ex@(TypingError e) -> putStrLn (unpack e) >> throw ex
-      -- it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
-      --   check 0 (Def
-      --             (Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One]))
-      --             (Def (Decl (B "elimBool")
-      --                    (Pi (B "C")
-      --                      (Pi Wildcard (Var "Bool") U)
-      --                      (Pi Wildcard
-      --                        (Ap (Var "C") (Ctor "false" Unit))
-      --                        (Pi Wildcard
-      --                          (Ap (Var "C") (Ctor "true" Unit))
-      --                          (Pi (B "b") (Var "Bool")
-      --                            (Ap (Var "C") (Var "b"))))))
-      --                    (Abs (B "C")
-      --                      (Abs (B "h0")
-      --                        (Abs (B "h1")
-      --                          (Case [ Choice "true" (Abs Wildcard (Var "h1"))
-      --                                , Choice "false" (Abs Wildcard (Var "h0"))])))))
-      --               (Ap (Var "elimbool") (Ctor "false" Unit))))
-      --     EUnit
-      --     EmptyEnv EmptyContext
-      --     `catch` \ (TypingError e) -> putStrLn (unpack e)
+      it "Check Unit and unitElim" $ do
+        check 0 (Def
+                  (Decl (B "Unit") U (Sum [Choice "tt" Nothing]))
+                  (Def
+                    (Decl (B "elimUnit")
+                      (Pi (B "C") (Pi Wildcard (Var "Unit") U)
+                        (Pi Wildcard (Ap (Var "C") (Ctor "tt" Nothing))
+                          (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))))
+                      (Abs (B "C")
+                        (Abs (B "h")
+                          (Case [Clause "tt" (Abs Wildcard (Var "h"))]))))
+                    Unit))
+          EUnit
+          EmptyEnv
+          EmptyContext
+          `shouldReturn` ()
+
+      it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
+        check 0 (Def
+                  (Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing]))
+                  (Def (Decl (B "elimBool")
+                         (Pi (B "C")
+                           (Pi Wildcard (Var "Bool") U)
+                           (Pi Wildcard
+                             (Ap (Var "C") (Ctor "false" Nothing))
+                             (Pi Wildcard
+                               (Ap (Var "C") (Ctor "true" Nothing))
+                               (Pi (B "b") (Var "Bool")
+                                 (Ap (Var "C") (Var "b"))))))
+                         (Abs (B "C")
+                           (Abs (B "h0")
+                             (Abs (B "h1")
+                               (Case [ Clause "true" (Abs Wildcard (Var "h1"))
+                                     , Clause "false" (Abs Wildcard (Var "h0"))])))))
+                    (Ap (Var "elimbool") (Ctor "false" Nothing))))
+          EUnit
+          EmptyEnv EmptyContext
+          `shouldReturn` ()
 
       -- it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
       --   check 0 (Def

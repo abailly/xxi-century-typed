@@ -215,6 +215,12 @@ check l a@(Ctor c_i (Just m)) t@(ESum (c, ν)) ρ γ = do
     Just (Choice _ (Just a_i)) -> do
       check l m (eval a_i ν) ρ γ
       checkedHasType a t l ρ γ
+    _             -> throwM $ typingError ("invalid ctor " <> show c_i <> " among " <> show c <> " while expecting type " <> show (pretty t) )
+
+check l a@(Ctor c_i Nothing) t@(ESum (c, _)) ρ γ = do
+  checkingHasType a t l ρ γ
+  case choose c c_i of
+    Just (Choice _ Nothing) ->
       checkedHasType a t l ρ γ
     _             -> throwM $ typingError ("invalid ctor " <> show c_i <> " among " <> show c <> " while expecting type " <> show (pretty t) )
 

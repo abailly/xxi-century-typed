@@ -56,24 +56,24 @@ spec = parallel $ describe "Expressions Evaluator" $ do
       `shouldBe` EI 13
 
   it "evaluates Application of a choice to a unary ctor" $ do
-    eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x"))
-                   , Choice "B" (Abs Wildcard (D 13))
+    eval (Ap (Case [ Clause "A" (Abs (B "x") (Var "x"))
+                   , Clause "B" (Abs Wildcard (D 13))
                    ])
-           (Ctor "A" (D 14))) emptyEnv
+           (Ctor "A" (Just $ D 14))) emptyEnv
       `shouldBe` ED 14
 
   it "raises error when evaluates Application of a choice without matching ctor" $ do
-    evaluate (eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x"))
-                             , Choice "B" (Abs Wildcard (D 13))
+    evaluate (eval (Ap (Case [ Clause "A" (Abs (B "x") (Var "x"))
+                             , Clause "B" (Abs Wildcard (D 13))
                              ])
-                     (Ctor "C" (D 14))) emptyEnv)
+                     (Ctor "C" (Just $ D 14))) emptyEnv)
       `shouldThrow` anyException
 
   it "evaluates application of choice to neutral value as neutral" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
-    eval (Ap (Case [ Choice "A" (Abs (B "x") (Var "x")) ])
+    eval (Ap (Case [ Clause "A" (Abs (B "x") (Var "x")) ])
            (Var "x")) extended
-      `shouldBe` ENeut (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+      `shouldBe` ENeut (NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
 
   it "evaluates application of neutral to value as neutral" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
@@ -81,18 +81,18 @@ spec = parallel $ describe "Expressions Evaluator" $ do
       `shouldBe` ENeut (NAp (NV $ NVar  1) (EI 12))
 
   it "evaluates Constructor expression" $ do
-    eval (Ctor "foo" (I 12)) emptyEnv
-      `shouldBe` ECtor "foo" (EI 12)
+    eval (Ctor "foo" (Just $ I 12)) emptyEnv
+      `shouldBe` ECtor "foo" (Just $ EI 12)
 
   it "evaluates case match" $ do
     let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
                    (B "y") (ENeut $ NV $ NVar  2)
 
-    eval (Case [ Choice "foo" (Abs (C $ I 12) (Var "x"))
-               , Choice "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
+    eval (Case [ Clause "foo" (Abs (C $ I 12) (Var "x"))
+               , Clause "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
                ])
-      extended `shouldBe` ECase ([ Choice "foo" (Abs (C $ I 12) (Var "x"))
-                                 , Choice "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
+      extended `shouldBe` ECase ([ Clause "foo" (Abs (C $ I 12) (Var "x"))
+                                 , Clause "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
                                  ]
                                 , extended)
 
@@ -100,8 +100,8 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
                    (B "y") (ENeut $ NV $ NVar  2)
 
-    eval (Sum [ Choice "true" Unit, Choice "false" Unit])
-      extended `shouldBe` ESum ([ Choice "true" Unit, Choice "false" Unit]
+    eval (Sum [ Choice "true" (Just Unit), Choice "false" Nothing])
+      extended `shouldBe` ESum ([ Choice "true" (Just Unit), Choice "false" Nothing]
                                 , extended)
 
   it "evaluates declaration continuation in extended env" $ do
@@ -116,16 +116,16 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Def (RDecl (B "add")
                 (Pi Wildcard (Var "Nat") (Pi Wildcard (Var "Nat") (Var "Nat")))
                 (Abs (B "x")
-                  (Case [ Choice "zero" (Abs Wildcard (Var "x"))
-                        , Choice "succ" (Abs (B "y1")
+                  (Case [ Clause "zero" (Abs Wildcard (Var "x"))
+                        , Clause "succ" (Abs (B "y1")
                                           (Ctor "succ"
-                                            (Ap (Ap (Var "add")
-                                                  (Var "x"))
-                                              (Var "y1"))))
+                                            (Just (Ap (Ap (Var "add")
+                                                       (Var "x"))
+                                                   (Var "y1")))))
                         ])))
            (Ap
              (Ap (Var "add")
-              (Ctor "succ" (Ctor "zero" Unit)))
-             (Ctor "succ" (Ctor "zero" Unit)))
+              (Ctor "succ" (Just (Ctor "zero" (Just Unit)))))
+             (Ctor "succ" (Just $ Ctor "zero" (Just Unit))))
          ) emptyEnv
-      `shouldBe`  ECtor "succ" (ECtor "succ" (ECtor "zero" EUnit))
+      `shouldBe`  ECtor "succ" (Just $ ECtor "succ" (Just $ ECtor "zero" (Just EUnit)))

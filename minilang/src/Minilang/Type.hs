@@ -209,13 +209,14 @@ check
   :: (TypeChecker tc)
   => Int -> AST -> Value -> Env -> Context -> tc ()
 
-check l a@(Ctor c_i m) t@(ESum (c, ν)) ρ γ = do
+check l a@(Ctor c_i (Just m)) t@(ESum (c, ν)) ρ γ = do
   checkingHasType a t l ρ γ
   case choose c c_i of
-    Nothing             -> throwM $ typingError ("invalid ctor " <> show c_i <> " among " <> show c <> " while typing")
-    Just (Choice _ a_i) -> do
+    Just (Choice _ (Just a_i)) -> do
       check l m (eval a_i ν) ρ γ
       checkedHasType a t l ρ γ
+      checkedHasType a t l ρ γ
+    _             -> throwM $ typingError ("invalid ctor " <> show c_i <> " among " <> show c <> " while expecting type " <> show (pretty t) )
 
 check l a@(Pair m n)   ty@(ESig t g)    ρ γ = do
   checkingHasType a ty l ρ γ
@@ -227,19 +228,21 @@ check l Unit     EOne  ρ  γ = checkingHasType Unit EOne l ρ γ >> checkedHasT
 
 check l One      EU    ρ  γ = checkingHasType One EU l ρ γ >> checkedHasType One EU l ρ γ
 
-check l a@(Case cs) ty@(EPi (ESum (cs', ν)) g) ρ γ = do
+check l a@(Case cs) ty@(EPi esum@(ESum (cs', ν)) g) ρ γ = do
   checkingHasType a ty l ρ γ
   when (length cs /= length cs') $
     throwM $ typingError ("number of ctors in case " <> show cs <> " must be same than number in " <> show cs')
-  forM_ (zip cs cs') $ \ (Choice c_i m_i, Choice c_i' a_i) -> do
+  forM_ (zip cs cs') $ \ (Clause c_i m_i, Choice c_i' a_i) -> do
     when (c_i /= c_i') $
       throwM $ typingError ("order of ctors in case must be the same same as in definition, found " <> show c_i <> ", expected " <> show c_i')
-    check l m_i (EPi (eval a_i ν) (ClComp g c_i)) ρ γ
+    case a_i of
+      Just a_i' -> check l m_i (EPi (eval a_i' ν) (ClComp g c_i)) ρ γ
+      Nothing   -> check l m_i (EPi esum (ClComp g c_i)) ρ γ
   checkedHasType a ty l ρ γ
 
 check l e@(Sum cs) EU    ρ  γ = do
   checkingHasType e EU l ρ γ
-  forM_ cs (\ (Choice _ a) -> check l a EU ρ γ)
+  forM_ cs (\ (Choice _ a_i) -> maybe (pure ()) (\ a -> check l a EU ρ γ) a_i)
   checkedHasType e EU l ρ γ
 
 check l e@(Sigma p a b) EU ρ  γ = checkDependent l e p a b ρ γ

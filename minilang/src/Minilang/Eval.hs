@@ -45,15 +45,17 @@ data Value = EU
            | ED Double
            | ENeut Neutral
            | EAbs FunClos
-           | ECtor Name Value
+           | ECtor Name (Maybe Value)
            | EPi Value FunClos
            | ESig Value FunClos
            | EPair Value Value
            | ESum SumClos
-           | ECase SumClos
+           | ECase CaseClos
   deriving (Eq, Show)
 
 type SumClos = ( [ Choice ], Env)
+
+type CaseClos = ( [ Clause ], Env)
 
 data FunClos = Cl Binding AST Env | ClComp FunClos Name
   deriving (Eq, Show)
@@ -64,7 +66,7 @@ newtype NVar = NVar Int
 data Neutral = NV NVar
              | NP1 Neutral
              | NP2 Neutral
-             | NCase SumClos Neutral
+             | NCase CaseClos Neutral
              | NAp Neutral Value
   deriving (Eq, Show)
 
@@ -85,7 +87,7 @@ eval (P1 e)        ρ = p1 (eval e ρ)
 eval (P2 e)        ρ = p2 (eval e ρ)
 eval (Case cs)     ρ = ECase (cs,ρ)
 eval (Sum cs)      ρ = ESum (cs,ρ)
-eval (Ctor n e)    ρ = ECtor n (eval e ρ)
+eval (Ctor n e)    ρ = ECtor n (flip eval ρ <$> e)
 eval (Def d m)     ρ = eval m (extend d ρ)
 eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
 
@@ -93,17 +95,19 @@ eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in 
 app
   :: Value -> Value -> Value
 app (EAbs f@Cl{})     v          = inst f v
-app c@(ECase (cs,ρ)) (ECtor n v) = app (eval m ρ) v
+app c@(ECase (cs,ρ)) (ECtor n v) = maybe m' (app m') v
   where
-    Choice _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $ choose cs n
+    m'         = eval m ρ
+    Clause _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $ branch cs n
 app (ECase s)        (ENeut k)   = ENeut $ NCase s k
 app (ENeut k)        v           = ENeut $ NAp k v
 app l r             = error $ "don't know how to apply " ++ show l ++ " to "++ show r
 
 inst
   :: FunClos -> Value -> Value
-inst (Cl b e ρ)   v = eval e (ExtendPat ρ b v)
-inst (ClComp f c) v = inst f (ECtor c v)
+inst (Cl b e ρ)   v     = eval e (ExtendPat ρ b v)
+inst (ClComp f c) EUnit = inst f (ECtor c Nothing)
+inst (ClComp f c) v     = inst f (ECtor c (Just v))
 
 p1
   :: Value -> Value

@@ -15,8 +15,10 @@ spec = parallel $ describe "Normalizer" $ do
     normalize 0 (ED 12) `shouldBe` ND 12
 
   it "normalizes constructor" $ do
-    normalize 0 (ECtor "foo" EUnit)
-      `shouldBe` NCtor "foo" NUnit
+    normalize 0 (ECtor "foo" (Just EUnit))
+      `shouldBe` NCtor "foo" (Just NUnit)
+    normalize 0 (ECtor "foo" Nothing)
+      `shouldBe` NCtor "foo" Nothing
 
   it "normalizes pairs" $ do
     normalize 0 (EPair EUnit (EI 12))
@@ -39,8 +41,8 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes case neutral application with env" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
 
-    normalize 0 (NCase ([ Choice "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
-      `shouldBe` NNCase ( [Choice "A" (Abs (B "x") (Var "x"))]
+    normalize 0 (NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+      `shouldBe` NNCase ( [Clause "A" (Abs (B "x") (Var "x"))]
                         , NExtendEnv NEmptyEnv (B "x") (NNeut (NNV (NVar 1)))
                         ) (NNV (NVar 1))
 
@@ -60,11 +62,11 @@ spec = parallel $ describe "Normalizer" $ do
       `shouldBe` NSig (NVar 0) NU (NI 12)
 
   it "normalizes Sum definitions" $ do
-    normalize 0 (ESum ([ Choice "true" Unit, Choice "false" Unit]
+    normalize 0 (ESum ([ Choice "true" (Just Unit), Choice "false" Nothing]
                      , emptyEnv))
-      `shouldBe` NSum ([ Choice "true" Unit, Choice "false" Unit], NEmptyEnv)
+      `shouldBe` NSum ([ Choice "true" (Just Unit), Choice "false" Nothing], NEmptyEnv)
 
   it "normalizes Case expressions" $ do
-    normalize 0 (ECase ([ Choice "true" Unit, Choice "false" Unit]
+    normalize 0 (ECase ([ Clause "true" Unit, Clause "false" Unit]
                      , emptyEnv))
-      `shouldBe` NFun ([ Choice "true" Unit, Choice "false" Unit], NEmptyEnv)
+      `shouldBe` NFun ([ Clause "true" Unit, Clause "false" Unit], NEmptyEnv)

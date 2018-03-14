@@ -20,8 +20,8 @@ instance Pretty AST where
   pretty (I n)             = pretty n
   pretty (D d)             = pretty d
   pretty (Abs p e)         = "λ" <+> pretty p <+> "." <+> pretty e
-  pretty (Ctor n Unit)     = "$" <> pretty n
-  pretty (Ctor n e)        = parens ("$" <> pretty n <+> pretty e)
+  pretty (Ctor n Nothing)  = "$" <> pretty n
+  pretty (Ctor n (Just e)) = parens ("$" <> pretty n <+> pretty e)
   pretty (Pi Wildcard t e) = pretty t <+> "→" <+> pretty e
   pretty (Pi p t e)        = "Π" <+> pretty p <+> ":" <+> pretty t <+> "." <+> pretty e
   pretty (Sigma p t e)     = "Σ" <+> pretty p <+> ":" <+> pretty t <+> "." <+> pretty e
@@ -47,13 +47,12 @@ instance Pretty Binding where
 
 
 prettySum :: Choice -> Doc ann
-prettySum (Choice t One) = pretty t
-prettySum (Choice t e)   = pretty t <+> pretty e
+prettySum (Choice t Nothing)  = pretty t
+prettySum (Choice t (Just e)) = pretty t <+> pretty e
 
 
-prettyFun :: Choice -> Doc ann
-prettyFun (Choice t One) = pretty t
-prettyFun (Choice t e)   = pretty t <+> "→" <+> pretty e
+prettyFun :: Clause -> Doc ann
+prettyFun (Clause t e)   = pretty t <+> "→" <+> pretty e
 
 -- ** Values
 
@@ -99,8 +98,8 @@ instance Pretty Normal where
   pretty NOne          = "[]"
   pretty (NI i)        = pretty i
   pretty (ND d)        = pretty d
-  pretty (NCtor n NUnit) = "$" <> pretty n
-  pretty (NCtor n nf)  = parens ("$" <> pretty n <+> pretty nf)
+  pretty (NCtor n Nothing)   = "$" <> pretty n
+  pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)
   pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
   pretty (NFun (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
 

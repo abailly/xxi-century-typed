@@ -19,12 +19,12 @@ data AST = U  -- universe
          | I Integer
          | D Double
          | Abs Binding AST
-         | Ctor Text AST
+         | Ctor Text (Maybe AST)
          | Pi Binding AST AST
          | Sigma Binding AST AST
          | Pair AST AST
          | Sum [ Choice ]
-         | Case [ Choice ]
+         | Case [ Clause ]
          | Var Text
          | Ap AST AST
          | P1 AST
@@ -45,7 +45,10 @@ data Binding = Pat Binding Binding
   deriving (Eq, Show, Generic)
 
 
-data Choice = Choice Text AST
+data Choice = Choice Text (Maybe AST)
+  deriving (Eq, Show, Generic)
+
+data Clause = Clause Text AST
   deriving (Eq, Show, Generic)
 
 choose :: [ Choice ] -> Text -> Maybe Choice
@@ -53,6 +56,12 @@ choose (c@(Choice t _):cs) n
   | t == n    = Just c
   | otherwise = choose cs n
 choose [] _ = Nothing
+
+branch :: [ Clause ] -> Text -> Maybe Clause
+branch (c@(Clause t _):cs) n
+  | t == n    = Just c
+  | otherwise = branch cs n
+branch [] _ = Nothing
 
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
@@ -162,7 +171,7 @@ ctor_expr
   :: MLParser AST
 ctor_expr = debug "constructor" $ do
   Ctor c _ <- ctor
-  e <- option Unit expr
+  e <- optionMaybe expr
   pure $ Ctor c e
 
 application
@@ -170,10 +179,7 @@ application
 application = debug "application" $ ((do
   l    <- term
   r:rs <- many1 term
-  pure $
-    case l of
-      Ctor n _ -> Ctor n r
-      _        -> app l (r:rs)) <?> "application")
+  pure $ app l (r:rs)) <?> "application")
   where
     app l []     = l
     app l [r]    = Ap l r
@@ -189,7 +195,7 @@ labelled_sum
 labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
     ctors = sepBy clause pipe
-    clause = Choice <$> identifier <*> (expr <|> pure One)
+    clause = Choice <$> identifier <*> optionMaybe expr
 
 case_match
   :: MLParser AST
@@ -197,7 +203,7 @@ case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
              <?> "case match"
   where
     ctors = sepBy clause pipe
-    clause = Choice
+    clause = Clause
            <$> identifier
            <*> (Abs
                 <$> (binding <|> pure Wildcard)
@@ -237,7 +243,7 @@ unit   = string "()" >> spaces *> pure Unit <?> "unit"
 
 one = string "[]" >> spaces *> pure One <?>  "One"
 
-ctor = char '$' >> Ctor <$> identifier <*> pure Unit
+ctor = char '$' >> Ctor <$> identifier <*> pure Nothing
 
 identifier :: MLParser Text
 identifier = debug "identifier" $ do

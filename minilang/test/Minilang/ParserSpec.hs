@@ -61,23 +61,23 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "π2.abc" `shouldBe` P2 (Var "abc")
 
     it "parse Constructor application" $ do
-      parseProgram False "$c1 abc" `shouldBe` Ctor "c1" (Var "abc")
+      parseProgram False "$c1 abc" `shouldBe` Ctor "c1" (Just $ Var "abc")
 
     it "parse Pairing" $ do
       parseProgram False "(abc,12)" `shouldBe` Pair (Var "abc") (I 12)
 
     it "parses Constructor w/ Pairing" $ do
-      parseProgram False "$foo (abc,12)" `shouldBe` (Ctor "foo" (Pair (Var "abc") (I 12)))
+      parseProgram False "$foo (abc,12)" `shouldBe` (Ctor "foo" (Just $ Pair (Var "abc") (I 12)))
 
     it "parses Labelled Sum" $ do
-      parseProgram False "Sum(foo []| bar Nat)" `shouldBe` Sum [ Choice "foo" One , Choice "bar" (Var "Nat")]
-      parseProgram False "Sum(foo[]| bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" One , Choice "bar" (Pair (Var "Nat") (Var "Bool"))]
-      parseProgram False "Sum(foo| bar)" `shouldBe` Sum [ Choice "foo" One , Choice "bar" One]
-      parseProgram False "Sum  (  foo  | bar  )" `shouldBe` Sum [ Choice "foo" One , Choice "bar" One]
+      parseProgram False "Sum(foo []| bar Nat)" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Var "Nat")]
+      parseProgram False "Sum(foo[]| bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Pair (Var "Nat") (Var "Bool"))]
+      parseProgram False "Sum(foo| bar)" `shouldBe` Sum [ Choice "foo" Nothing , Choice "bar" Nothing]
+      parseProgram False "Sum  (  foo  | bar  )" `shouldBe` Sum [ Choice "foo" Nothing , Choice "bar" Nothing]
 
     it "parses Case choices" $ do
-      parseProgram False "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (Abs (C $ I 12) (Var "h1")) , Choice "bar" (Abs (B "x") (Var "h2"))]
-      parseProgram False "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Choice "foo" (Abs Wildcard (I 12)) , Choice "bar" (Abs (B "x") (Var "h2"))]
+      parseProgram False "fun (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Clause "foo" (Abs (C $ I 12) (Var "h1")) , Clause "bar" (Abs (B "x") (Var "h2"))]
+      parseProgram False "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
 
     it "parses Pattern" $ do
       parseProgram False "λ (abc, xyz) . abc" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
@@ -93,12 +93,12 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses Bool declaration" $ do
       parseDecl "Bool : U = Sum (true | false)"
-        `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One])
+        `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing])
 
     it "parses some declaration" $ do
       parseProgram False "x : Unit -> [] = fun (tt -> ());()"
         `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
-                        (Case [ Choice "tt" (Abs Wildcard Unit)])
+                        (Case [ Clause "tt" (Abs Wildcard Unit)])
                        ) Unit
 
     it "parses Bool elimination" $ do
@@ -115,12 +115,12 @@ spec = parallel $ describe "Minilang Core" $ do
                    (Abs (B "C")
                      (Abs (B "h0")
                        (Abs (B "h1")
-                         (Case [ Choice "true" (Abs Wildcard (Var "h1"))
-                               , Choice "false" (Abs Wildcard (Var "h0"))]))))
+                         (Case [ Clause "true" (Abs Wildcard (Var "h1"))
+                               , Clause "false" (Abs Wildcard (Var "h0"))]))))
 
     it "parses Nat declaration" $ do
       parseDecl "rec Nat : U = Sum (zero | succ Nat)"
-        `shouldBe` RDecl (B "Nat") U (Sum [Choice "zero" One, Choice "succ" (Var "Nat")])
+        `shouldBe` RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")])
 
     it "parses recursive-inductive universe def" $ do
       parseDecl "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
@@ -128,14 +128,14 @@ spec = parallel $ describe "Minilang Core" $ do
                   (Sigma (B "X") U
                    (Pi Wildcard (Var "X") U))
                   (Pair
-                   (Sum [ Choice "nat" One
-                        , Choice "pi" (Sigma (B "x") (Var "V")
-                                     (Pi Wildcard
-                                      (Ap (Var "T") (Var "x"))
-                                      (Var "V")))
+                   (Sum [ Choice "nat" Nothing
+                        , Choice "pi" (Just $ Sigma (B "x") (Var "V")
+                                       (Pi Wildcard
+                                        (Ap (Var "T") (Var "x"))
+                                        (Var "V")))
                         ])
-                    (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
-                          , Choice "pi" (Abs (Pat (B "x") (B "f"))
+                    (Case [ Clause "nat" (Abs Wildcard (Var "Nat"))
+                          , Clause "pi" (Abs (Pat (B "x") (B "f"))
                                           (Pi (B "y")
                                             (Ap (Var "T") (Var "x"))
                                             (Ap (Var "T")
@@ -149,21 +149,21 @@ spec = parallel $ describe "Minilang Core" $ do
                   (RDecl (B "natrec")
                    (Pi (B "C")
                     (Pi Wildcard (Var "Nat") U)
-                    (Pi Wildcard (Ap (Var "C") (Ctor "zero" Unit))
+                    (Pi Wildcard (Ap (Var "C") (Ctor "zero" Nothing))
                      (Pi Wildcard
                       (Pi (B "n")
                        (Var "Nat")
                        (Pi Wildcard (Ap (Var "C") (Var "n"))
                         (Ap (Var "C")
-                         (Ctor "succ" (Var "n")))))
+                         (Ctor "succ" (Just $ Var "n")))))
                        (Pi (B "n")
                         (Var "Nat")
                         (Ap (Var "C") (Var "n"))))))
                     (Abs (B "C")
                      (Abs (B "a")
                       (Abs (B "g")
-                       (Case [Choice "zero" (Abs Wildcard (Var "a"))
-                             ,Choice "succ" (Abs (B "n1")
+                       (Case [Clause "zero" (Abs Wildcard (Var "a"))
+                             ,Clause "succ" (Abs (B "n1")
                                              (Ap (Ap (Var "g") (Var "n1"))
                                                (Ap (Ap (Ap (Ap (Var "natrec")
                                                             (Var "C"))
@@ -174,7 +174,7 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses a program" $ do
       parseProgram False "rec Nat : U = Sum (zero | succ Nat) ;\nid : Π A : U . Π _ : A . A = λ A . λ x . x; ()"
-        `shouldBe` (Def (RDecl (B "Nat") U (Sum [Choice "zero" One,Choice "succ" (Var "Nat")]))
+        `shouldBe` (Def (RDecl (B "Nat") U (Sum [Choice "zero" Nothing,Choice "succ" (Just $ Var "Nat")]))
                     (Def (Decl (B "id")
                            (Pi (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                            (Abs (B "A") (Abs (B "x") (Var "x"))))
@@ -182,7 +182,13 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "" $ do
       parseProgram False "Unit : U = Sum (tt); elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . fun (tt -> h); ()"
-        `shouldBe` (Def (Decl (B "Unit") U (Sum [Choice "tt" One])) (Def (Decl (B "elimUnit") (Pi (B "C") (Pi Wildcard (Var "Unit") U) (Pi Wildcard (Ap (Var "C") (Ctor "tt" Unit)) (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x"))))) (Abs (B "C") (Abs (B "h") (Case [Choice "tt" (Abs Wildcard (Var "h"))])))) Unit))
+        `shouldBe` (Def (Decl (B "Unit") U
+                         (Sum [Choice "tt" Nothing]))
+                     (Def (Decl (B "elimUnit")
+                            (Pi (B "C") (Pi Wildcard (Var "Unit") U)
+                              (Pi Wildcard (Ap (Var "C") (Ctor "tt" Nothing))
+                                (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))))
+                            (Abs (B "C") (Abs (B "h") (Case [Clause "tt" (Abs Wildcard (Var "h"))])))) Unit))
 
   describe "Pretty-printing Expressions" $ do
 

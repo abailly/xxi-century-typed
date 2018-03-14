@@ -13,18 +13,20 @@ data Normal = NAbs NVar Normal
             | NOne
             | NI Integer
             | ND Double
-            | NCtor Name Normal
+            | NCtor Name (Maybe Normal)
             | NSum NSumClos
-            | NFun NSumClos
+            | NFun NCaseClos
   deriving (Eq, Show)
 
 type NSumClos = ( [ Choice ], NEnv)
+
+type NCaseClos = ( [ Clause ], NEnv)
 
 data NNeutral = NNV NVar
               | NNAp NNeutral Normal
               | NNPi1 NNeutral
               | NNPi2 NNeutral
-              | NNCase NSumClos NNeutral
+              | NNCase NCaseClos NNeutral
   deriving (Eq,Show)
 
 data NEnv = NEmptyEnv
@@ -41,7 +43,7 @@ instance Normalize Value Normal where
   normalize _ EU          = NU
   normalize _ (EI i)      = NI i
   normalize _ (ED d)      = ND d
-  normalize n (ECtor c e) = NCtor c (normalize n e)
+  normalize n (ECtor c e) = NCtor c (normalize n <$> e)
   normalize n (EPair u v) = NPair (normalize n u) (normalize n v)
   normalize n (EAbs clos) = NAbs x_n (normalize (n+1) $ inst clos (ENeut $ NV x_n))
     where

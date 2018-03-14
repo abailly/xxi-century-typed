@@ -46,20 +46,20 @@ spec = parallel $ describe "Type Checker" $ do
     describe "Check a declaration is correct" $ do
 
       it "checks a recursive declaration is correct given env and empty context" $ do
-        γ  <- checkD 0 (RDecl (B "Nat") U (Sum [Choice "zero" One, Choice "succ" (Var "Nat")]))
+        γ  <- checkD 0 (RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
                EmptyEnv EmptyContext
         γ' <- checkD 0 (RDecl (Pat (B "V") (B "T"))
                          (Sigma (B "X") U
                           (Pi Wildcard (Var "X") U))
                          (Pair
-                          (Sum [ Choice "nat" One
-                               , Choice "pi" (Sigma (B "x") (Var "V")
+                          (Sum [ Choice "nat" Nothing
+                               , Choice "pi" (Just $ Sigma (B "x") (Var "V")
                                               (Pi Wildcard
                                                (Ap (Var "T") (Var "x"))
                                                (Var "V")))
                                ])
-                          (Case [ Choice "nat" (Abs Wildcard (Var "Nat"))
-                                , Choice "pi" (Abs (Pat (B "x") (B "f"))
+                          (Case [ Clause "nat" (Abs Wildcard (Var "Nat"))
+                                , Clause "pi" (Abs (Pat (B "x") (B "f"))
                                                (Pi (B "y")
                                                 (Ap (Var "T") (Var "x"))
                                                 (Ap
@@ -72,15 +72,15 @@ spec = parallel $ describe "Type Checker" $ do
 
       it "Check simple Bool function" $ do
         check 0 (Def
-                  (Decl (B "Bool") U (Sum [ Choice "true" One, Choice "false" One]))
+                  (Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing]))
                   (Def
                    (Decl (B "not")
                      (Pi Wildcard (Var "Bool") (Var "Bool"))
-                     (Case [ Choice "true" (Abs Wildcard (Ctor "false" Unit))
-                           , Choice "false" (Abs Wildcard (Ctor "true" Unit))
+                     (Case [ Clause "true" (Abs Wildcard (Ctor "false" Nothing))
+                           , Clause "false" (Abs Wildcard (Ctor "true" Nothing))
                            ]))
-                   (Ap (Var "not") (Ctor "false" Unit))))
-          (ESum ([Choice "true" One,Choice "false" One], EmptyEnv))
+                   (Ap (Var "not") (Ctor "false" Nothing))))
+          (ESum ([Choice "true" Nothing,Choice "false" Nothing], EmptyEnv))
           EmptyEnv EmptyContext
           `shouldReturn` ()
 

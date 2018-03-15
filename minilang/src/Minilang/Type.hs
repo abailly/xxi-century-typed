@@ -243,7 +243,7 @@ check l a@(Case cs) ty@(EPi esum@(ESum (cs', ν)) g) ρ γ = do
       throwM $ typingError ("order of ctors in case must be the same same as in definition, found " <> show c_i <> ", expected " <> show c_i')
     case a_i of
       Just a_i' -> check l m_i (EPi (eval a_i' ν) (ClComp g c_i)) ρ γ
-      Nothing   -> check l m_i (EPi esum (ClComp g c_i)) ρ γ
+      Nothing   -> check l m_i (EPi esum (ClComp0 g c_i)) ρ γ
   checkedHasType a ty l ρ γ
 
 check l e@(Sum cs) EU    ρ  γ = do

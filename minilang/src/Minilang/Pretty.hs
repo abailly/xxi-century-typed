@@ -72,8 +72,9 @@ instance Pretty Value where
   pretty (ECase (cs, ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
 
 instance Pretty FunClos where
-  pretty (Cl b e ρ)   = angles ("λ" <+> pretty b <+> "." <+> pretty e <+> "," <+> pretty ρ)
-  pretty (ClComp f c) = pretty f <+> "*" <+> pretty c
+  pretty (Cl b e ρ)    = angles ("λ" <+> pretty b <+> "." <+> pretty e <+> "," <+> pretty ρ)
+  pretty (ClComp f c)  = pretty f <+> "*" <+> pretty c
+  pretty (ClComp0 f c) = pretty f <+> "*" <+> pretty c
 
 instance Pretty  NVar where
   pretty (NVar n) = "#" <> pretty n

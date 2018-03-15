@@ -111,7 +111,7 @@ spec = parallel $ describe "Type Checker" $ do
                         (Abs (B "h")
                           (Case [Clause "tt" (Abs Wildcard (Var "h"))]))))
                     Unit))
-          EUnit
+          EOne
           EmptyEnv
           EmptyContext
           `shouldReturn` ()
@@ -133,7 +133,7 @@ spec = parallel $ describe "Type Checker" $ do
                              (Abs (B "h1")
                                (Case [ Clause "true" (Abs Wildcard (Var "h1"))
                                      , Clause "false" (Abs Wildcard (Var "h0"))])))))
-                    (Ap (Var "elimbool") (Ctor "false" Nothing))))
+                    (Ap (Var "elimBool") (Ctor "false" Nothing))))
           EUnit
           EmptyEnv EmptyContext
           `shouldReturn` ()

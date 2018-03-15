@@ -57,7 +57,7 @@ type SumClos = ( [ Choice ], Env)
 
 type CaseClos = ( [ Clause ], Env)
 
-data FunClos = Cl Binding AST Env | ClComp FunClos Name
+data FunClos = Cl Binding AST Env | ClComp FunClos Name | ClComp0 FunClos Name
   deriving (Eq, Show)
 
 newtype NVar = NVar Int
@@ -105,9 +105,9 @@ app l r             = error $ "don't know how to apply " ++ show l ++ " to "++ s
 
 inst
   :: FunClos -> Value -> Value
-inst (Cl b e ρ)   v     = eval e (ExtendPat ρ b v)
-inst (ClComp f c) EUnit = inst f (ECtor c Nothing)
-inst (ClComp f c) v     = inst f (ECtor c (Just v))
+inst (Cl b e ρ)    v  = eval e (ExtendPat ρ b v)
+inst (ClComp0 f c) _v = inst f (ECtor c Nothing)
+inst (ClComp f c)  v  = inst f (ECtor c (Just v))
 
 p1
   :: Value -> Value

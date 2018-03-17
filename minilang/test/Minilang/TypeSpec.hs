@@ -133,8 +133,17 @@ spec = parallel $ describe "Type Checker" $ do
                              (Abs (B "h1")
                                (Case [ Clause "true" (Abs Wildcard (Var "h1"))
                                      , Clause "false" (Abs Wildcard (Var "h0"))])))))
-                    (Ap (Var "elimBool") (Ctor "false" Nothing))))
-          EUnit
+                    (Ap
+                      (Ap
+                       (Ap
+                        (Ap
+                          (Var "elimBool")
+                          (Case [ Clause "true" (Abs Wildcard One)
+                                , Clause "false" (Abs Wildcard One)]))
+                         Unit)
+                        Unit)
+                      (Ctor "false" Nothing))))
+          EOne
           EmptyEnv EmptyContext
           `shouldReturn` ()
 

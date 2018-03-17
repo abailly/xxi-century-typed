@@ -95,7 +95,7 @@ eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in 
 app
   :: Value -> Value -> Value
 app (EAbs f@Cl{})     v          = inst f v
-app c@(ECase (cs,ρ)) (ECtor n v) = maybe m' (app m') v
+app c@(ECase (cs,ρ)) (ECtor n v) = maybe (app m' EUnit) (app m') v
   where
     m'         = eval m ρ
     Clause _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $ branch cs n

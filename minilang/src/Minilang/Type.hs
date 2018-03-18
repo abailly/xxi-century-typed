@@ -60,7 +60,9 @@ lookupType
 lookupType x (Context γ x' t)
   | x == x'               = pure t
   | otherwise             = lookupType x γ
-lookupType x EmptyContext = throwM $ typingError $ "cannot find " <> show x <> " in empty context"
+lookupType "Int"    EmptyContext = pure $ EPrim PrimInt
+lookupType "Double" EmptyContext = pure $ EPrim PrimDouble
+lookupType x        EmptyContext = throwM $ typingError $ "cannot find " <> show x <> " in empty context"
 
 
 bindType
@@ -350,6 +352,8 @@ checkI l a@(Ap m n) ρ γ = do
   inferredType a l ρ γ v
 
 checkI _ (I _) _ _ = pure $ EPrim PrimInt
+
+checkI _ (D _) _ _ = pure $ EPrim PrimDouble
 
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)

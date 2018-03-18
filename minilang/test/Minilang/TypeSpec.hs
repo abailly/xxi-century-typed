@@ -50,6 +50,16 @@ spec = parallel $ describe "Type Checker" $ do
         checkI 0 (I 12) EmptyEnv EmptyContext
           `shouldReturn` EPrim PrimInt
 
+      it "types primitive double as #Double" $
+        checkI 0 (D 12) EmptyEnv EmptyContext
+          `shouldReturn` EPrim PrimDouble
+
+      it "resolves Int as primitive type #Int" $
+        lookupType "Int" EmptyContext `shouldReturn` EPrim PrimInt
+
+      it "resolves Double as primitive type #Double" $
+        lookupType "Double" EmptyContext `shouldReturn` EPrim PrimDouble
+
     describe "Check a declaration is correct" $ do
 
       it "checks a recursive declaration is correct given env and empty context" $ do

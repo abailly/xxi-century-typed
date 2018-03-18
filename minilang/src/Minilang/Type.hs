@@ -8,6 +8,7 @@ import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser
 import           Minilang.Pretty
+import           Minilang.Primitives
 
 -- * Typing
 
@@ -347,6 +348,8 @@ checkI l a@(Ap m n) ρ γ = do
   let
     v = inst g (eval n ρ)
   inferredType a l ρ γ v
+
+checkI _ (I _) _ _ = pure $ EPrim PrimInt
 
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)

@@ -7,6 +7,7 @@ import           Data.Text.Prettyprint.Doc
 import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser
+import           Minilang.Primitives
 
 
 -- * Pretty-Printing
@@ -62,6 +63,7 @@ instance Pretty Value where
   pretty EOne            = "[]"
   pretty (EI n)          = pretty n
   pretty (ED d)          = pretty d
+  pretty (EPrim p)       = pretty p
   pretty (ENeut nt)      = pretty nt
   pretty (EAbs f)        = pretty f
   pretty (ECtor n v)     = "$" <> pretty n <+> pretty v
@@ -99,6 +101,7 @@ instance Pretty Normal where
   pretty NOne          = "[]"
   pretty (NI i)        = pretty i
   pretty (ND d)        = pretty d
+  pretty (NPrim p)     = pretty p
   pretty (NCtor n Nothing)   = "$" <> pretty n
   pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)
   pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
@@ -139,3 +142,10 @@ instance Pretty Context where
     where
       pretty' EmptyContext    = "∅"
       pretty' (Context γ n v) = pretty n <> " ↦ " <> pretty v <> ", " <> pretty' γ
+
+-- ** Primitives
+
+instance Pretty PrimType where
+  pretty PrimInt    = "#Int"
+  pretty PrimDouble = "#Double"
+  pretty PrimString = "#String"

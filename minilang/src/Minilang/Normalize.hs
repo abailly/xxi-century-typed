@@ -2,6 +2,7 @@ module Minilang.Normalize where
 
 import           Minilang.Eval
 import           Minilang.Parser
+import           Minilang.Primitives
 
 data Normal = NAbs NVar Normal
             | NPi NVar Normal Normal
@@ -13,6 +14,7 @@ data Normal = NAbs NVar Normal
             | NOne
             | NI Integer
             | ND Double
+            | NPrim PrimType
             | NCtor Name (Maybe Normal)
             | NSum NSumClos
             | NFun NCaseClos
@@ -43,6 +45,7 @@ instance Normalize Value Normal where
   normalize _ EU          = NU
   normalize _ (EI i)      = NI i
   normalize _ (ED d)      = ND d
+  normalize _ (EPrim p)   = NPrim p
   normalize n (ECtor c e) = NCtor c (normalize n <$> e)
   normalize n (EPair u v) = NPair (normalize n u) (normalize n v)
   normalize n (EAbs clos) = NAbs x_n (normalize (n+1) $ inst clos (ENeut $ NV x_n))

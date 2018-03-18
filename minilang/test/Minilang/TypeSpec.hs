@@ -4,6 +4,7 @@ import qualified Data.Text       as Text
 import           Minilang.Eval
 import           Minilang.Parser
 import           Minilang.Type
+import           Minilang.Primitives
 import           Test.Hspec
 
 
@@ -42,6 +43,12 @@ spec = parallel $ describe "Type Checker" $ do
       lookupType "y" γ' `shouldReturn` EPi EUnit (Cl Wildcard U (ExtendPat EmptyEnv (B "x") EUnit))
 
   describe "Typing Judgments" $ do
+
+    describe "Builtins" $ do
+
+      it "types primitive int as #Int" $
+        checkI 0 (I 12) EmptyEnv EmptyContext
+          `shouldReturn` EPrim PrimInt
 
     describe "Check a declaration is correct" $ do
 

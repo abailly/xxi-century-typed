@@ -5,6 +5,7 @@ import           Data.Maybe          (fromJust)
 import           Data.Monoid         ((<>))
 import           Data.Text           (Text)
 import           Minilang.Parser
+import Minilang.Primitives
 
 type Name = Text
 
@@ -41,6 +42,7 @@ data Context = EmptyContext
 data Value = EU
            | EUnit
            | EOne
+           | EPrim PrimType
            | EI Integer
            | ED Double
            | ENeut Neutral

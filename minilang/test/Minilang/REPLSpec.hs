@@ -22,9 +22,10 @@ spec = parallel $ describe "MiniLang REPL" $ do
 
     out `shouldBe`
       [ "Bye!"
-      , "$succ $succ $succ $zero ::Sum(zero| succ Nat, {Nat : U ↦ Sum(zero| succ Nat), ∅})"
+      , "$succ $succ $succ $zero  :: Sum(zero| succ Nat, {Nat : U ↦ Sum(zero| succ Nat), ∅})"
       , "defined id : Π A : U . A → A"
-      , "defined Nat : U"]
+      , "defined Nat : U"
+      ]
 
   around withTempFile $
     it "evaluates single MiniLang term read from IO" $ \ fileName -> do
@@ -40,7 +41,7 @@ spec = parallel $ describe "MiniLang REPL" $ do
     out <- readFile outputFileName
 
     out `shouldBe`
-      "\955\928> defined Nat : U\n\955\928> defined id : \928 A : U . A \8594 A\n\955\928> $succ $succ $succ $zero ::Sum(zero| succ Nat, {Nat : U \8614 Sum(zero| succ Nat), \8709})\n\955\928> Bye!\n"
+      "\955\928> defined Nat : U\n\955\928> defined id : \928 A : U . A \8594 A\n\955\928> $succ $succ $succ $zero  :: Sum(zero| succ Nat, {Nat : U \8614 Sum(zero| succ Nat), \8709})\n\955\928> Bye!\n"
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =

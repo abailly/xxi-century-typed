@@ -147,41 +147,35 @@ spec = parallel $ describe "Type Checker" $ do
           EmptyEnv EmptyContext
           `shouldReturn` ()
 
-      -- it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
-      --   check 0 (Def
-      --             (RDecl (B "Nat") U (Sum [Choice "zero" One, Choice "succ" (Var "Nat")]))
-      --             (Def
-      --             (RDecl (B "natrec")
-      --              (Pi (B "C")
-      --               (Pi Wildcard (Var "Nat") U)
-      --               (Pi Wildcard (Ap (Var "C") (Ctor "zero" Unit))
-      --                (Pi Wildcard
-      --                 (Pi (B "n")
-      --                  (Var "Nat")
-      --                  (Pi Wildcard (Ap (Var "C") (Var "n"))
-      --                   (Ap (Var "C")
-      --                    (Ctor "succ" (Var "n")))))
-      --                  (Pi (B "n")
-      --                   (Var "Nat")
-      --                   (Ap (Var "C") (Var "n"))))))
-      --               (Abs (B "C")
-      --                (Abs (B "a")
-      --                 (Abs (B "g")
-      --                  (Case [Choice "zero" (Abs Wildcard (Var "a"))
-      --                        ,Choice "succ" (Abs (B "n1")
-      --                                        (Ap
-      --                                         (Ap
-      --                                          (Ap
-      --                                           (Ap
-      --                                            (Ap
-      --                                             (Ap (Var "g") (Var "n1"))
-      --                                             (Var "natrec"))
-      --                                             (Var "C"))
-      --                                            (Var "a"))
-      --                                           (Var "g"))
-      --                                          (Var "n1")))
-      --                        ])))))
-      --              Unit))
-      --     EUnit
-      --     EmptyEnv EmptyContext
-      --     `shouldReturn` ()
+      it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
+        check 0 (Def
+                  (RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
+                  (Def
+                   (RDecl (B "natrec")
+                    (Pi (B "C")
+                    (Pi Wildcard (Var "Nat") U)
+                    (Pi Wildcard (Ap (Var "C") (Ctor "zero" Nothing))
+                     (Pi Wildcard
+                      (Pi (B "n")
+                       (Var "Nat")
+                       (Pi Wildcard (Ap (Var "C") (Var "n"))
+                        (Ap (Var "C")
+                         (Ctor "succ" (Just $ Var "n")))))
+                       (Pi (B "n")
+                        (Var "Nat")
+                        (Ap (Var "C") (Var "n"))))))
+                    (Abs (B "C")
+                     (Abs (B "a")
+                      (Abs (B "g")
+                       (Case [Clause "zero" (Abs Wildcard (Var "a"))
+                             ,Clause "succ" (Abs (B "n1")
+                                              (Ap (Ap (Var "g") (Var "n1"))
+                                                (Ap (Ap (Ap (Ap (Var "natrec")
+                                                             (Var "C"))
+                                                          (Var "a"))
+                                                     (Var "g"))
+                                                  (Var "n1"))))])))))
+                    Unit))
+          EOne
+          EmptyEnv EmptyContext
+          `shouldReturn` ()

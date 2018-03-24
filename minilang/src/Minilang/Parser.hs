@@ -16,8 +16,7 @@ import qualified Text.Parsec.Token     as Tokens
 data AST = U  -- universe
          | One
          | Unit
-         | I Integer
-         | D Double
+         | I Integer | D Double | S String
          | Abs Binding AST
          | Ctor Text (Maybe AST)
          | Pi Binding AST AST
@@ -140,7 +139,8 @@ decl = debug "simple declaration" $ ((Decl <$> binding <*> (colon *> expr) <*> (
 
 term
   :: MLParser AST
-term = debug "term" ((number  <?> "number")
+term = debug "term" ((string_literal  <?> "string")
+   <|> (number  <?> "number")
    <|> (try unit  <?> "unit")
    <|> (try one  <?> "one")
    <|> (try ctor  <?> "ctor")
@@ -228,10 +228,12 @@ lexer
   :: Tokens.GenTokenParser String ParserState Identity
 lexer = Tokens.makeTokenParser haskellDef
 
-number, variable, unit, ctor, one
+number, string_literal, variable, unit, ctor, one
   :: MLParser AST
 
 number = either I D <$> Tokens.naturalOrFloat lexer
+
+string_literal = S <$> Tokens.stringLiteral lexer
 
 variable = try $ do
   s <- identifier

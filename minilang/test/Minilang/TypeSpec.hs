@@ -1,10 +1,10 @@
 module Minilang.TypeSpec where
 
-import qualified Data.Text       as Text
+import qualified Data.Text           as Text
 import           Minilang.Eval
 import           Minilang.Parser
-import           Minilang.Type
 import           Minilang.Primitives
+import           Minilang.Type
 import           Test.Hspec
 
 
@@ -59,6 +59,10 @@ spec = parallel $ describe "Type Checker" $ do
 
       it "resolves Double as primitive type #Double" $
         lookupType "Double" EmptyContext `shouldReturn` EPrim PrimDouble
+
+      it "types primitive string as #String" $
+        checkI 0 (S "foo") EmptyEnv EmptyContext
+          `shouldReturn` EPrim PrimString
 
     describe "Check a declaration is correct" $ do
 

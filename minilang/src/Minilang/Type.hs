@@ -355,6 +355,8 @@ checkI _ (I _) _ _ = pure $ EPrim PrimInt
 
 checkI _ (D _) _ _ = pure $ EPrim PrimDouble
 
+checkI _ (S _) _ _ = pure $ EPrim PrimString
+
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 

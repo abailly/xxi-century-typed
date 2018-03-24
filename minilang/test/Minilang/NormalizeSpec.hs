@@ -13,6 +13,7 @@ spec = parallel $ describe "Normalizer" $ do
     normalize 0 EU `shouldBe` NU
     normalize 0 (EI 12) `shouldBe` NI 12
     normalize 0 (ED 12) `shouldBe` ND 12
+    normalize 0 (ES "foo" ) `shouldBe` NS "foo"
 
   it "normalizes constructor" $ do
     normalize 0 (ECtor "foo" (Just EUnit))

@@ -12,8 +12,7 @@ data Normal = NAbs NVar Normal
             | NSig NVar Normal Normal
             | NUnit
             | NOne
-            | NI Integer
-            | ND Double
+            | NI Integer | ND Double | NS String
             | NPrim PrimType
             | NCtor Name (Maybe Normal)
             | NSum NSumClos
@@ -45,6 +44,7 @@ instance Normalize Value Normal where
   normalize _ EU          = NU
   normalize _ (EI i)      = NI i
   normalize _ (ED d)      = ND d
+  normalize _ (ES s)      = NS s
   normalize _ (EPrim p)   = NPrim p
   normalize n (ECtor c e) = NCtor c (normalize n <$> e)
   normalize n (EPair u v) = NPair (normalize n u) (normalize n v)

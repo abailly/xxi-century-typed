@@ -20,6 +20,7 @@ instance Pretty AST where
   pretty Unit              = "()"
   pretty (I n)             = pretty n
   pretty (D d)             = pretty d
+  pretty (S s)             = dquotes $ pretty s
   pretty (Abs p e)         = "λ" <+> pretty p <+> "." <+> pretty e
   pretty (Ctor n Nothing)  = "$" <> pretty n
   pretty (Ctor n (Just e)) = parens ("$" <> pretty n <+> pretty e)
@@ -63,6 +64,7 @@ instance Pretty Value where
   pretty EOne            = "[]"
   pretty (EI n)          = pretty n
   pretty (ED d)          = pretty d
+  pretty (ES s)          = dquotes $ pretty s
   pretty (EPrim p)       = pretty p
   pretty (ENeut nt)      = pretty nt
   pretty (EAbs f)        = pretty f
@@ -101,6 +103,7 @@ instance Pretty Normal where
   pretty NOne          = "[]"
   pretty (NI i)        = pretty i
   pretty (ND d)        = pretty d
+  pretty (NS s)        = dquotes $ pretty s
   pretty (NPrim p)     = pretty p
   pretty (NCtor n Nothing)   = "$" <> pretty n
   pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)

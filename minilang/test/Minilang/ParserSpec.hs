@@ -13,6 +13,9 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "12" `shouldBe` I 12
       parseProgram False "12.4" `shouldBe` D 12.4
 
+    it "parse String" $ do
+      parseProgram False "\"123\"" `shouldBe` S "123"
+
     it "parse Variable" $ do
       parseProgram False "abc" `shouldBe` Var "abc"
 

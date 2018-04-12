@@ -3,4 +3,6 @@ package xxi
 pkgs = contrib
 
 sourcedir = src
-modules = Quizz, Cargo.Model
+modules = quizz
+main = main
+executable = quizz

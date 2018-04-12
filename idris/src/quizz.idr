@@ -1,9 +1,10 @@
-module Quizz
+module quizz
 
 import Data.String
 import Data.Vect
 import Data.Fin
 
+%access public export
 
 interface Displayable d where
   total display : d -> String
@@ -49,6 +50,9 @@ isCorrectAnswer (QCM {numOptions} question qcmOptions expected) (AnswerQCM   opt
 isCorrectAnswer (Grade question _ expected)                     (AnswerGrade answer) = answer == expected
 isCorrectAnswer (Open question expected)                        (AnswerOpen  answer) = answer == expected
 
+
+
+||| Magic values to simplify proofs
 -- an impossible value which we use to construct contradictory proofs
 VOID : _|_
 VOID = hd []
@@ -65,10 +69,8 @@ tooLargeOption _ = VOID
 tooLarge : (contra : LTE num ub -> Void) -> Answer (Grade question (lb, ub) expected) -> Void
 tooLarge contra (AnswerGrade {ubok} answer) = VOID
 
-tooSmall : Answer (Grade question (lb, ub) expected) -> (a : Nat ** LTE lb a)
-tooSmall (AnswerGrade {lbok} answer) = (answer ** lbok)
-
-answerIsSmaller : (a : Answer (Grade question (lb,ub) expected)) -> LTE lb (answer a)
+tooSmall : (contra : LTE num ub ->  Void) -> (a -> Void)
+tooSmall contra _ = VOID
 
 validateAnswer : (s : String) -> (q : Question) -> Dec (Answer q)
 validateAnswer s (QCM {numOptions} question qcmOptions expected) =
@@ -86,7 +88,7 @@ validateAnswer s (Grade question (lb, ub) expected) =
                      (Yes prf) => case isLTE num ub of
                                       (Yes prf) => Yes (AnswerGrade num)
                                       (No contra) => No $ tooLarge contra
-                     (No contra) => No $ contra . answerIsSmaller
+                     (No contra) => No $ tooSmall contra
 
 readAnswer : (q : Question) -> IO (Answer q)
 readAnswer q = do
@@ -150,7 +152,7 @@ parseInput s     = GiveAnswer (pack s)
 
 runCommand : Quizz n -> Command a -> IO (a, Quizz n)
 runCommand quizz  (Prompt q)         = do
-  putStr $ display q
+  putStrLn $ display q ++ " "
   l <- getLine
   pure (parseInput $ unpack l, quizz)
 
@@ -163,13 +165,14 @@ runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
       []        => pure (True, q)
       (x :: xs) => pure (True, updateQuizz current x xs answered a)
   else do
-    putStr "That's Wrong !"
+    putStrLn "That's Wrong !"
     pure (False, q)
 runCommand q@(MkQuizz answered current next) Back  = do
   case answered of
     []                          => pure ((), q)
     (MkAnswered (x ** _) :: xs) => pure ((), goBack x current next xs)
 runCommand q Quit    = pure ((), q)
+
 
 sampleQuizz : Quizz 4
 sampleQuizz = MkQuizz [] (Open "What is your name ?" "Sir Arthur")
@@ -193,6 +196,3 @@ runQuizz quizz@(MkQuizz answered current next) = do
       runQuizz q'
     Garbage => do
       runQuizz quizz'
-
-main : IO ()
-main = runQuizz sampleQuizz

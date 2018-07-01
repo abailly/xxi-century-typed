@@ -1,6 +1,7 @@
 module Minilang.EvalSpec where
 
 import           Control.Exception
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Parser
 import           Test.Hspec

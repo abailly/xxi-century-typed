@@ -1,36 +1,16 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Minilang.Eval where
 
 import           Control.Applicative ((<|>))
 import           Data.Maybe          (fromJust)
 import           Data.Monoid         ((<>))
-import           Data.Text           (Text)
+import           Minilang.Env
 import           Minilang.Parser
 import           Minilang.Primitives
 
-type Name = Text
-
--- ** Evaluation Environment
-
-data Env = EmptyEnv
-         | ExtendPat Env Binding Value
-         | ExtendDecl Env Decl
-  deriving (Eq)
-
-instance Show Env where
-  show e = "{ " <> show' e <> " }"
-    where
-      show' EmptyEnv          = "∅"
-      show' (ExtendPat ρ b v) = show b  <> " ↦ " <> show v <> ", " <> show' ρ
-      show' (ExtendDecl ρ (Decl b t m))  = show b  <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
-      show' (ExtendDecl ρ (RDecl b t m))  = show b  <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
-
-emptyEnv :: Env
-emptyEnv = EmptyEnv
-
-extend :: Decl -> Env -> Env
-extend = flip ExtendDecl
-
 -- ** Typing Context
+
+type Env = Env' Value
 
 data Context = EmptyContext
              | Context Context Name Value
@@ -77,6 +57,7 @@ eval
   :: AST -> Env -> Value
 eval (I n)         _ = EI n
 eval (D d)         _ = ED d
+eval (S s)         _ = ES s
 eval U             _ = EU
 eval Unit          _ = EUnit
 eval One           _ = EOne
@@ -92,8 +73,7 @@ eval (Case cs)     ρ = ECase (cs,ρ)
 eval (Sum cs)      ρ = ESum (cs,ρ)
 eval (Ctor n e)    ρ = ECtor n (flip eval ρ <$> e)
 eval (Def d m)     ρ = eval m (extend d ρ)
-eval e             ρ = error $ "don't know how to evaluate " ++ show e ++ " in  " ++ show ρ
-
+eval (Err err)     _ = error $ "trying to evaluate parse error :" ++ show err
 
 app
   :: Value -> Value -> Value

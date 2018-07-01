@@ -1,6 +1,7 @@
 module Minilang.TypeSpec where
 
 import qualified Data.Text           as Text
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Parser
 import           Minilang.Primitives

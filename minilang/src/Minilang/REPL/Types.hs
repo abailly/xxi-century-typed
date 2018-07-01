@@ -1,6 +1,7 @@
 module Minilang.REPL.Types where
 
 import           Data.Text     hiding (replicate)
+import           Minilang.Env
 import           Minilang.Eval hiding (rho)
 
 

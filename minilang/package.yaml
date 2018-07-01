@@ -40,6 +40,7 @@ library:
   - Minilang.Normalize
   - Minilang.Type
   - Minilang.REPL
+  - Minilang.Env
   - Minilang.Primitives
   dependencies:
   - base

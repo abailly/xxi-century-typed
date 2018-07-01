@@ -4,6 +4,7 @@ module Minilang.Pretty
 where
 
 import           Data.Text.Prettyprint.Doc
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser
@@ -119,17 +120,9 @@ instance  Pretty NNeutral where
   pretty (NNAp nt v)        = parens (pretty nt <+> pretty v)
 
 
-instance Pretty NEnv where
-  pretty env = braces (pretty' env)
-    where
-      pretty' NEmptyEnv                     = "∅"
-      pretty' (NExtendEnv ρ b v)            = pretty b  <> " ↦ " <> pretty v <> ", " <> pretty' ρ
-      pretty' (NExtendDecl ρ (Decl b t m))  = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
-      pretty' (NExtendDecl ρ (RDecl b t m)) = pretty b  <> " : " <> pretty t <> " ↦ " <> pretty m <> ", " <> pretty' ρ
-
 -- ** Environment
 
-instance Pretty Env where
+instance (Pretty value) => Pretty (Env' value) where
   pretty env = braces (pretty' env)
     where
       pretty' EmptyEnv                     = "∅"

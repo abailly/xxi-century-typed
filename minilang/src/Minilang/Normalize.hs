@@ -1,20 +1,26 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Minilang.Normalize where
 
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Parser
 import           Minilang.Primitives
 
-data Normal = NAbs NVar Normal
-            | NPi NVar Normal Normal
-            | NU
-            | NNeut NNeutral
-            | NPair Normal Normal
-            | NSig NVar Normal Normal
+type NEnv = Env' Normal
+
+data Normal = NU
             | NUnit
             | NOne
-            | NI Integer | ND Double | NS String
             | NPrim PrimType
+            | NI Integer
+            | ND Double
+            | NS String
+            | NNeut NNeutral
+            | NAbs NVar Normal
             | NCtor Name (Maybe Normal)
+            | NPi NVar Normal Normal
+            | NSig NVar Normal Normal
+            | NPair Normal Normal
             | NSum NSumClos
             | NFun NCaseClos
   deriving (Eq, Show)
@@ -30,10 +36,6 @@ data NNeutral = NNV NVar
               | NNCase NCaseClos NNeutral
   deriving (Eq,Show)
 
-data NEnv = NEmptyEnv
-          | NExtendEnv NEnv Binding Normal
-          | NExtendDecl NEnv Decl
-  deriving (Eq, Show)
 
 class Normalize val norm where
   normalize :: Int -> val -> norm
@@ -69,6 +71,6 @@ instance Normalize Neutral NNeutral where
   normalize n (NCase (s,ρ) k) = NNCase (s, normalize n ρ) (normalize n k)
 
 instance Normalize Env NEnv where
-  normalize _ EmptyEnv          = NEmptyEnv
-  normalize n (ExtendPat ρ p v) = NExtendEnv (normalize n ρ) p (normalize n v)
-  normalize n (ExtendDecl ρ d)  = NExtendDecl (normalize n ρ) d
+  normalize _ EmptyEnv          = EmptyEnv
+  normalize n (ExtendPat ρ p v) = ExtendPat (normalize n ρ) p (normalize n v)
+  normalize n (ExtendDecl ρ d)  = ExtendDecl (normalize n ρ) d

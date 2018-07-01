@@ -13,6 +13,7 @@ import           Control.Monad.State
 import           Data.Text                             hiding (replicate)
 import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
+import           Minilang.Env
 import           Minilang.Eval                         hiding (rho)
 import           Minilang.Parser
 import           Minilang.REPL.Haskeline

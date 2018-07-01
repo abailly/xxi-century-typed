@@ -1,5 +1,6 @@
 module Minilang.NormalizeSpec where
 
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser
@@ -44,13 +45,13 @@ spec = parallel $ describe "Normalizer" $ do
 
     normalize 0 (NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
       `shouldBe` NNCase ( [Clause "A" (Abs (B "x") (Var "x"))]
-                        , NExtendEnv NEmptyEnv (B "x") (NNeut (NNV (NVar 1)))
+                        , ExtendPat EmptyEnv (B "x") (NNeut (NNV (NVar 1)))
                         ) (NNV (NVar 1))
 
 
   it "normalizes env with declaration" $ do
-    normalize 0 (ExtendDecl emptyEnv (Decl (B "x") U Unit))
-      `shouldBe` NExtendDecl NEmptyEnv (Decl (B "x") U Unit)
+    normalize 0 (ExtendDecl EmptyEnv (Decl (B "x") U Unit) :: Env)
+      `shouldBe` (ExtendDecl EmptyEnv (Decl (B "x") U Unit) :: NEnv)
 
   it "normalizes Pi expression" $ do
     let extended = ExtendPat emptyEnv (B "bar") (EI 12)
@@ -65,9 +66,9 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes Sum definitions" $ do
     normalize 0 (ESum ([ Choice "true" (Just Unit), Choice "false" Nothing]
                      , emptyEnv))
-      `shouldBe` NSum ([ Choice "true" (Just Unit), Choice "false" Nothing], NEmptyEnv)
+      `shouldBe` NSum ([ Choice "true" (Just Unit), Choice "false" Nothing], EmptyEnv)
 
   it "normalizes Case expressions" $ do
     normalize 0 (ECase ([ Clause "true" Unit, Clause "false" Unit]
                      , emptyEnv))
-      `shouldBe` NFun ([ Clause "true" Unit, Clause "false" Unit], NEmptyEnv)
+      `shouldBe` NFun ([ Clause "true" Unit, Clause "false" Unit], EmptyEnv)

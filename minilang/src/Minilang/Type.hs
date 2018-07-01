@@ -4,6 +4,7 @@ import           Control.Monad       (forM_, when)
 import           Control.Monad.Catch
 import           Data.Monoid         ((<>))
 import           Data.Text           (Text, pack)
+import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Normalize
 import           Minilang.Parser

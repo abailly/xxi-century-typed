@@ -9,7 +9,6 @@ import qualified Debug.Trace
 import           GHC.Generics          (Generic)
 import           Prelude               hiding (pi, sum)
 import           Text.Parsec
-import           Text.Parsec.Char      (alphaNum)
 import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
 
@@ -144,7 +143,7 @@ term = debug "term" ((string_literal  <?> "string")
    <|> (try unit  <?> "unit")
    <|> (try one  <?> "one")
    <|> (try ctor  <?> "ctor")
-   <|> (variable <?> "identifier")
+   <|> (try variable <?> "identifier")
    <|> (lpar *> expr <* rpar <?> "subexpression"))
 
 dependent_product
@@ -194,7 +193,7 @@ labelled_sum
   :: MLParser AST
 labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
   where
-    ctors = sepBy clause pipe
+    ctors = clause `sepBy` pipe
     clause = Choice <$> identifier <*> optionMaybe expr
 
 case_match
@@ -202,7 +201,7 @@ case_match
 case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
              <?> "case match"
   where
-    ctors = sepBy clause pipe
+    ctors = clause `sepBy` pipe
     clause = Clause
            <$> identifier
            <*> (Abs
@@ -217,7 +216,7 @@ pair = (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
 binding
   :: MLParser Binding
 binding = debug "binding" ((string "_" >> spaces *> pure Wildcard <?> "wildcard")
-  <|> (B <$> identifier <?> "variable")
+  <|> try (B <$> identifier <?> "variable")
   <|> (C <$> number <?> "constant")
   <|> (lpar *> (Pat <$> binding <*> (comma *> binding)) <* rpar <?> "pattern")
   <?> "binding")
@@ -255,12 +254,21 @@ identifier = debug "identifier" $ do
     else pure i
   where
     ident = do
-      c  <- letter
-      cs <- many alphaNum
+      c  <- identInitial
+      cs <- many identNext
       pure (c:cs)
+
+identInitial :: MLParser Char
+identInitial = letter <|> oneOf "+->*%/^?!|<~#@&="
+
+identNext :: MLParser Char
+identNext = identInitial <|> digit
 
 isReserved :: Text -> Bool
 isReserved "λ"   = True
+isReserved "|"   = True
+isReserved "->"  = True
+isReserved "="   = True
 isReserved "Π"   = True
 isReserved "π1"  = True
 isReserved "π2"  = True

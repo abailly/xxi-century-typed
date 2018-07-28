@@ -18,6 +18,13 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parse Variable" $ do
       parseProgram False "abc" `shouldBe` Var "abc"
+      parseProgram False "+" `shouldBe` Var "+"
+      parseProgram False "-" `shouldBe` Var "-"
+      parseProgram False "*" `shouldBe` Var "*"
+      parseProgram False "/" `shouldBe` Var "/"
+      parseProgram False "%" `shouldBe` Var "%"
+      parseProgram False "^" `shouldBe` Var "^"
+      parseProgram False "^?!<~#|@&=" `shouldBe` Var "^?!<~#|@&="
 
     it "parse Universe" $ do
       parseProgram False "U" `shouldBe` U
@@ -73,9 +80,9 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "$foo (abc,12)" `shouldBe` (Ctor "foo" (Just $ Pair (Var "abc") (I 12)))
 
     it "parses Labelled Sum" $ do
-      parseProgram False "Sum(foo []| bar Nat)" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Var "Nat")]
-      parseProgram False "Sum(foo[]| bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Pair (Var "Nat") (Var "Bool"))]
-      parseProgram False "Sum(foo| bar)" `shouldBe` Sum [ Choice "foo" Nothing , Choice "bar" Nothing]
+      parseProgram False "Sum(foo [] | bar Nat)" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Var "Nat")]
+      parseProgram False "Sum(foo[] | bar (Nat, Bool))" `shouldBe` Sum [ Choice "foo" (Just One) , Choice "bar" (Just $ Pair (Var "Nat") (Var "Bool"))]
+      parseProgram False "Sum(foo | bar)" `shouldBe` Sum [ Choice "foo" Nothing , Choice "bar" Nothing]
       parseProgram False "Sum  (  foo  | bar  )" `shouldBe` Sum [ Choice "foo" Nothing , Choice "bar" Nothing]
 
     it "parses Case choices" $ do

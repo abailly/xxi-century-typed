@@ -110,8 +110,8 @@ spec = parallel $ describe "Type Checker" $ do
         let
           e = parseProgram False $
               Text.unlines [ "Unit : U = Sum(tt);"
-                           , "rec NEList : Π A:U . U = λ A . Sum(S A| C (Σ _ : A . NEList A));"
-                           , "head : Π A:U . NEList A -> A = λ A . fun(S a -> a| C (a,_) -> a);"
+                           , "rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ _ : A . NEList A));"
+                           , "head : Π A:U . NEList A -> A = λ A . fun(S a -> a | C (a,_) -> a);"
                            , "l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
                            , "x : Unit -> [] = fun(tt -> ());"
                            , "x (head Unit l)"

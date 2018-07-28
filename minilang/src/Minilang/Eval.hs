@@ -47,10 +47,10 @@ newtype NVar = NVar Int
   deriving (Eq, Show)
 
 data Neutral = NV NVar
+             | NAp Neutral Value
              | NP1 Neutral
              | NP2 Neutral
              | NCase CaseClos Neutral
-             | NAp Neutral Value
   deriving (Eq, Show)
 
 eval

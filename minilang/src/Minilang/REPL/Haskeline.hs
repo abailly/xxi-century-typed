@@ -11,12 +11,16 @@ import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans                     (lift)
-import           Data.Text                               hiding (replicate)
+import           Data.List                               (isPrefixOf)
+import           Data.Text                               (Text, pack, unpack)
 import           Data.Text.IO                            as Text
 import           Data.Text.Prettyprint.Doc
 import           Minilang.REPL.Types
 import           Minilang.Type
-import           System.Console.Haskeline                (InputT, getInputLineWithInitial,
+import           System.Console.Haskeline                (Completion (Completion, replacement),
+                                                          CompletionFunc,
+                                                          InputT,
+                                                          getInputLineWithInitial,
                                                           outputStrLn)
 import qualified System.Console.Haskeline.MonadException as Exc
 
@@ -42,6 +46,26 @@ instance MonadREPL Haskeline where
 
   getEnv = get
   setEnv = put
+
+completion :: CompletionFunc IO
+completion (s, _) =
+  if ":set" `isPrefixOf` inputString
+  then pure ("", filter ((inputString `isPrefixOf`) . replacement) setCompletions)
+  else pure ("", filter ((inputString `isPrefixOf`) . replacement) completions)
+  where
+    inputString = reverse s
+    setCompletions = [ Completion ":set step"  "step - Step through evaluation process, displaying each rule application" True
+                     , Completion ":set debug"  "debug - Debug parsing of input" True
+                     ]
+    completions = [ Completion ":quit"  ":quit - Quit minilang REPL" False
+                  , Completion ":env"  ":env - Dump current environment and context (types and values)" False
+                  , Completion ":clear"  ":clear - Clear environment" False
+                  , Completion ":load"  ":load - Load a file into the REPL" True
+                  , Completion ":set"  ":set - Set some properties of the REPL" True
+                  , Completion ":unset"  ":unset - Unset some properties of the REPL" True
+                  ]
+
+
 
 interpret
   :: Text -> In

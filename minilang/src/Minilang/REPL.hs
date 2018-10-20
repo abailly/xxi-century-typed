@@ -24,7 +24,8 @@ import           Minilang.Type
 import           System.Console.Haskeline              (defaultBehavior,
                                                         defaultSettings,
                                                         historyFile,
-                                                        runInputTBehavior)
+                                                        runInputTBehavior,
+                                                        setComplete)
 import           System.IO                             (Handle)
 import           Text.Parsec                           (runParser)
 
@@ -95,7 +96,7 @@ withTerminal :: IO ()
 withTerminal =
   runInputTBehavior defaultBehavior settings $ evalStateT (runHaskeline runREPL) initialREPL
   where
-    settings = defaultSettings { historyFile = Just "~/.minilang.history" }
+    settings = setComplete completion $ defaultSettings { historyFile = Just "~/.minilang.history" }
 
 
 -- * IO REPL

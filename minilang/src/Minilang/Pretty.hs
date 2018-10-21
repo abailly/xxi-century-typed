@@ -5,8 +5,8 @@ where
 
 import           Data.Text.Prettyprint.Doc
 import           Minilang.Env
-import           Minilang.Eval
-import           Minilang.Normalize
+import           Minilang.Eval             as Eval
+import           Minilang.Normalize        as Norm
 import           Minilang.Parser
 import           Minilang.Primitives
 
@@ -88,7 +88,7 @@ instance  Pretty Neutral where
   pretty (NV x)            = pretty x
   pretty (NP1 nt)          = "π1." <> pretty nt
   pretty (NP2 nt)          = "π2." <> pretty nt
-  pretty (NCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
+  pretty (Eval.NCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
   pretty (NAp nt v)        = parens (pretty nt <+> pretty v)
 
 -- ** Normal Forms
@@ -109,7 +109,7 @@ instance Pretty Normal where
   pretty (NCtor n Nothing)   = "$" <> pretty n
   pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)
   pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
-  pretty (NFun (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
+  pretty (Norm.NCase (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
 
 
 instance  Pretty NNeutral where

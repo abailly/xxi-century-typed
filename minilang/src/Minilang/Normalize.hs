@@ -2,7 +2,8 @@
 module Minilang.Normalize where
 
 import           Minilang.Env
-import           Minilang.Eval
+import           Minilang.Eval       hiding (NCase)
+import qualified Minilang.Eval       as Eval
 import           Minilang.Parser
 import           Minilang.Primitives
 
@@ -12,17 +13,15 @@ data Normal = NU
             | NUnit
             | NOne
             | NPrim PrimType
-            | NI Integer
-            | ND Double
-            | NS String
-            | NNeut NNeutral
+            | NI Integer | ND Double | NS String
             | NAbs NVar Normal
             | NCtor Name (Maybe Normal)
             | NPi NVar Normal Normal
             | NSig NVar Normal Normal
             | NPair Normal Normal
             | NSum NSumClos
-            | NFun NCaseClos
+            | NCase NCaseClos
+            | NNeut NNeutral
   deriving (Eq, Show)
 
 type NSumClos = ( [ Choice ], NEnv)
@@ -61,14 +60,14 @@ instance Normalize Value Normal where
     where
       x_n = NVar n
   normalize n (ESum (s,ρ)) = NSum (s, normalize n ρ)
-  normalize n (ECase(s,ρ)) = NFun (s, normalize n ρ)
+  normalize n (ECase(s,ρ)) = NCase (s, normalize n ρ)
 
 instance Normalize Neutral NNeutral where
-  normalize _ (NV x)          = NNV x
-  normalize n (NAp k v)       = NNAp (normalize n k) (normalize n v)
-  normalize n (NP1 k)         = NNPi1 (normalize n k)
-  normalize n (NP2 k)         = NNPi2 (normalize n k)
-  normalize n (NCase (s,ρ) k) = NNCase (s, normalize n ρ) (normalize n k)
+  normalize _ (NV x)               = NNV x
+  normalize n (NAp k v)            = NNAp (normalize n k) (normalize n v)
+  normalize n (NP1 k)              = NNPi1 (normalize n k)
+  normalize n (NP2 k)              = NNPi2 (normalize n k)
+  normalize n (Eval.NCase (s,ρ) k) = NNCase (s, normalize n ρ) (normalize n k)
 
 instance Normalize Env NEnv where
   normalize _ EmptyEnv          = EmptyEnv

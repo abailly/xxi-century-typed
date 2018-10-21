@@ -1,7 +1,8 @@
 module Minilang.NormalizeSpec where
 
 import           Minilang.Env
-import           Minilang.Eval
+import           Minilang.Eval      hiding (NCase)
+import qualified Minilang.Eval      as Eval
 import           Minilang.Normalize
 import           Minilang.Parser
 import           Test.Hspec
@@ -43,7 +44,7 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes case neutral application with env" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
 
-    normalize 0 (NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+    normalize 0 (Eval.NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
       `shouldBe` NNCase ( [Clause "A" (Abs (B "x") (Var "x"))]
                         , ExtendPat EmptyEnv (B "x") (NNeut (NNV (NVar 1)))
                         ) (NNV (NVar 1))
@@ -71,4 +72,4 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes Case expressions" $ do
     normalize 0 (ECase ([ Clause "true" Unit, Clause "false" Unit]
                      , emptyEnv))
-      `shouldBe` NFun ([ Clause "true" Unit, Clause "false" Unit], EmptyEnv)
+      `shouldBe` NCase ([ Clause "true" Unit, Clause "false" Unit], EmptyEnv)

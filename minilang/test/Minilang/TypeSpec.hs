@@ -119,8 +119,6 @@ spec = parallel $ describe "Type Checker" $ do
         check 0 e EOne EmptyEnv EmptyContext
           `shouldReturn` ()
 
-      -- TODO following tests are failing due to unknown issue in type checker algorithm
-
       it "Check Unit and unitElim" $ do
         check 0 (Def
                   (Decl (B "Unit") U (Sum [Choice "tt" Nothing]))

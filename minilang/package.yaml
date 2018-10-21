@@ -42,6 +42,7 @@ library:
   - Minilang.REPL
   - Minilang.Env
   - Minilang.Primitives
+  - Minilang.REPL.Haskeline
   dependencies:
   - base
   - containers
@@ -82,6 +83,7 @@ tests:
     - base
     - directory
     - minilang
+    - haskeline
     - hspec
     - hspec-discover
     - text

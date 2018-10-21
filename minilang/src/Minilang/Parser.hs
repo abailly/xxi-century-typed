@@ -98,20 +98,21 @@ program = expr <* eof
 
 expr
     :: MLParser AST
-expr = debug "expr:" (
-       (try def <?> "declaration")
-  <|> (abstraction <?> "abstraction")
-  <|> (dependent_product <?> "dependent product")
-  <|> (dependent_sum  <?> "dependent sum")
-  <|> (projection  <?> "projection")
-  <|> (labelled_sum  <?> "labelled sum")
-  <|> try case_match
-  <|> try fun_type
-  <|> try pair
-  <|> (ctor_expr <?> "constructor")
-  <|> try application
-  <|> (try term  <?> "term")
-  <?> "expression")
+expr =
+  debug "expr:" (
+  (try def <?> "declaration")
+    <|> (abstraction <?> "abstraction")
+    <|> (dependent_product <?> "dependent product")
+    <|> try (dependent_sum  <?> "dependent sum")
+    <|> (projection  <?> "projection")
+    <|> (labelled_sum  <?> "labelled sum")
+    <|> try case_match
+    <|> try fun_type
+    <|> try pair
+    <|> (ctor_expr <?> "constructor")
+    <|> try application
+    <|> (try term  <?> "term")
+    <?> "expression")
 
 debug :: String -> MLParser a -> MLParser a
 debug lbl act = do
@@ -122,7 +123,7 @@ debug lbl act = do
 
 def
   :: MLParser AST
-def = debug "definition" $ Def <$> single_decl <*> (scolon *> expr)
+def = debug "definition" $ define >> Def <$> single_decl <*> (scolon *> expr)
 
 single_decl
   :: MLParser Decl
@@ -130,11 +131,15 @@ single_decl = debug "declaration" $ (rec_decl <|> decl)
 
 rec_decl
   :: MLParser Decl
-rec_decl = debug "recursive declaration" $ ((recur >> RDecl <$> binding <*> (colon *> expr) <*> (equal *> expr)) <?> "recursive declaration")
+rec_decl = debug "recursive declaration" $ ((recur >> declaration RDecl) <?> "recursive declaration")
 
 decl
   :: MLParser Decl
-decl = debug "simple declaration" $ ((Decl <$> binding <*> (colon *> expr) <*> (equal *> expr)) <?> "declaration")
+decl = debug "simple declaration" $ (declaration Decl <?> "declaration")
+
+declaration
+  :: (Binding -> AST -> AST -> b) -> MLParser b
+declaration f = f <$> binding <*> (colon *> expr) <*> (equal *> expr)
 
 term
   :: MLParser AST
@@ -259,7 +264,7 @@ identifier = debug "identifier" $ do
       pure (c:cs)
 
 identInitial :: MLParser Char
-identInitial = letter <|> oneOf "+->*%/^?!|<~#@&="
+identInitial = letter <|> oneOf "+->*%/^?!<~#@&="
 
 identNext :: MLParser Char
 identNext = identInitial <|> digit
@@ -275,11 +280,12 @@ isReserved "π2"  = True
 isReserved "Sum" = True
 isReserved "fun" = True
 isReserved "rec" = True
+isReserved "def" = True
 isReserved "Σ"   = True
 isReserved _     = False
 
 lambda, dot, colon, scolon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum, fun, rarrow, recur, spaces1
+  ,lpar, rpar, pipe, sum, fun, rarrow, define, recur, spaces1
   :: MLParser ()
 lambda = char 'λ' >> spaces >> pure () <?> "lambda"
 dot    = char '.' >> spaces >> pure () <?> "dot"
@@ -295,6 +301,7 @@ pi1    = string "π1"  >> spaces >> pure () <?> "Pi.1"
 pi2    = string "π2"  >> spaces >> pure () <?> "Pi.2"
 sum    = string "Sum" >> spaces >> pure () <?> "Sum"
 fun    = string "fun" >> spaces >> pure () <?> "fun"
+define = string "def" >> spaces >> pure ()  <?> "def"
 recur  = string "rec" >> spaces >> pure ()  <?> "rec"
 sigma  = char 'Σ' >> spaces >> pure ()  <?> "Sigma"
 equal  = char '=' >> spaces >> pure ()  <?> "equal"

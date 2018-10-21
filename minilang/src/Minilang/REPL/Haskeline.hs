@@ -6,12 +6,14 @@
 module Minilang.REPL.Haskeline where
 
 
+import           Control.Arrow                           (first)
 import           Control.Exception                       (throw)
 import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans                     (lift)
-import           Data.List                               (isPrefixOf)
+import           Data.List                               (isPrefixOf,
+                                                          isSuffixOf)
 import           Data.Text                               (Text, pack, unpack)
 import           Data.Text.IO                            as Text
 import           Data.Text.Prettyprint.Doc
@@ -23,6 +25,7 @@ import           System.Console.Haskeline                (Completion (Completion
                                                           getInputLineWithInitial,
                                                           outputStrLn)
 import qualified System.Console.Haskeline.MonadException as Exc
+import           System.Directory                        (listDirectory)
 
 
 -- * Haskeline REPL
@@ -48,24 +51,45 @@ instance MonadREPL Haskeline where
   setEnv = put
 
 completion :: CompletionFunc IO
-completion (s, _) =
-  if ":set" `isPrefixOf` inputString
-  then pure ("", filter ((inputString `isPrefixOf`) . replacement) setCompletions)
-  else pure ("", filter ((inputString `isPrefixOf`) . replacement) completions)
+completion = completion' . first reverse
+
+data CompleteWith = SetUnset String | LoadFile | AllCommands
+
+completion' :: CompletionFunc IO
+completion' (inputString ,_) =
+  case matchedCompletionRule inputString of
+    SetUnset com:_ -> setUnsetCompletion com
+    LoadFile:_     -> completeLoadWithFiles
+    _              -> allCommandCompletions
+
   where
-    inputString = reverse s
-    setCompletions = [ Completion ":set step"  "step - Step through evaluation process, displaying each rule application" True
-                     , Completion ":set debug"  "debug - Debug parsing of input" True
-                     ]
-    completions = [ Completion ":quit"  ":quit - Quit minilang REPL" False
-                  , Completion ":env"  ":env - Dump current environment and context (types and values)" False
-                  , Completion ":clear"  ":clear - Clear environment" False
-                  , Completion ":load"  ":load - Load a file into the REPL" True
-                  , Completion ":set"  ":set - Set some properties of the REPL" True
-                  , Completion ":unset"  ":unset - Unset some properties of the REPL" True
-                  ]
+    matchedCompletionRule prefix =
+      snd <$> filter (($ prefix) . fst)
+      [ ((":set" `isPrefixOf`), SetUnset ":set")
+      , ((":unset" `isPrefixOf`), SetUnset ":unset")
+      , ((":load" `isPrefixOf`), LoadFile)
+      , (const True, AllCommands)
+      ]
 
+    completeLoadWithFiles = do
+      files <- filter (".mtt" `isSuffixOf`) <$> listDirectory "."
+      pure ("", fmap (\ fp -> Completion (":load " <> fp) fp True) files)
 
+    setUnsetCompletion com =
+      pure ("", filter ((inputString `isPrefixOf`) . replacement)
+                [ Completion (com <>" step")  "step - Step through evaluation process, displaying each rule application" True
+                , Completion (com <> " debug")  "debug - Debug parsing of input" True
+                ])
+
+    allCommandCompletions =
+      pure ("", filter ((inputString `isPrefixOf`) . replacement)
+                [ Completion ":quit"  ":quit - Quit minilang REPL" False
+                , Completion ":env"  ":env - Dump current environment and context (types and values)" False
+                , Completion ":clear"  ":clear - Clear environment" False
+                , Completion ":load"  ":load - Load a file into the REPL" True
+                , Completion ":set"  ":set - Set some properties of the REPL" True
+                , Completion ":unset"  ":unset - Unset some properties of the REPL" True
+                ])
 
 interpret
   :: Text -> In

@@ -346,11 +346,14 @@ checkI l (Var x) ρ γ = do
 
 checkI l a@(Ap m n) ρ γ = do
   inferringType a l ρ γ
-  EPi t g <- checkI l m ρ γ
-  check l n t ρ γ
-  let
-    v = inst g (eval n ρ)
-  inferredType a l ρ γ v
+  typ <- checkI l m ρ γ
+  case typ of
+    EPi t g -> do
+      check l n t ρ γ
+      let
+        v = inst g (eval n ρ)
+      inferredType a l ρ γ v
+    other -> throwM $ typingError $ "expected type of  "<> show (pretty m) <> " to be a product type (π x : A.f x), but found " <> show (pretty other)
 
 checkI _ (I _) _ _ = pure $ EPrim PrimInt
 

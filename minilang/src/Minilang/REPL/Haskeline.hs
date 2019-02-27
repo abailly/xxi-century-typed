@@ -16,7 +16,6 @@ import           Data.List                               (isPrefixOf,
                                                           isSuffixOf)
 import           Data.Text                               (Text, pack, unpack)
 import           Data.Text.IO                            as Text
-import           Data.Text.Prettyprint.Doc
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           System.Console.Haskeline                (Completion (Completion, replacement),

@@ -91,7 +91,7 @@ tenPercentOverbooking cargo@(MkCargo size) voyage@(MkVoyage capacity orderConfir
 ||| make further decisions.
 makeBooking'' : (cargo : Cargo) -> Voyage
               -> OverbookingPolicy
-               -> (voyage' : Voyage ** Dec (HasCargo cargo voyage'))
+              -> (voyage' : Voyage ** Dec (HasCargo cargo voyage'))
 makeBooking'' cargo voyage@(MkVoyage capacity orderConfirmation cargos) isAllowed =
   let voyage' = if isAllowed cargo voyage
                   then MkVoyage capacity orderConfirmation (cargo :: cargos)

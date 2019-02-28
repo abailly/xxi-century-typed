@@ -51,7 +51,6 @@ isCorrectAnswer (Grade question _ expected)                     (AnswerGrade ans
 isCorrectAnswer (Open question expected)                        (AnswerOpen  answer) = answer == expected
 
 
-
 ||| Magic values to simplify proofs
 -- an impossible value which we use to construct contradictory proofs
 VOID : _|_
@@ -90,14 +89,14 @@ validateAnswer s (Grade question (lb, ub) expected) =
                                       (No contra) => No $ tooLarge contra
                      (No contra) => No $ tooSmall contra
 
-readAnswer : (q : Question) -> IO (Answer q)
-readAnswer q = do
-  input <- getLine
+readAnswer : (q : Question) -> String -> IO (Answer q)
+readAnswer q input =
   case validateAnswer input q of
     (Yes prf) => pure prf
     (No contra) => do
-      putStr "Invalid answer !"
-      readAnswer q
+      putStrLn "Invalid answer, try again !"
+      l <- getLine
+      readAnswer q l
 
 data Answered : Type where
   MkAnswered : (question ** Answer question) -> Answered
@@ -152,12 +151,12 @@ parseInput s     = GiveAnswer (pack s)
 
 runCommand : Quizz n -> Command a -> IO (a, Quizz n)
 runCommand quizz  (Prompt q)         = do
-  putStrLn $ display q ++ " "
+  putStr $ display q ++ " "
   l <- getLine
   pure (parseInput $ unpack l, quizz)
 
 runCommand q@(MkQuizz answered current next) (AnswerQuestion x) = do
-  a <- readAnswer current
+  a <- readAnswer current x
   if isCorrectAnswer current a
   then do
     putStr "Correct !"

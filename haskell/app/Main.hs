@@ -1,7 +1,10 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Main where
 
-import           Data.Text (unpack)
+import           Control.Monad.State
+import           Data.Text           (pack, unpack)
 import           Quizz
+import           System.IO
 
 q1 =  Question (OpenQuestion "What is your name ?" "Sir Arthur" Nothing) Just
 q2 =  Question (OpenQuestion "What is your quest?" "To seek the Holy Grail" Nothing) Just
@@ -11,9 +14,25 @@ q5 =  Question (Grade "What is the air-speed velocity of an unladen swallow?" (0
 
 
 survey =
-  Quizz [] q1 [ q1, q2, q3, q4 ]
+  Quizz [] q1 [ q2, q3, q4 ]
 
 
 main :: IO ()
-main = undefined -- TBD this is left as an exercise for the reader...
+main = do
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout NoBuffering
+  result <- quizz survey
+  putStrLn $ show result
+  case bridgeKeeperAssessment arthur result of
+    CanCross _ -> putStrLn $ "You can cross the bridge " <> show arthur
+    IsDoomed _ -> putStrLn $ "You shall fall into the Chasm of Death, " <> show arthur
+  where
+    arthur = Knight "Arthur" (const Nothing)
 
+    quizz cur@Quizz{currentQuestion} = do
+      putStr (show currentQuestion)
+      answer <- getLine
+      let updated = answerQuestion (arthur { responses = const (pure $ pack answer) }) currentQuestion cur
+      case nextQuestions updated of
+        [] -> pure updated
+        _  -> quizz updated

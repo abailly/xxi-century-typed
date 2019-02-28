@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Quizz (Quizz(..), Question(..), QCM(..), OpenQuestion(..), Grade(..), Knight(..), Fate(..),
-              answers, bridgeKeeperAssessment, isCorrectAnswer)
+              answerQuestion, answers, bridgeKeeperAssessment, isCorrectAnswer)
 where
 
 import           Data.Text (Text, unpack)
@@ -103,9 +104,10 @@ answers k q =
  foldr (answerQuestion k) q (nextQuestions q)
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
-bridgeKeeperAssessment knight quizz =
-  if all answersAreCorrect (previousQuestions $ knight `answers` quizz)
-  then CanCross knight
-  else IsDoomed knight
+bridgeKeeperAssessment knight Quizz{previousQuestions} =
+  _foo (all answersAreCorrect previousQuestions)
+  -- if all answersAreCorrect previousQuestions
+  -- then CanCross knight
+  -- else IsDoomed knight
   where
     answersAreCorrect (Question q _) = isCorrectAnswer q

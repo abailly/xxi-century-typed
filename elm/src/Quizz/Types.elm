@@ -1,4 +1,4 @@
-module Quizz.Types exposing (..)
+module Quizz.Types exposing (Model(..), Msg(..), OpenQuestion, QCMQuestion, Question(..), Quizz, ResponseStatus(..), checkResponseVsExpectation, initialModel, mkQuestion, qcm, showQuestion, showResponse, updateAnswer)
 
 
 type Model
@@ -12,21 +12,9 @@ type alias Quizz =
     , nextQuestions : List Question
     , currentResponse :
         String
-        -- UI only state
+
+    -- UI only state
     }
-
-
-initialModel : Model
-initialModel =
-    QuizzInProgress
-        { pastQuestions = []
-        , current = question "What is your name?" "Sir Arthur"
-        , nextQuestions =
-            [ question "What is your quest?" "To seek the Holy Grail"
-            , qcm "What is your favorite colour?" [ "blue", "green", "yellow", "don't know" ] "blue"
-            ]
-        , currentResponse = ""
-        }
 
 
 type Question
@@ -47,6 +35,19 @@ type alias QCMQuestion =
     , expected : String
     , response : Maybe String
     }
+
+
+initialModel : Model
+initialModel =
+    QuizzInProgress
+        { pastQuestions = []
+        , current = mkQuestion "What is your name?" "Sir Arthur"
+        , nextQuestions =
+            [ mkQuestion "What is your quest?" "To seek the Holy Grail"
+            , qcm "What is your favorite colour?" [ "blue", "green", "yellow", "don't know" ] "blue"
+            ]
+        , currentResponse = ""
+        }
 
 
 showQuestion : Question -> String
@@ -70,8 +71,8 @@ showResponse question =
                 q.response
 
 
-question : String -> String -> Question
-question q e =
+mkQuestion : String -> String -> Question
+mkQuestion q e =
     Question { question = q, expected = e, response = Nothing }
 
 
@@ -86,8 +87,8 @@ updateAnswer answer question =
         Question open ->
             Question { open | response = answer }
 
-        QCM qcm ->
-            QCM { qcm | response = answer }
+        QCM aQcm ->
+            QCM { aQcm | response = answer }
 
 
 type ResponseStatus
@@ -107,6 +108,7 @@ checkResponseVsExpectation question =
                 Just r ->
                     if r == expected then
                         Correct
+
                     else
                         Incorrect
 
@@ -118,6 +120,7 @@ checkResponseVsExpectation question =
                 Just i ->
                     if i == expected then
                         Correct
+
                     else
                         Incorrect
 

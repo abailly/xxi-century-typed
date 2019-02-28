@@ -22,18 +22,18 @@ update msg state =
                         answeredQuestions =
                             answered :: quizz.pastQuestions
                     in
-                        case quizz.nextQuestions of
-                            [] ->
-                                QuizzCompleted { answers = answeredQuestions } ! []
+                    case quizz.nextQuestions of
+                        [] ->
+                            QuizzCompleted { answers = answeredQuestions } ! []
 
-                            q :: qs ->
-                                QuizzInProgress
-                                    { quizz
-                                        | pastQuestions = answeredQuestions
-                                        , current = q
-                                        , nextQuestions = qs
-                                    }
-                                    ! []
+                        q :: qs ->
+                            QuizzInProgress
+                                { quizz
+                                    | pastQuestions = answeredQuestions
+                                    , current = q
+                                    , nextQuestions = qs
+                                }
+                                ! []
 
                 NoOp ->
                     state ! []

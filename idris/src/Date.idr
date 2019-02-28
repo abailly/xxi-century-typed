@@ -90,6 +90,21 @@ data Date : Type where
          -> { auto dayGreaterThanOne : LTE 1 day }
          -> Date
 
+
+implementation Eq Date where
+  (MkDate y1 m1 d1) == (MkDate y2 m2 d2) =
+    d1 == d2 && m1 == m2 && y1 == y2
+
+implementation Ord Date where
+  compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
+    case compare y1 y2 of
+      EQ => case compare m1 m2 of
+                 EQ => compare d1 d2
+                 LT => LT
+                 GT => GT
+      LT => LT
+      GT => GT
+
 daysMax : (d: Date) -> Nat
 daysMax (MkDate y m _) = daysInMonth m y
 
@@ -114,10 +129,12 @@ addDays : (d : Date)
 addDays d Z     = d
 addDays d (S k) = addDays (addOneDay d) k
 
-lireLeJour : String -> Maybe Date
-lireLeJour jour =
-  let  j = parsePositive jour
-  in  case j of
+
+||| Reads a single day for the month of February 2018
+readDay : String -> Maybe Date
+readDay day =
+  let  d = parsePositive day
+  in  case d of
          Nothing  => Nothing
          (Just x) => let j' = the Nat $ fromInteger x
                      in case isLTE j' 28 of
@@ -126,17 +143,3 @@ lireLeJour jour =
                                                        MkDate  2018 February j'
                                          (No _) => Nothing
                        (No _)    => Nothing
-
-implementation Eq Date where
-  (MkDate y1 m1 d1) == (MkDate y2 m2 d2) =
-    d1 == d2 && m1 == m2 && y1 == y2
-
-implementation Ord Date where
-  compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
-    case compare y1 y2 of
-      EQ => case compare m1 m2 of
-                 EQ => compare d1 d2
-                 LT => LT
-                 GT => GT
-      LT => LT
-      GT => GT

@@ -3,11 +3,12 @@ module Minilang.Parser where
 import           Data.Either           (fromRight)
 import           Data.Functor          (void)
 import           Data.Functor.Identity (Identity)
+import           Data.Maybe            (fromMaybe)
 import           Data.Monoid           ((<>))
 import           Data.Text             (Text, pack, unpack)
 import qualified Debug.Trace
 import           GHC.Generics          (Generic)
-import           Prelude               hiding (pi, sum)
+import           Prelude               hiding (lex, pi, sum)
 import           Text.Parsec
 import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
@@ -94,7 +95,7 @@ type MLParser a = Parsec String ParserState a
 
 program
   :: MLParser AST
-program = expr <* eof
+program = ws *> expr <* eof
 
 expr
     :: MLParser AST
@@ -123,7 +124,7 @@ debug lbl act = do
 
 def
   :: MLParser AST
-def = debug "definition" $ define >> Def <$> single_decl <*> (scolon *> expr)
+def = debug "definition" $ define >> Def <$> single_decl <*> fmap (fromMaybe Unit) (optionMaybe (scolon *> expr))
 
 single_decl
   :: MLParser Decl
@@ -232,6 +233,15 @@ lexer
   :: Tokens.GenTokenParser String ParserState Identity
 lexer = Tokens.makeTokenParser haskellDef
 
+reservedOp :: String -> MLParser ()
+reservedOp = Tokens.reservedOp lexer
+
+lex :: MLParser a -> MLParser a
+lex = Tokens.lexeme lexer
+
+ws :: MLParser ()
+ws = Tokens.whiteSpace lexer
+
 number, string_literal, variable, unit, ctor, one
   :: MLParser AST
 
@@ -245,15 +255,15 @@ variable = try $ do
     "U"   -> pure U
     other -> pure $ Var other
 
-unit   = string "()" >> spaces *> pure Unit <?> "unit"
+unit   = reservedOp "()" *> pure Unit <?> "unit"
 
-one = string "[]" >> spaces *> pure One <?>  "One"
+one = reservedOp "[]" *> pure One <?>  "One"
 
 ctor = char '$' >> Ctor <$> identifier <*> pure Nothing
 
 identifier :: MLParser Text
 identifier = debug "identifier" $ do
-  i <- pack <$> ident <* spaces
+  i <- pack <$> lex ident
   if isReserved i
     then fail (unpack i ++ " is a keyword")
     else pure i
@@ -287,22 +297,22 @@ isReserved _     = False
 lambda, dot, colon, scolon, pi, sigma, equal, pi1, pi2, comma
   ,lpar, rpar, pipe, sum, fun, rarrow, define, recur, spaces1
   :: MLParser ()
-lambda = char 'λ' >> spaces >> pure () <?> "lambda"
-dot    = char '.' >> spaces >> pure () <?> "dot"
-colon  = char ':' >> spaces >> pure () <?> "colon"
-scolon = char ';' >> spaces >> pure () <?> "colon"
-comma  = char ',' >> spaces >> pure () <?> "comma"
-pipe   = char '|' >> spaces >> pure () <?> "pipe"
-lpar   = char '(' >> spaces >> pure () <?> "left parenthesis"
-rpar   = char ')' >> spaces >> pure () <?> "right parenthesis"
-rarrow = (void (string "->") <|> void (char '→')) >> spaces >> pure () <?> "right arrow"
-pi     = char 'Π' >> spaces >> pure ()  <?> "Pi"
+lambda = lex (char 'λ') >> pure () <?> "lambda"
+dot    = lex (char '.')  >> pure () <?> "dot"
+colon  = lex (char ':')  >> pure () <?> "colon"
+scolon = lex (char ';')  >> pure () <?> "colon"
+comma  = lex (char ',')  >> pure () <?> "comma"
+pipe   = lex (char '|')  >> pure () <?> "pipe"
+lpar   = lex (char '(')  >> pure () <?> "left parenthesis"
+rpar   = lex (char ')')  >> pure () <?> "right parenthesis"
+rarrow = (void (lex (string "->")) <|> void (lex (char '→'))) >> pure () <?> "right arrow"
+pi     = lex (char 'Π')  >> pure ()  <?> "Pi"
 pi1    = string "π1"  >> spaces >> pure () <?> "Pi.1"
 pi2    = string "π2"  >> spaces >> pure () <?> "Pi.2"
-sum    = string "Sum" >> spaces >> pure () <?> "Sum"
-fun    = string "fun" >> spaces >> pure () <?> "fun"
-define = string "def" >> spaces >> pure ()  <?> "def"
-recur  = string "rec" >> spaces >> pure ()  <?> "rec"
-sigma  = char 'Σ' >> spaces >> pure ()  <?> "Sigma"
-equal  = char '=' >> spaces >> pure ()  <?> "equal"
+sum    = lex (string "Sum")  >> pure () <?> "Sum"
+fun    = lex (string "fun")  >> pure () <?> "fun"
+define = lex (string "def")  >> pure ()  <?> "def"
+recur  = lex (string "rec")  >> pure ()  <?> "rec"
+sigma  = lex (char 'Σ')  >> pure ()  <?> "Sigma"
+equal  = lex (char '=')  >> pure ()  <?> "equal"
 spaces1 = skipMany1 space <?> "spaces"

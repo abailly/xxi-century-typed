@@ -95,6 +95,21 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "λ (abc, xyz) . abc" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
       parseProgram False "Π (abc, xyz): U . abc" `shouldBe` Pi (Pat (B "abc") (B "xyz")) U (Var "abc")
 
+    it "parses single-line comments after an expression" $ do
+      parseProgram False "() -- this is a comment" `shouldBe` Unit
+      parseProgram False "[] -- this is a comment" `shouldBe` One
+      parseProgram False "-- this is a comment\n()" `shouldBe` Unit
+      parseProgram False "λ -- this is a comment\n(abc, xyz) . abc"
+        `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
+      parseProgram False "fun -- a comment\n (foo -- a comment \n-> 12 | bar x -> h2)"
+        `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
+
+    it "parses multiline comments" $ do
+      parseProgram False "fun {- this is a multiline \n comment -} (foo -- a comment \n-> 12 | bar x -> h2)"
+        `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
+      parseProgram False "{- this is a multiline comment -}\ndef x : Unit -> [] = fun (tt -> ())"
+        `shouldBe`  Def (Decl (B "x") (Pi Wildcard (Var "Unit") One) (Case [Clause "tt" (Abs Wildcard Unit)])) Unit
+
   describe "Declarations" $ do
 
     it "parses generic id function" $ do

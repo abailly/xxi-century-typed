@@ -99,8 +99,10 @@ withTerminal =
     settings = setComplete completion $ defaultSettings { historyFile = Just "~/.minilang.history" }
 
 
--- * IO REPL
+-- * Other REPLs
 
+-- | Pure IO REPL
+-- Used for testing purposes
 withHandles
   :: Handle -> Handle -> IO ()
 withHandles hin hout =

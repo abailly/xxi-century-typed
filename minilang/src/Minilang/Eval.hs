@@ -81,7 +81,8 @@ app (EAbs f@Cl{})     v          = inst f v
 app c@(ECase (cs,ρ)) (ECtor n v) = maybe (app m' EUnit) (app m') v
   where
     m'         = eval m ρ
-    Clause _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $ branch cs n
+    Clause _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $
+                 branch cs n
 app (ECase s)        (ENeut k)   = ENeut $ NCase s k
 app (ENeut k)        v           = ENeut $ NAp k v
 app l r             = error $ "don't know how to apply " ++ show l ++ " to "++ show r
@@ -133,4 +134,4 @@ proj nam bnd val = fromJust $ proj' nam bnd val
       | n == n'           = Just v
       | otherwise         = Nothing
     proj' n (Pat b b') v  = proj' n b (p1 v) <|> proj' n b' (p2 v)
-    proj' _ _ _                     = error $ "don't know how to project " <> show nam <> " to " <> show val <> " in " <> show bnd
+    proj' _ _ _           = error $ "don't know how to project " <> show nam <> " to " <> show val <> " in " <> show bnd

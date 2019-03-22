@@ -33,18 +33,9 @@ ghc-options: -Wall -Werror
 
 library:
   source-dirs: src
-  exposed-modules:
-  - Minilang.Parser
-  - Minilang.Pretty
-  - Minilang.Eval
-  - Minilang.Normalize
-  - Minilang.Type
-  - Minilang.REPL
-  - Minilang.Env
-  - Minilang.Primitives
-  - Minilang.REPL.Haskeline
   dependencies:
   - base
+  - bytestring
   - containers
   - concurrency
   - directory
@@ -70,6 +61,7 @@ executables:
     - base
     - minilang
     - text
+    - unix
 
 tests:
   minilang-test:

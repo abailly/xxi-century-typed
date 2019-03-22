@@ -1,0 +1,18 @@
+def rec Nat : U = Sum(zero | succ Nat);
+
+def Pair : U -> U -> U = λ A . λ B . Sum (P (Σ _ : A . B));
+
+def rec add : Nat -> Nat -> Nat =
+  fun (  zero  -> λ n . n
+       | succ n -> λ m . $succ (add n m));
+
+def rec mult : Nat -> Nat -> Nat =
+  fun (zero -> λ _ . $zero
+       | succ n -> λ m . add m (mult n m)) ;
+
+def rec Vec : U -> Π n : Nat . U =
+    λ A . λ n . Sum (nil | cons A (Vec A n)) ;
+
+def rec append : Π A : U . Π m : Nat . Π n : Nat . Π xs : Vec A n . Π ys : Vec A m =
+  λ _ . λ _ . λ _ . fun ( nil -> λ ys . ys
+                          | cons )

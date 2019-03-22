@@ -197,14 +197,14 @@ projection = try (P1 <$> (pi1 >> dot *> expr))
 
 labelled_sum
   :: MLParser AST
-labelled_sum = sum >> spaces >> lpar *> (Sum <$> ctors) <* rpar
+labelled_sum = sum >> lpar *> (Sum <$> ctors) <* rpar
   where
     ctors = clause `sepBy` pipe
     clause = Choice <$> identifier <*> optionMaybe expr
 
 case_match
   :: MLParser AST
-case_match = fun >> spaces >> lpar *> (Case <$> ctors) <* rpar
+case_match = fun >> lpar *> (Case <$> ctors) <* rpar
              <?> "case match"
   where
     ctors = clause `sepBy` pipe

@@ -13,6 +13,4 @@ def rec mult : Nat -> Nat -> Nat =
 def rec Vec : U -> Π n : Nat . U =
     λ A . λ n . Sum (nil | cons A (Vec A n)) ;
 
-def rec append : Π A : U . Π m : Nat . Π n : Nat . Π xs : Vec A n . Π ys : Vec A m =
-  λ _ . λ _ . λ _ . fun ( nil -> λ ys . ys
-                          | cons )
+def rec append : Π A : U . Π m : Nat . Π n : Nat . Π xs : Vec A n . Π ys : Vec A m =  λ _ . λ _ . λ _ . fun ( nil -> λ ys . ys | cons )

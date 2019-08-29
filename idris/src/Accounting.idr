@@ -22,6 +22,7 @@ import Decidable.Order
 -- are impacted by a given transaction, the fundamental accounting
 -- equation of assets equal liabilities plus capital will hold.
 
+export
 data Direction : Type where
   Dr : Direction
   Cr : Direction
@@ -31,6 +32,8 @@ Eq Direction where
   Cr == Cr = True
   _  == _  = False
 
+
+public export
 data AccountType : Type  where
   Asset : AccountType
   Liability : AccountType
@@ -38,12 +41,15 @@ data AccountType : Type  where
   Expense : AccountType
   Revenue : AccountType
 
+export
 data Account : (accType : AccountType) -> Type where
   MkAccount : String -> Account accType
 
+export
 capital : Account Equity
 capital = MkAccount "capital"
 
+export
 bank : Account Asset
 bank = MkAccount "bank"
 
@@ -62,18 +68,28 @@ balance : Vect n Entry -> (Nat, Direction)
 balance entries = balance' entries (Z, Cr)
   where
     balance' : Vect n Entry -> (Nat, Direction) -> (Nat, Direction)
-    balance' [] acc = acc
+    balance' [] (Z, Dr) = (Z, Cr)  -- this normalizes 0 to be a Credit operation
+    balance' [] acc     = acc
     balance' ((MkEntry amount direction account) :: xs) (n, dir) =
       if direction == dir
-      then (amount + n, dir)
+      then balance' xs (amount + n, dir)
       else case order {to=LTE} n amount of
-             (Left ltenamount) => balance' xs (amount - n, direction)
-             (Right lteamountn) => balance' xs  (n - amount, dir)
+             (Left ltenamount)  => balance' xs (amount - n, direction)
+             (Right lteamountn) => balance' xs (n - amount, dir)
+
+valid : balance [ MkEntry 100 Cr Accounting.bank,
+                  MkEntry 100 Dr Accounting.capital ] = (0, Cr)
+valid = Refl
+
+invalid : balance [ MkEntry 100 Cr Accounting.bank,
+                    MkEntry 101 Dr Accounting.capital ] = (0, Cr)
+invalid = ?hole
 
 data Entries : Type where
   MkEntries : (entries : Vect n Entry) ->
               { auto need2Entries : LTE 2 n } ->
               { auto balanced : balance entries = (0, Cr) } -> Entries
+
 
 record Transaction where
   constructor Tx

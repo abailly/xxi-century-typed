@@ -81,9 +81,9 @@ valid : balance [ MkEntry 100 Cr Accounting.bank,
                   MkEntry 100 Dr Accounting.capital ] = (0, Cr)
 valid = Refl
 
-invalid : balance [ MkEntry 100 Cr Accounting.bank,
-                    MkEntry 101 Dr Accounting.capital ] = (0, Cr)
-invalid = ?hole
+invalid : Not (balance [ MkEntry 100 Cr Accounting.bank,
+                         MkEntry 101 Dr Accounting.capital ] = (0, Cr))
+invalid = \ Refl impossible
 
 data Entries : Type where
   MkEntries : (entries : Vect n Entry) ->

@@ -3,7 +3,9 @@
 ||| The goal of this module is to demonstrate how dependent can be useful
 ||| in defining invariants for business domains.
 |||
-||| ## Reference
+||| ## Accounting Rules
+|||
+||| ### Reference
 |||
 ||| From https://en.wikipedia.org/wiki/Double-entry_bookkeeping_system
 |||
@@ -25,7 +27,8 @@
 ||| > are impacted by a given transaction, the fundamental accounting
 ||| > equation of assets equal liabilities plus capital will hold.
 |||
-||| **NOTE**:
+||| ### Actual Rules
+|||
 ||| Actually, this fundamental equation is only true at the end of a period
 ||| because everyday transactions usually involve a revenue/expense account
 ||| and one or more assets/liabilities accounts. For example, making a sale
@@ -156,7 +159,7 @@ data Entries : Type where
               { auto need2Entries : LTE 2 n } ->
               { auto balanced : balance entries = (0, Cr) } -> Entries
 
-public export
+export
 record Transaction where
   constructor Tx
   label : String

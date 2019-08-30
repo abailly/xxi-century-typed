@@ -3,6 +3,6 @@ package xxi
 pkgs = contrib
 
 sourcedir = src
-modules = quizz
+modules = quizz, Accounting
 main = main
 executable = quizz

@@ -46,12 +46,12 @@ data Account : (accType : AccountType) -> Type where
   MkAccount : String -> Account accType
 
 export
-capital : Account Equity
-capital = MkAccount "capital"
+Capital : Account Equity
+Capital = MkAccount "Capital"
 
 export
-bank : Account Asset
-bank = MkAccount "bank"
+Bank : Account Asset
+Bank = MkAccount "Bank"
 
 record Entry where
   constructor MkEntry
@@ -77,12 +77,16 @@ balance entries = balance' entries (Z, Cr)
              (Left ltenamount)  => balance' xs (amount - n, direction)
              (Right lteamountn) => balance' xs (n - amount, dir)
 
-valid : balance [ MkEntry 100 Cr Accounting.bank,
-                  MkEntry 100 Dr Accounting.capital ] = (0, Cr)
-valid = Refl
+valid1 : balance [ MkEntry 100 Dr Bank,
+                  MkEntry 100 Cr Capital ] = (0, Cr)
+valid1 = Refl
 
-invalid : Not (balance [ MkEntry 100 Cr Accounting.bank,
-                         MkEntry 101 Dr Accounting.capital ] = (0, Cr))
+valid2 : balance [ MkEntry 100 Cr Bank,
+                  MkEntry 100 Dr Capital ] = (0, Cr)
+valid2 = Refl
+
+invalid : Not (balance [ MkEntry 100 Cr Bank,
+                         MkEntry 101 Dr Capital ] = (0, Cr))
 invalid = \ Refl impossible
 
 data Entries : Type where

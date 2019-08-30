@@ -111,6 +111,9 @@ public export
 data Account : Type where
   MkAccount : String -> { type : AccountType } -> Account
 
+Eq Account where
+  (MkAccount lbl {type=t}) == (MkAccount lbl' {type=t'}) = lbl == lbl' && t == t'
+
 isA : AccountType -> Account -> Bool
 isA t (MkAccount _ {type}) = t == type
 
@@ -127,6 +130,9 @@ record Entry where
   constructor MkEntry
   amount : Balance
   account : Account
+
+Eq Entry where
+  (MkEntry amount acc) == (MkEntry amount' acc') = amount == amount' && acc == acc'
 
 ||| Provide the balance for a list of entries
 ||| When there is not entry, by convention it returns `(0, Cr)`,
@@ -155,9 +161,21 @@ invalid = \ Refl impossible
 
 export
 data Entries : Type where
+
+
   MkEntries : (entries : Vect n Entry) ->
               { auto need2Entries : LTE 2 n } ->
               { auto balanced : balance entries = (0, Cr) } -> Entries
+
+
+withSameLength : (en : Vect n' Entry) -> (prf : n = n') -> Vect n Entry
+withSameLength en prf = rewrite prf in en
+
+Eq Entries where
+  (MkEntries en {n=n}) == (MkEntries en' {n=n'}) with (decEq n n')
+     | (Yes prf) = withSameLength en' prf == en
+     | (No _)    = False
+
 
 export
 record Transaction where
@@ -165,6 +183,9 @@ record Transaction where
   label : String
   date : String
   entries : Entries
+
+Eq Transaction where
+  (Tx lbl dat en) == (Tx lbl' dat' en') = lbl == lbl' && dat == dat' && en == en'
 
 select : (Account -> Bool) -> Entries -> (Nat, Direction)
 select selector (MkEntries entries) with (filter (selector . account) entries)
@@ -188,7 +209,28 @@ data BookOfAccounts : Type where
                      { auto fundamentalEquation : invert (assets txs) = liabilities txs <+> capital txs } ->
                      BookOfAccounts
 
+tx : Transaction
+tx = Tx "Some transaction" "2019-01-01" $ MkEntries [ MkEntry (100, Dr) Bank,
+                                                      MkEntry (100, Cr) Capital ]
+
 book1 : BookOfAccounts
-book1 = BookTransactions [ Tx "foo" "1/1/2019" $ MkEntries [ MkEntry (100, Dr) Bank,
-                                                             MkEntry (100, Cr) Capital ]
-                         ]
+book1 = BookTransactions [ tx ]
+
+ReadError : Type
+ReadError = String
+
+||| Reads a transaction from a `String`
+||| The expected format is:
+||| * A line with an ISO8601-formatted data, one or more space, and a free-form label||| * 2 or more lines starting with at least 2 spaces, of the form:
+|||   * Account type, followed by a colon, followed by an account name
+|||     The account name can contain spaces
+|||   * one or more spaces, followed by the letter D or C, followe by an integer
+|||
+readTransaction : String -> Either ReadError Transaction
+readTransaction input = Left input
+
+test1 : Bool
+test1 = readTransaction """
+2019-01-01 Some transaction
+  Asset:Bank D 100
+  Equity:Capital C 100"""  == Right tx

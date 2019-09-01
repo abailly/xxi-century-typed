@@ -1,8 +1,8 @@
 package xxi
 
-pkgs = contrib
+pkgs = contrib, lightyear
 
 sourcedir = src
-modules = quizz, Accounting
+modules = Accounting
 main = main
-executable = quizz
+executable = accounting

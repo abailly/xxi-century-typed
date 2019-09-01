@@ -1,6 +1,6 @@
 module Main
 
-import quizz
+import Accounting
 
 main : IO ()
-main = runQuizz sampleQuizz
+main = readAccounts

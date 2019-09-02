@@ -28,10 +28,10 @@ parseTxHeader = do
 
 parseAccountType : Parser AccountType
 parseAccountType = do
-  typ <- string "Asset" <|>
+  typ <- string "Asset"     <|>
          string "Liability" <|>
-         string "Equity" <|>
-         string "Expense" <|>
+         string "Equity"    <|>
+         string "Expense"   <|>
          string "Revenue"
   case typ of
     "Asset" => pure Asset

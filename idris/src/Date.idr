@@ -1,3 +1,10 @@
+||| Date representation in Gregorian Calendar
+|||
+||| This module provides basic `Date` type encoded as dates in the Gregorian
+||| calendar, with an [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) `String`
+||| representation. The `Date`'s only constructor `MkDate` statically ensures
+||| the constructed date is valid, eg. it is a type error to try to define a
+||| `MkDate 2019 February 29` as 2019 is not a bisextile year.
 module Date
 
 import Lightyear
@@ -185,6 +192,8 @@ toDate y m d = do
                       (No _) => Left ("invalid number of days " ++ d ++ " in month " ++ m ++ " and year " ++ y)
     (No _) => Left ("invalid number of days "++ d ++ " in month " ++ m ++ " and year " ++ y)
 
+||| Parse a `Date` in ISO8601 format
+||| Date must respect the format `YYYY-mm-dd` and of course be a valid date.
 parseISO8601Date : Parser Date
 parseISO8601Date = do
   let digits = \ n => pack <$> ntimes n (satisfy isDigit)

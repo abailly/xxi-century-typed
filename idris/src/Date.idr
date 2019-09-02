@@ -1,11 +1,9 @@
 module Date
 
 import Lightyear
-import Prelude.Either
 import public Lightyear.Char
 import public Lightyear.Strings
 
-import Prelude.Strings
 import Decidable.Order
 import Data.String
 
@@ -30,10 +28,10 @@ toNat October    = 10
 toNat November   = 11
 toNat December   = 12
 
-implementation Eq Month where
+Eq Month where
   m1 == m2 = toNat m1 == toNat m2
 
-implementation Ord Month where
+Ord Month where
   compare m1  m2 = compare (toNat m1) (toNat m2)
 
 fromInteger : Integer -> Either String Month
@@ -111,11 +109,11 @@ data Date : Type where
          -> Date
 
 
-implementation Eq Date where
+Eq Date where
   (MkDate y1 m1 d1) == (MkDate y2 m2 d2) =
     d1 == d2 && m1 == m2 && y1 == y2
 
-implementation Ord Date where
+Ord Date where
   compare (MkDate d1 m1 y1) (MkDate d2 m2 y2) =
     case compare y1 y2 of
       EQ => case compare m1 m2 of
@@ -187,12 +185,12 @@ toDate y m d = do
                       (No _) => Left ("invalid number of days " ++ d ++ " in month " ++ m ++ " and year " ++ y)
     (No _) => Left ("invalid number of days "++ d ++ " in month " ++ m ++ " and year " ++ y)
 
-export
 parseISO8601Date : Parser Date
 parseISO8601Date = do
-  y <- pack <$> ntimes 4 (satisfy isDigit)
+  let digits = \ n => pack <$> ntimes n (satisfy isDigit)
+  y <- digits 4
   char '-'
-  m <- pack <$> ntimes 2 (satisfy isDigit)
+  m <- digits 2
   char '-'
-  d <- pack <$> ntimes 2 (satisfy isDigit)
+  d <- digits 2
   either fail pure (toDate y m d)

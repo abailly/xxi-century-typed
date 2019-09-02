@@ -3,6 +3,6 @@ package xxi
 pkgs = contrib, lightyear
 
 sourcedir = src
-modules = Accounting
+modules = Accounting, Accounting.Core, Accounting.Parse, Date
 main = main
 executable = accounting

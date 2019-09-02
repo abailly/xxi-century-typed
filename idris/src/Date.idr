@@ -1,5 +1,10 @@
 module Date
 
+import Lightyear
+import Prelude.Either
+import public Lightyear.Char
+import public Lightyear.Strings
+
 import Prelude.Strings
 import Decidable.Order
 import Data.String
@@ -30,6 +35,21 @@ implementation Eq Month where
 
 implementation Ord Month where
   compare m1  m2 = compare (toNat m1) (toNat m2)
+
+fromInteger : Integer -> Either String Month
+fromInteger 1 = Right January
+fromInteger 2 = Right February
+fromInteger 3 = Right March
+fromInteger 4 = Right April
+fromInteger 5 = Right May
+fromInteger 6 = Right June
+fromInteger 7 = Right July
+fromInteger 8 = Right August
+fromInteger 9 = Right September
+fromInteger 10 = Right October
+fromInteger 11 = Right November
+fromInteger 12 = Right December
+fromInteger n = Left $ "Invalid month number " ++ show n
 
 Year : Type
 Year = Nat
@@ -105,6 +125,14 @@ implementation Ord Date where
       LT => LT
       GT => GT
 
+Show Date where
+  show (MkDate y m d) = show y ++ "-" ++ with2Digits (toNat m) ++ "-" ++ with2Digits d
+  where
+    with2Digits : Nat -> String
+    with2Digits n = if n <= 9
+                    then "0" ++ show n
+                    else show n
+
 daysMax : (d: Date) -> Nat
 daysMax (MkDate y m _) = daysInMonth m y
 
@@ -130,16 +158,41 @@ addDays d Z     = d
 addDays d (S k) = addDays (addOneDay d) k
 
 
-||| Reads a single day for the month of February 2018
-readDay : String -> Maybe Date
-readDay day =
-  let  d = parsePositive day
-  in  case d of
-         Nothing  => Nothing
-         (Just x) => let j' = the Nat $ fromInteger x
-                     in case isLTE j' 28 of
-                       (Yes prf) => case isLTE 1 j' of
-                                         (Yes prf') => Just $
-                                                       MkDate  2018 February j'
-                                         (No _) => Nothing
-                       (No _)    => Nothing
+mkYear : (y : String) -> Either String Year
+mkYear y =
+  case parsePositive {a=Nat} y of
+    Nothing => Left ("Invalid year " ++ y)
+    (Just x) => Right x
+
+mkMonth : (y : String) -> Either String Month
+mkMonth y =
+  case parsePositive {a=Integer} y of
+    Nothing => Left ("Invalid month " ++ y)
+    (Just x) => fromInteger x
+
+mkDay : (y : String) -> Either String Nat
+mkDay y =
+  case parsePositive {a=Nat} y of
+    Nothing => Left ("Invalid day " ++ y)
+    (Just x) => Right x
+
+toDate : String -> String -> String -> Either String Date
+toDate y m d = do
+  year <- mkYear y
+  month <- mkMonth m
+  day <- mkDay d
+  case isLTE day (daysInMonth month year) of
+    (Yes prf) => case isLTE 1 day of
+                      (Yes prf') => pure $ MkDate year month day
+                      (No _) => Left ("invalid number of days " ++ d ++ " in month " ++ m ++ " and year " ++ y)
+    (No _) => Left ("invalid number of days "++ d ++ " in month " ++ m ++ " and year " ++ y)
+
+export
+parseISO8601Date : Parser Date
+parseISO8601Date = do
+  y <- pack <$> ntimes 4 (satisfy isDigit)
+  char '-'
+  m <- pack <$> ntimes 2 (satisfy isDigit)
+  char '-'
+  d <- pack <$> ntimes 2 (satisfy isDigit)
+  either fail pure (toDate y m d)

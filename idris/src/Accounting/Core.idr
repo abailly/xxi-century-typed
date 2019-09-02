@@ -1,6 +1,7 @@
 module Accounting.Core
 
 import Data.Vect
+import Date
 import Decidable.Order
 import public Decidable.Equality
 
@@ -140,14 +141,14 @@ public export
 record Transaction where
   constructor Tx
   label : String
-  date : String
+  date : Date
   entries : Entries
 
 Eq Transaction where
   (Tx lbl dat en) == (Tx lbl' dat' en') = lbl == lbl' && dat == dat' && en == en'
 
 Show Transaction where
-  show (Tx lbl dt entries) = dt ++ " " ++ lbl ++ "\n" ++ show entries
+  show (Tx lbl dt entries) = show dt ++ " " ++ lbl ++ "\n" ++ show entries
 
 public export
 select : (Account -> Bool) -> Entries -> (Nat, Direction)
@@ -210,7 +211,7 @@ invalid : Not (balance [ MkEntry (100, Cr) Bank,
 invalid = \ Refl impossible
 
 tx : Transaction
-tx = Tx "Some transaction" "2019-01-01" $ MkEntries [ MkEntry (100, Dr) Bank,
+tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry (100, Dr) Bank,
                                                       MkEntry (100, Cr) Capital ]
 
 book1 : BookOfAccounts

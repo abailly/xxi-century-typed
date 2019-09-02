@@ -2,21 +2,14 @@ module Accounting.Parse
 
 import public Accounting.Core
 
+import Date
+
 import public Lightyear
 import public Lightyear.Char
 import public Lightyear.Strings
 
 ReadError : Type
 ReadError = String
-
-parseDate : Parser String
-parseDate = do
-  year <- pack <$> ntimes 4 (satisfy isDigit)
-  char '-'
-  month <- pack  <$> ntimes 2 (satisfy isDigit)
-  char '-'
-  day <- pack  <$> ntimes 2 (satisfy isDigit)
-  pure $ year ++ "-" ++ month ++ "-" ++ day
 
 parseLabel : Parser String
 parseLabel = pack <$> manyTill anyChar (eol <|> eof)
@@ -26,9 +19,9 @@ parseLabel = pack <$> manyTill anyChar (eol <|> eof)
     endOfLine
     pure ()
 
-parseTxHeader : Parser (String, String)
+parseTxHeader : Parser (String, Date)
 parseTxHeader = do
-  date <- parseDate
+  date <- parseISO8601Date
   spaces
   lbl <- parseLabel
   pure $ (lbl, date)

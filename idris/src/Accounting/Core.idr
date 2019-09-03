@@ -79,7 +79,7 @@ minusPlusPlusMinus (S k) (S j) Z     = Refl
 minusPlusPlusMinus (S k) (S j) (S i) with (order {to=LTE} i (k + j))
   | (Left l) with (order {to=LTE} i k)
     | (Left x) = minusPlusPlusMinus k (S j) i { prf = ltePlusSucc i j k l }
-    | (Right r) = ?op_rhs_3
+    | (Right r) = ?hool
 
   | (Right r) = ?op_rhs_2
 

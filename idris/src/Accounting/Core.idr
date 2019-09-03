@@ -57,8 +57,8 @@ lteAndNotEqIsLT LTEZero     f {m = (S k)}     = LTESucc LTEZero
 lteAndNotEqIsLT (LTESucc x) f {m = (S right)} = LTESucc (lteAndNotEqIsLT x (notEqSuccIsNotEq f))
 
 ltMinusIsLTZero : LTE (S n) m -> LTE 1 (minus m n)
-ltMinusIsLTZero x {n = Z}     {m = m} = rewrite minusZeroRight m in x
-ltMinusIsLTZero x {n = (S k)} {m = m} = ?hole_2
+ltMinusIsLTZero (LTESucc LTEZero)     = LTESucc LTEZero
+ltMinusIsLTZero (LTESucc (LTESucc x)) = ltMinusIsLTZero (LTESucc x)
 
 notEqualMinusGTOne : (n, n' : Nat) -> (l : LTE n n') -> (contra : (n = n') -> Void) -> LTE 1 (n' - n)
 notEqualMinusGTOne n n' l contra =
@@ -77,8 +77,8 @@ compensate (MkAmount n {notZero}) d (MkAmount n' {notZero=notZero1}) d' with (de
 
 public export
 Semigroup Balance where
-  Zero          <+> y = y
-  x             <+> Zero = x
+  Zero      <+> y           = y
+  x         <+> Zero        = x
   (Bal n d) <+> (Bal n' d') =
         if d == d'
         then Bal (n + n') d

@@ -56,10 +56,14 @@ lteAndNotEqIsLT LTEZero     f {m = Z}         = absurd (f Refl)
 lteAndNotEqIsLT LTEZero     f {m = (S k)}     = LTESucc LTEZero
 lteAndNotEqIsLT (LTESucc x) f {m = (S right)} = LTESucc (lteAndNotEqIsLT x (notEqSuccIsNotEq f))
 
-notEqualMinusGTOne : (n, n' : Nat) -> (l : LTE n n') -> (contra : (n = n') -> Void) -> (notZero : LTE 1 n) -> (notZero1 : LTE 1 n') -> LTE 1 (n' - n)
-notEqualMinusGTOne n n' l contra notZero notZero1 =
+ltMinusIsLTZero : LTE (S n) m -> LTE 1 (minus m n)
+ltMinusIsLTZero x {n = Z}     {m = m} = rewrite minusZeroRight m in x
+ltMinusIsLTZero x {n = (S k)} {m = m} = ?hole_2
+
+notEqualMinusGTOne : (n, n' : Nat) -> (l : LTE n n') -> (contra : (n = n') -> Void) -> LTE 1 (n' - n)
+notEqualMinusGTOne n n' l contra =
   let lt = lteAndNotEqIsLT l contra
-  in ?notEqualMinusGTOne_rhs
+  in ltMinusIsLTZero lt
 
 notEqReflexive : ((m = n) -> Void) -> ((n = m) -> Void)
 notEqReflexive f Refl = f Refl
@@ -68,8 +72,8 @@ compensate : (n : Amount) -> (d : Direction) -> (n' : Amount) -> (d' : Direction
 compensate (MkAmount n {notZero}) d (MkAmount n' {notZero=notZero1}) d' with (decEq n n')
     | (Yes prf) = Zero
     | (No contra) with (order {to=LTE} n n')
-      | (Left l)  = Bal (MkAmount (n' - n) { notZero = notEqualMinusGTOne n n' l contra notZero notZero1 }) d'
-      | (Right r) = Bal (MkAmount (n - n') { notZero = notEqualMinusGTOne n' n r (notEqReflexive contra) notZero1 notZero }) d
+      | (Left l)  = Bal (MkAmount (n' - n) { notZero = notEqualMinusGTOne n n' l contra }) d'
+      | (Right r) = Bal (MkAmount (n - n') { notZero = notEqualMinusGTOne n' n r (notEqReflexive contra) }) d
 
 public export
 Semigroup Balance where

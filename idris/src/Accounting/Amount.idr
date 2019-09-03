@@ -8,10 +8,6 @@ import public Decidable.Equality
 
 -- Auxiliary lemmas for proving properties of Amount
 
-||| A proof that the sum of 2 numbers greater than 1 is greater than 1
-lteOnePlus : (nz : LTE 1 n) -> (nz' : LTE 1 k) -> LTE 1 (n + k)
-lteOnePlus nz nz' {n} = lteTransitive nz (lteAddRight n)
-
 ||| Adding a `Nat` number to the right of an inequation preserves the ordering
 plusRightIsLte : LTE j k -> LTE j (k + n)
 plusRightIsLte x   {k} = lteTransitive x (lteAddRight k)
@@ -49,7 +45,7 @@ fromIntegerAmount x =
 ||| build a proof the result is greater than 0, which makes things  trickier
 public export
 Num Amount where
-  (MkAmount n {notZero=nz}) + (MkAmount k {notZero=nz'}) = MkAmount (n + k) { notZero = lteOnePlus nz nz' }
+  (MkAmount n {notZero=nz}) + (MkAmount k {notZero=nz'}) = MkAmount (n + k) { notZero = plusRightIsLte nz }
 
   (MkAmount n {notZero=nz}) * (MkAmount k {notZero=nz'}) = MkAmount (n * k) { notZero = lteOneMult nz nz' }
 

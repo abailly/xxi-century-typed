@@ -2,7 +2,6 @@ module Accounting.Core
 
 import Accounting.Amount
 
-
 import Data.Vect
 import Date
 import Decidable.Order
@@ -49,8 +48,18 @@ data Balance : Type where
 
 %name Balance z, bal
 
+notEqSuccIsNotEq : ((S left = S right) -> Void) -> (left = right) -> Void
+notEqSuccIsNotEq f Refl = f Refl
+
+lteAndNotEqIsLT : LTE n m -> ((n = m) -> Void) -> LTE (S n) m
+lteAndNotEqIsLT LTEZero     f {m = Z}         = absurd (f Refl)
+lteAndNotEqIsLT LTEZero     f {m = (S k)}     = LTESucc LTEZero
+lteAndNotEqIsLT (LTESucc x) f {m = (S right)} = LTESucc (lteAndNotEqIsLT x (notEqSuccIsNotEq f))
+
 notEqualMinusGTOne : (n, n' : Nat) -> (l : LTE n n') -> (contra : (n = n') -> Void) -> (notZero : LTE 1 n) -> (notZero1 : LTE 1 n') -> LTE 1 (n' - n)
-notEqualMinusGTOne n n' l contra notZero notZero1 = ?notEqualMinusGTOne_rhs
+notEqualMinusGTOne n n' l contra notZero notZero1 =
+  let lt = lteAndNotEqIsLT l contra
+  in ?notEqualMinusGTOne_rhs
 
 notEqReflexive : ((m = n) -> Void) -> ((n = m) -> Void)
 notEqReflexive f Refl = f Refl

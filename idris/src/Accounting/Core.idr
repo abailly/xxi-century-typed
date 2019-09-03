@@ -33,6 +33,8 @@ public export
 Balance : Type
 Balance = (Nat, Direction)
 
+%name Balance n, d
+
 public export
 Semigroup Balance where
   (n,d) <+> (n', d') =
@@ -45,6 +47,65 @@ Semigroup Balance where
 public export
 Monoid Balance where
   neutral = (0, Cr)
+
+rightNeutralBalance : (x : Balance) -> (x <+> (0, Cr) = x)
+rightNeutralBalance (n, Cr) = rewrite plusZeroRightNeutral n in Refl
+rightNeutralBalance (Z, Dr) = believe_me "special case for zero debit"
+rightNeutralBalance (S n, Dr) = Refl
+
+leftNeutralBalance : (x : Balance) -> ((0, Cr) <+> x = x)
+leftNeutralBalance (n, Cr) = Refl
+leftNeutralBalance (n, Dr) = rewrite minusZeroRight n in Refl
+
+plusSucc : (k, j : Nat) -> (k + S j = S (k + j))
+plusSucc Z     j = Refl
+plusSucc (S k) j =
+  let hypo = plusSucc k j
+  in rewrite hypo in Refl
+
+ltePlusSucc : (i, j, k : Nat) -> (l : LTE i (k + j)) -> LTE i (k + (S j))
+ltePlusSucc i j k l = rewrite plusSucc k j in lteSuccRight l
+
+minusPlusPlusMinus : (a : Nat) -> (b : Nat) -> (c : Nat)
+                   -> { auto prf : LTE c (a + b) }
+                   -> { auto prf2 : LTE c a }
+                   -> ((a + b) - c = (a - c) + b)
+minusPlusPlusMinus Z     b     Z     = rewrite minusZeroRight b in Refl
+minusPlusPlusMinus Z     b     (S k) impossible
+minusPlusPlusMinus (S k) Z     c     = rewrite plusZeroRightNeutral k in
+                                       rewrite plusZeroRightNeutral (minus (S k) c)
+                                       in Refl
+minusPlusPlusMinus (S k) (S j) Z     = Refl
+minusPlusPlusMinus (S k) (S j) (S i) with (order {to=LTE} i (k + j))
+  | (Left l) with (order {to=LTE} i k)
+    | (Left x) = minusPlusPlusMinus k (S j) i { prf = ltePlusSucc i j k l }
+    | (Right r) = ?op_rhs_3
+
+  | (Right r) = ?op_rhs_2
+
+
+minusPlusMinusMinus : (a : Nat) -> (b : Nat) -> (c : Nat)
+                    -> { auto prf1 : LTE a c }
+                    -> { auto prf : LTE c (plus a b) }
+                    -> { auto prf1 : LTE (minus c a) b } -> ((a + b) - c = b - (c - a))
+
+
+
+associativeBalance : (x : Balance) -> (y : Balance) -> (z : Balance) -> (x <+> (y <+> z) = (x <+> y) <+> z)
+associativeBalance (a, Dr) (b, Dr) (c, Dr) = rewrite plusAssociative a b c in Refl
+associativeBalance (a, Cr) (b, Cr) (c, Cr) = rewrite plusAssociative a b c in Refl
+associativeBalance (a, Dr) (b, Cr) (c, Cr) with (order {to=LTE} a (plus b c))
+  | (Left l) with (order {to=LTE} a b)
+    | (Left x) = rewrite minusPlusPlusMinus b c a in Refl
+    | (Right r) with (order {to=LTE} (a - b) c)
+      | (Left x) = rewrite minusPlusMinusMinus b c a in Refl
+      | (Right x) = ?hole_4
+
+  | (Right r) with (order {to=LTE} a b)
+    | (Left l) = ?hole_1
+    | (Right x) with (order {to=LTE} (a - b) c)
+      | (Left l) = ?hole_3
+      | (Right y) = rewrite minusMinusMinusPlus a b c in Refl
 
 ||| Invert the direction of a `Balance`
 public export

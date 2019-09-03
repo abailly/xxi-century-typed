@@ -31,6 +31,14 @@ public export
 data Amount : Type where
   MkAmount : (n : Nat) -> { auto notZero : LTE 1 n } -> Amount
 
+public export
+Eq Amount where
+  (MkAmount n) == (MkAmount n') = n == n'
+
+public export
+Show Amount where
+  show (MkAmount n) = show n
+
 ||| Convert an `Integer` to an `Amount
 ||| Negative or null values are mapped to 1
 fromIntegerAmount : Integer -> Amount

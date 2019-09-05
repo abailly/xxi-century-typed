@@ -9,6 +9,7 @@ import public Decidable.Equality
 -- Auxiliary lemmas for proving properties of Amount
 
 ||| Adding a `Nat` number to the right of an inequation preserves the ordering
+public export
 plusRightIsLte : LTE j k -> LTE j (k + n)
 plusRightIsLte x   {k} = lteTransitive x (lteAddRight k)
 
@@ -35,7 +36,7 @@ public export
 Eq Amount where
   (MkAmount n) == (MkAmount n') = n == n'
 
-private
+public export
 lteUniqueProof : (p, q : LTE a b) -> p = q
 lteUniqueProof LTEZero LTEZero = Refl
 lteUniqueProof (LTESucc x) (LTESucc y) =

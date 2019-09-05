@@ -69,6 +69,7 @@ notEqualMinusGTOne n n' l contra =
 notEqReflexive : ((m = n) -> Void) -> ((n = m) -> Void)
 notEqReflexive f Refl = f Refl
 
+public export
 compensate : (n : Amount) -> (d : Direction) -> (n' : Amount) -> (d' : Direction) -> Balance
 compensate (MkAmount n) d (MkAmount n') d' with (decEq n n')
     | (Yes prf) = Zero
@@ -106,18 +107,24 @@ Group Balance where
 --     forall a,     a <+> inverse a == neutral
 --     forall a,     inverse a <+> a == neutral
 
--- balanceRightNeutral : (b : Balance) -> (b <+> Zero = b)
--- balanceRightNeutral Zero      = Refl
--- balanceRightNeutral (Bal n d) = Refl
+balanceRightNeutral : (b : Balance) -> (b <+> Zero = b)
+balanceRightNeutral Zero      = Refl
+balanceRightNeutral (Bal n d) = Refl
 
--- balanceLeftNeutral : (b : Balance) -> (Zero <+> b = b)
--- balanceLeftNeutral Zero      = Refl
--- balanceLeftNeutral (Bal n d) = Refl
+balanceLeftNeutral : (b : Balance) -> (Zero <+> b = b)
+balanceLeftNeutral Zero      = Refl
+balanceLeftNeutral (Bal n d) = Refl
 
 balanceRightInverse : (b : Balance) -> (b <+> inverse b = Zero)
 balanceRightInverse Zero      = Refl
-balanceRightInverse (Bal n Dr) = ?balanceRightInverse_rhs_1
-balanceRightInverse (Bal n Cr) = ?balanceRightInverse_rhs_3
+balanceRightInverse (Bal (MkAmount n) Dr) with (decEq n n)
+  | (Yes prf)   = Refl
+  | (No contra) = absurd (contra Refl)
+
+balanceRightInverse (Bal (MkAmount n) Cr) with (decEq n n)
+  | (Yes prf) = Refl
+  | (No contra) = absurd (contra Refl)
+
 
 -- balanceAssociative : (a,b,c : Balance) -> (a <+> (b <+> c) = (a <+> b) <+> c)
 -- balanceAssociative Zero      Zero      c = Refl

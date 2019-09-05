@@ -35,6 +35,31 @@ public export
 Eq Amount where
   (MkAmount n) == (MkAmount n') = n == n'
 
+private
+lteUniqueProof : (p, q : LTE a b) -> p = q
+lteUniqueProof LTEZero LTEZero = Refl
+lteUniqueProof (LTESucc x) (LTESucc y) =
+  rewrite lteUniqueProof x y in
+  Refl
+
+private
+eqNIsEqAmount : (prf : n = k)
+      -> { notZeron : LTE 1 n }
+      -> { notZerok : LTE 1 k }
+      -> (MkAmount n = MkAmount k)
+eqNIsEqAmount Refl {notZeron} {notZerok} =
+  rewrite lteUniqueProof notZeron notZerok in Refl
+
+public export
+nInj : (MkAmount n {notZero} = MkAmount m {notZero=notZerom}) -> (n = m)
+nInj Refl = Refl
+
+public export
+DecEq Amount where
+  decEq (MkAmount n {notZero=notZeron}) (MkAmount k {notZero=notZerok}) with (decEq n k)
+    | (Yes prf)   = Yes (eqNIsEqAmount prf)
+    | (No contra) = No (contra . nInj)
+
 public export
 Show Amount where
   show (MkAmount n) = show n

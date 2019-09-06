@@ -99,6 +99,22 @@ Group Balance where
   inverse (Bal n Dr) = Bal n Cr
   inverse (Bal n Cr) = Bal n Dr
 
+directionInj : (Bal n d = Bal x y) -> d = y
+directionInj Refl = Refl
+
+amountInj : (Bal n d = Bal m d') -> (n = m)
+amountInj Refl = Refl
+
+DecEq Balance where
+  decEq Zero Zero = Yes Refl
+  decEq Zero (Bal n d) = No $ \ Refl impossible
+  decEq (Bal n d) Zero = No $ \ Refl impossible
+  decEq (Bal n d) (Bal x y) with (decEq n x, decEq d y)
+    decEq (Bal n y) (Bal n y) | (Yes Refl, Yes Refl) = Yes Refl
+    decEq (Bal n d) (Bal x y) | (No contra, b) = No (contra . amountInj)
+    decEq (Bal n d) (Bal x y) | (a, No contra) = No (contra . directionInj)
+
+
 ||| The 5 basic categories of accounts
 data AccountType : Type  where
   Asset : AccountType

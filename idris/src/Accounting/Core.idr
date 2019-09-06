@@ -8,14 +8,20 @@ import Date
 import Decidable.Order
 import public Decidable.Equality
 
+%access public export
 %default total
 
-public export
+||| Direction of a cash movement
+||| It's either a _Debit_ (`Dr`) or a _Credit_ (`Cr`).
+||| * A _Debit_ is an `Amount` that _enters_ an account
+||| * A _Credit_ is an `Amount` that _exits_ an account
 data Direction : Type where
+  ||| A Debit operation
   Dr : Direction
+
+  ||| A Credit operation
   Cr : Direction
 
-public export
 Eq Direction where
   Dr == Dr = True
   Cr == Cr = True
@@ -25,7 +31,6 @@ Show Direction where
   show Dr = "D"
   show Cr = "C"
 
-public export
 DecEq Direction where
   decEq Dr Dr = Yes Refl
   decEq Cr Cr = Yes Refl
@@ -33,9 +38,7 @@ DecEq Direction where
   decEq Cr Dr = No $ \ Refl impossible
 
 
-
 ||| A Balance is a debit or a credit of a certain `Amount` or `Zero`
-public export
 data Balance : Type where
   ||| A Balance can be `Zero` in which case we don't care whether or
   ||| not it's a Debit or Credit.
@@ -47,7 +50,8 @@ data Balance : Type where
   ||| natural integer and a `Direction`
   Bal : (n : Amount) -> (d : Direction) -> Balance
 
-%name Balance z, bal
+-- Lemmas used in the definition of `compensate`
+
 
 notEqSuccIsNotEq : ((S left = S right) -> Void) -> (left = right) -> Void
 notEqSuccIsNotEq f Refl = f Refl
@@ -69,7 +73,10 @@ notEqualMinusGTOne n n' l contra =
 notEqReflexive : ((m = n) -> Void) -> ((n = m) -> Void)
 notEqReflexive f Refl = f Refl
 
-public export
+||| The "sum" of 2 `Amount`s with a `Direction`
+||| This is really just a signed addition in the group of Relative numbers (eg. `Z`) but
+||| it is adapted to the structure of a `Balance`: We need to provide the proofs that
+||| the resulting amount is greater than 0 which involves a few lemmas.
 compensate : (n : Amount) -> (d : Direction) -> (n' : Amount) -> (d' : Direction) -> Balance
 compensate (MkAmount n) d (MkAmount n') d' with (decEq n n')
     | (Yes prf) = Zero
@@ -77,7 +84,6 @@ compensate (MkAmount n) d (MkAmount n') d' with (decEq n n')
       | (Left l)  = Bal (MkAmount (n' - n) { notZero = notEqualMinusGTOne n n' l contra }) d'
       | (Right r) = Bal (MkAmount (n - n') { notZero = notEqualMinusGTOne n' n r (notEqReflexive contra) }) d
 
-public export
 Semigroup Balance where
   Zero      <+> y           = y
   x         <+> Zero        = x
@@ -85,144 +91,15 @@ Semigroup Balance where
     | (Yes prf) = Bal (n + n') d
     | (No contra) = compensate n d n' d'
 
-public export
 Monoid Balance where
   neutral = Zero
 
-public export
 Group Balance where
   inverse Zero = Zero
   inverse (Bal n Dr) = Bal n Cr
   inverse (Bal n Cr) = Bal n Dr
 
--- Proofs for Group Properties of Balance
--- Recall that a Group must satisfy the following laws:
--- + Associativity of `<+>`:
---     forall a b c, a <+> (b <+> c) == (a <+> b) <+> c
--- + Neutral for `<+>`:
---     forall a,     a <+> neutral   == a
---     forall a,     neutral <+> a   == a
--- + Inverse for `<+>`:
---     forall a,     a <+> inverse a == neutral
---     forall a,     inverse a <+> a == neutral
-
--- Proofs for neutral are pretty trivial as they are directly reducible
--- from the definition of `<+>`
-balanceRightNeutral : (b : Balance) -> (b <+> Zero = b)
-balanceRightNeutral Zero      = Refl
-balanceRightNeutral (Bal n d) = Refl
-
-balanceLeftNeutral : (b : Balance) -> (Zero <+> b = b)
-balanceLeftNeutral Zero      = Refl
-balanceLeftNeutral (Bal n d) = Refl
-
--- Proof of (right) inverse is slightly more involved as we need to check the 2 cases
--- for `decEq n n` stemming from the definition of `<+>`.
--- We also need to expand the `Bal`'s amount to `MkAmount n` in order to trigger the
--- reducing of `compensate`. And for the same reason but applied to `inverse` we need
--- to pattern match on the direction too.
-balanceRightInverse : (b : Balance) -> (b <+> inverse b = Zero)
-balanceRightInverse Zero      = Refl
-balanceRightInverse (Bal (MkAmount n) Dr) with (decEq n n)
-  | (Yes prf)   = Refl
-  | (No contra) = absurd (contra Refl)
-
-balanceRightInverse (Bal (MkAmount n) Cr) with (decEq n n)
-  | (Yes prf) = Refl
-  | (No contra) = absurd (contra Refl)
-
-
--- Lemmas proved while trying to prove associativity
--- I gave up at some point as it became more and more tedious, with dozens of cases to unfold because
--- of the way `<+>` and `compensate` are defined.
--- I will need to think more about the types, maybe to embed more "proofs" in the types themselves to
--- limit the number of cases to reduce
-
-||| Balances are equal when their `Amount` is made of equal `Nat`
-||| This proof uses `lteUniqueProof` provided in `Amount` in order to ensure
-||| the compiler has the needed implicits that n and m are greater than 0.
-eqNatIsEqAmount : (n = m)
-                -> {notZeron : LTE 1 n} -> {notZerom : LTE 1 m}
-                -> (Bal (MkAmount n) d = Bal (MkAmount m) d)
-eqNatIsEqAmount Refl {notZeron} {notZerom} =
-  rewrite lteUniqueProof notZeron notZerom in Refl
-
-||| Lift associativity of `Nat`s into `Balance`
-||| This is trivial once we have `eqNatIsEqAmount` thanks to prelude's `plusAssociative`
-amountAssociative : (notZeron : LTE 1 n) -> (notZerom : LTE 1 m) -> (notZerok : LTE 1 k)
-                  -> { auto prf1 : LTE 1 (plus n (plus m k)) }
-                  -> { auto prf2 : LTE 1 (plus (plus n m) k) }
-                  -> (Bal (MkAmount (plus n (plus m k))) z = Bal (MkAmount (plus (plus n m) k)) z)
-amountAssociative notZeron notZerom notZerok {n} {m} {k} =
-  eqNatIsEqAmount (plusAssociative n m k)
-
-||| A simpler version of `succInjective` from `Prelude.Nat`
-succInj : (S n = S m) -> n = m
-succInj Refl = Refl
-
-||| Proof that adding a number greater than 0 to any number cannot yield 2 equal numbers
-||| This looks obvious but was actually quite tricky to write. Pattern matching on the equality
-||| does not work: The hole gets filled by an `impossible` statement but this is wrong. And
-||| manually matching on `Refl` gives a type error
-notPlusSucc : (n : Nat) -> Not (n + S m = n)
-notPlusSucc Z     prf = SIsNotZ prf
-notPlusSucc (S n) prf = notPlusSucc n (succInj prf)
-
-||| A very specialised lemma to prove a `Balance` cannot be zero under some (obvious) conditions
-||| The `Z` cases for each of `m` and `k` easily yield `impossible` statements.
-zeroNotEqBal : (x : plus m k = m) -> (prf : plus m k = k) -> {auto notZerom : LTE 1 m} -> {notZerok : LTE 1 k} -> (Zero = Bal (MkAmount k) z)
-zeroNotEqBal {m = Z}     {k}         _ _ impossible
-zeroNotEqBal {m}         {k = Z}     x prf impossible
--- it's unclear to me why we need to match explicitly the k but this seems to trigger
--- the reduction of `notPlusSucc` correctly so that the types line up for `m + S k = m`.
--- I suppose the typechecker does not know at this stage the only possible value for
--- k is `S k` as the other cases are covered before?
-zeroNotEqBal {m = m}     {k = (S k)} x prf = absurd (notPlusSucc m x)
-
-
-||| (Partial) proof that <+> is associative
-||| The cases involving `Zero`s are easy, things go awry in the general case.
-balanceAssociative : (a,b,c : Balance) -> (a <+> (b <+> c) = (a <+> b) <+> c)
-balanceAssociative Zero      Zero      c = Refl
-balanceAssociative (Bal n d) Zero      c = Refl
-balanceAssociative Zero      (Bal n d) c = Refl
-balanceAssociative (Bal (MkAmount n) y) (Bal (MkAmount m) d) Zero with (decEq y d)
-  | (Yes prf) = Refl
-  | (No contra) with (decEq n m)
-    | (Yes prf) = Refl
-    | (No f) with (order {to=LTE} n m)
-      | (Left l) = Refl
-      | (Right r) = Refl
-
-balanceAssociative (Bal (MkAmount n {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) d) (Bal (MkAmount k {notZero=notZerok}) z) with (decEq d z)
-  balanceAssociative (Bal (MkAmount n {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) d) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes prf) with (decEq y d)
-    balanceAssociative (Bal (MkAmount n {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) d) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes prf) | (Yes x) with (decEq y z)
-      balanceAssociative (Bal (MkAmount n {notZero=notZeron}) z) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (Yes Refl) | (Yes Refl) =
-        amountAssociative notZeron notZerom notZerok
-      balanceAssociative (Bal (MkAmount n) y) (Bal (MkAmount m) d) (Bal (MkAmount k) z) | (Yes prf) | (Yes x) | (No contra) with (decEq (n + m) k)
-        balanceAssociative (Bal (MkAmount n) z) (Bal (MkAmount m) z) (Bal (MkAmount (plus n m)) z) | (Yes Refl) | (Yes Refl) | (No contra) | (Yes Refl) = absurd (contra Refl)
-        balanceAssociative (Bal (MkAmount n) y) (Bal (MkAmount m) d) (Bal (MkAmount k ) z) | (Yes prf) | (Yes x) | (No contra) | (No f) with (order {to=LTE} (n + m) k)
-          balanceAssociative (Bal (MkAmount n) z) (Bal (MkAmount m) z) (Bal (MkAmount k) z) | (Yes Refl) | (Yes Refl) | (No contra) | (No f) | (Left l) = absurd (contra Refl)
-          balanceAssociative (Bal (MkAmount n) z) (Bal (MkAmount m) z) (Bal (MkAmount k) z) | (Yes Refl) | (Yes Refl) | (No contra) | (No f) | (Right r) = absurd (contra Refl)
-
-    balanceAssociative (Bal (MkAmount n {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (No contra) with (decEq n (m + k))
-      balanceAssociative (Bal (MkAmount (plus m k) {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z)     | (Yes Refl) | (No contra) | (Yes Refl) with (decEq (m + k) k)
-        balanceAssociative (Bal (MkAmount (plus m k) {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z)   | (Yes Refl) | (No contra) | (Yes Refl) | (Yes prf) with (decEq (m + k) m)
-          balanceAssociative (Bal (MkAmount (plus m k) {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (No contra) | (Yes Refl) | (Yes prf) | (Yes x) = zeroNotEqBal x prf
-          balanceAssociative (Bal (MkAmount (plus m k) {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (No contra) | (Yes Refl) | (Yes prf) | (No f)  = believe_me "proof is way too involved which probably means there is something wrontg in the types"
-
-
-        balanceAssociative (Bal (MkAmount (plus m k) {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (No contra) | (Yes Refl) | (No f) = believe_me "proof is way too involved which probably means there is something wrontg in the types"
-
-      balanceAssociative (Bal (MkAmount n {notZero=notZeron}) y) (Bal (MkAmount m {notZero=notZerom}) z) (Bal (MkAmount k {notZero=notZerok}) z) | (Yes Refl) | (No contra) | (No f) = believe_me "proof is way too involved which probably means there is something wrontg in the types"
-
-
-  | (No contra) = believe_me "proof is way too involved which probably means there is something wrontg in the types"
-
-
-
-
-public export
+||| The 5 basic categories of accounts
 data AccountType : Type  where
   Asset : AccountType
   Liability : AccountType
@@ -230,7 +107,6 @@ data AccountType : Type  where
   Expense : AccountType
   Revenue : AccountType
 
-public export
 Eq AccountType where
   Asset     == Asset     = True
   Liability == Liability = True
@@ -239,7 +115,6 @@ Eq AccountType where
   Revenue   == Revenue   = True
   _         == _         = False
 
-public export
 Show AccountType where
   show Asset = "Asset"
   show Liability = "Liability"
@@ -247,23 +122,29 @@ Show AccountType where
   show Expense = "Expense"
   show Revenue = "Revenue"
 
-public export
+||| An `Account`
+||| I initially tried to make the `AccountType` part of the type of the `Account`
+||| but this caused to be problematic when trying to categorize the accounts. I
+||| should probably try again as it seems to make more sense.
 data Account : Type where
   MkAccount : String -> { type : AccountType } -> Account
 
-public export
 Eq Account where
   (MkAccount lbl {type=t}) == (MkAccount lbl' {type=t'}) = lbl == lbl' && t == t'
 
-public export
 Show Account where
   show (MkAccount lbl {type=t}) = show t ++ ":" ++ lbl
 
-public export
+||| Classify an `Account` according to its `AccountType`.
 isA : AccountType -> Account -> Bool
 isA t (MkAccount _ {type}) = t == type
 
-public export
+||| A single `Entry` in a ledger.
+||| An `Entry` is never used alone, it's used as a constituent of a `Transaction` and can
+||| later on be displayed part of one or several `Account`s register.
+||| An `Entry` can never be `Zero` hence we do not use a `Balance` to store the `Entry`s
+||| amount but provide a `Cast Entry Balance` implementation so that  we can interpret
+||| an `Entry` as a `Balance` should we need to.
 record Entry where
   constructor MkEntry
   amount : Amount
@@ -276,27 +157,27 @@ Eq Entry where
 Show Entry where
   show (MkEntry amt dir acc) = "  " ++ show acc ++ " " ++ show dir ++ " " ++ show amt
 
-public export
 Cast Entry Balance where
   cast (MkEntry amount direction account) = Bal amount direction
 
-||| Provide the balance for a list of entries
-||| When there is not entry, by convention it returns `(0, Cr)`,
-||| otherwise it returns the difference between debits `Dr` and credits
-||| `Cr` from all transactions.
+||| Provides the balance for a list of entries
+||| This boils down to `cast` the entries to `Balance`s and use the `Monoid` property of
+||| Balance to sum them all.
 total
-public export
 balance : Vect n Entry -> Balance
 balance =  concat . map cast
 
-public export
+
+||| A wrapper over a sequence of `Entry`s
+||| This type guarantees that the sequence of `Entry`s provided:
+||| * Has at least 2 elements (otherwise, it could not be balanced),
+||| * Is propertly _balanced_
 data Entries : Type where
   MkEntries : (entries : Vect n Entry) ->
               { auto need2Entries : LTE 2 n } ->
               { auto balanced : balance entries = Zero } -> Entries
 
 
-public export
 withSameLength : (en : Vect n' Entry) -> (prf : n = n') -> Vect n Entry
 withSameLength en prf = rewrite prf in en
 
@@ -308,7 +189,7 @@ Eq Entries where
 Show Entries where
   show (MkEntries ens) = unlines (toList $ map show ens)
 
-public export
+||| A transaction is simply a balanced sequence of entries with a label and a date
 record Transaction where
   constructor Tx
   label : String
@@ -321,36 +202,36 @@ Eq Transaction where
 Show Transaction where
   show (Tx lbl dt entries) = show dt ++ " " ++ lbl ++ "\n" ++ show entries
 
-public export
+||| Compute the balance of filtered `Entries`
+||| I use a `with ...` clause here in order to be able to use `select` in a
+||| type-level expression and produce a sequence of entries with a known
+||| length.
 select : (Account -> Bool) -> Entries -> Balance
 select selector (MkEntries entries) with (filter (selector . account) entries)
   | (_ ** filtered) = concat $ map cast filtered
 
-public export
+||| Aggregated `Balance` of a list of a filtered list of `Entries`.
 selectEntries : (Account -> Bool) -> Vect k Entries -> Balance
 selectEntries selector entries = concat $ map (select selector) entries
 
-public export
 assets : Vect k Transaction -> Balance
 assets = selectEntries (isA Asset) . map entries
 
-public export
 liabilities : Vect k Transaction -> Balance
 liabilities = selectEntries (isA Liability) . map entries
 
-public export
 capital : Vect k Transaction -> Balance
 capital = selectEntries (isA Equity) . map entries
 
-public export
 expenses : Vect k Transaction -> Balance
 expenses = selectEntries (isA Expense) . map entries
 
-public export
 revenues : Vect k Transaction -> Balance
 revenues = selectEntries (isA Revenue) . map entries
 
-public export
+||| A global book of `Account`s made from a sequence of transactions
+||| This type guarantees the sequence of transactions respects the _fundamental equation_
+||| of accounting: ```assets + expenses = liabilities + capital + revenues```
 data BookOfAccounts : Type where
   BookTransactions : (txs : Vect k Transaction) ->
                      { auto fundamentalEquation : inverse (assets txs <+> expenses txs) = liabilities txs <+> capital txs <+> revenues txs } ->
@@ -361,7 +242,7 @@ Show BookOfAccounts where
   show (BookTransactions txs) = unlines (toList $ map show txs)
 
 
--- Testing
+-- Simple values for testing
 
 Capital : Account
 Capital = MkAccount "Capital" {type = Equity}

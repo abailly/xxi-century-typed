@@ -1,9 +1,11 @@
 module Accounting.Parse
 
+import public Accounting.Amount
 import public Accounting.Core
-
 import Date
 
+import Control.Algebra
+import Decidable.Order
 import public Lightyear
 import public Lightyear.Char
 import public Lightyear.Strings
@@ -59,7 +61,9 @@ parseEntry = do
   dir <- parseDirection
   spaces
   amnt <- integer
-  pure $ MkEntry (amnt, dir) acc
+  case order {to=LTE} 1 amnt of
+    (Left l) => pure $ MkEntry (MkAmount amnt) dir acc
+    (Right r) => fail "Entry's amount cannot be 0"
 
 parseEntries : Parser Entries
 parseEntries = do
@@ -69,7 +73,7 @@ parseEntries = do
   endOfLine
   es <- sepBy parseEntry endOfLine
   let entries = e1 :: e2 :: fromList es
-  case decEq (balance entries) (Z, Cr) of
+  case decEq (balance entries) Zero of
     (Yes prf) => pure $ MkEntries entries
     (No  _)   => fail "Entries are not balanced, total debits minus total credits should be 0"
 
@@ -94,6 +98,6 @@ parseBookOfAccounts : Parser BookOfAccounts
 parseBookOfAccounts = do
   rawTxs <- sepBy parseTransaction (many endOfLine)
   let txs = fromList rawTxs
-  case decEq (invert (assets txs <+> expenses txs)) (liabilities txs <+> capital txs <+> revenues txs) of
+  case decEq (inverse (assets txs <+> expenses txs)) (liabilities txs <+> capital txs <+> revenues txs) of
     (Yes prf) => pure $ BookTransactions txs
     (No contra) => fail "Transactions are not balanced, assets should equal sum of liabilities and capital"

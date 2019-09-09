@@ -7,12 +7,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg state =
     case state of
         QuizzCompleted _ ->
-            state ! []
+            ( state
+            , Cmd.none
+            )
 
         QuizzInProgress quizz ->
             case msg of
                 UpdateResponse s ->
-                    QuizzInProgress { quizz | currentResponse = s } ! []
+                    ( QuizzInProgress { quizz | currentResponse = s }
+                    , Cmd.none
+                    )
 
                 SubmitResponse r ->
                     let
@@ -24,16 +28,21 @@ update msg state =
                     in
                     case quizz.nextQuestions of
                         [] ->
-                            QuizzCompleted { answers = answeredQuestions } ! []
+                            ( QuizzCompleted { answers = answeredQuestions }
+                            , Cmd.none
+                            )
 
                         q :: qs ->
-                            QuizzInProgress
+                            ( QuizzInProgress
                                 { quizz
                                     | pastQuestions = answeredQuestions
                                     , current = q
                                     , nextQuestions = qs
                                 }
-                                ! []
+                            , Cmd.none
+                            )
 
                 NoOp ->
-                    state ! []
+                    ( state
+                    , Cmd.none
+                    )

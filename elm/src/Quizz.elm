@@ -1,9 +1,9 @@
 module Quizz exposing (main)
 
+import Html exposing (program)
 import Quizz.Types exposing (..)
 import Quizz.Update exposing (update)
 import Quizz.View exposing (view)
-import Html exposing (program)
 
 
 {-| Main
@@ -20,4 +20,6 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    initialModel ! []
+    ( initialModel
+    , Cmd.none
+    )

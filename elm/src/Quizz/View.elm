@@ -1,8 +1,8 @@
 module Quizz.View exposing (view)
 
 import Html as H
-import Html.Attributes exposing (type_, width, style, value, selected)
-import Html.Events exposing (on, keyCode, onInput, targetValue)
+import Html.Attributes exposing (selected, style, type_, value, width)
+import Html.Events exposing (keyCode, on, onInput, targetValue)
 import Json.Decode as Json
 import Quizz.Types exposing (..)
 
@@ -40,10 +40,10 @@ viewPastQuestion question =
                 Incorrect ->
                     [ ( "color", "red" ), ( "font-weight", "bold" ) ]
     in
-        H.div []
-            [ H.div [] [ H.text <| showQuestion question ]
-            , H.div [ style styles ] [ H.text <| showResponse question ]
-            ]
+    H.div []
+        [ H.div [] [ H.text <| showQuestion question ]
+        , H.div [ style styles ] [ H.text <| showResponse question ]
+        ]
 
 
 viewCurrentQuestion : Quizz -> H.Html Msg
@@ -85,9 +85,9 @@ viewQCM currentResponse { options } =
         viewOptions =
             H.option [ value "" ] [ H.text "Choose" ] :: List.map (viewOption currentResponse) options
     in
-        H.select
-            [ onSelect (Just >> SubmitResponse) ]
-            viewOptions
+    H.select
+        [ onSelect (Just >> SubmitResponse) ]
+        viewOptions
 
 
 onSelect : (String -> msg) -> H.Attribute msg
@@ -108,5 +108,6 @@ is13 : Int -> Json.Decoder ()
 is13 code =
     if code == 13 then
         Json.succeed ()
+
     else
         Json.fail "not the right key code"

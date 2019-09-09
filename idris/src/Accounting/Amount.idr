@@ -67,6 +67,7 @@ Show Amount where
 
 ||| Convert an `Integer` to an `Amount
 ||| Negative or null values are mapped to 1
+public export
 fromIntegerAmount : Integer -> Amount
 fromIntegerAmount x =
     let n = fromInteger x

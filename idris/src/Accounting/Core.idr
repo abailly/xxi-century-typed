@@ -77,7 +77,7 @@ notEqReflexive f Refl = f Refl
 ||| This is really just a signed addition in the group of Relative numbers (eg. `Z`) but
 ||| it is adapted to the structure of a `Balance`: We need to provide the proofs that
 ||| the resulting amount is greater than 0 which involves a few lemmas.
-compensate : (n : Amount) -> (d : Direction) -> (n' : Amount) -> (d' : Direction) -> Balance
+compensate : (n : Amount) -> (d : Direction) -> (n' : Amount) -> (d' : Direction) -> { auto notEqDir : Not (d = d') } -> Balance
 compensate (MkAmount n) d (MkAmount n') d' with (decEq n n')
     | (Yes prf) = Zero
     | (No contra) with (order {to=LTE} n n')
@@ -89,7 +89,7 @@ Semigroup Balance where
   x         <+> Zero        = x
   (Bal n d) <+> (Bal n' d') with (decEq d d')
     | (Yes prf) = Bal (n + n') d
-    | (No contra) = compensate n d n' d'
+    | (No contra) = compensate n d n' d' { notEqDir = contra }
 
 Monoid Balance where
   neutral = Zero
@@ -266,21 +266,21 @@ Capital = MkAccount "Capital" {type = Equity}
 Bank : Account
 Bank = MkAccount "Bank" {type = Asset}
 
-valid1 : balance [ MkEntry (MkAmount 100) Dr Bank,
-                   MkEntry (MkAmount 100) Cr Capital ] = Zero
+valid1 : balance [ MkEntry 100 Dr Bank,
+                   MkEntry 100 Cr Capital ] = Zero
 valid1 = Refl
 
-valid2 : balance [ MkEntry (MkAmount 100) Cr Bank,
-                  MkEntry (MkAmount 100) Dr Capital ] = Zero
+valid2 : balance [ MkEntry 100 Cr Bank,
+                  MkEntry 100 Dr Capital ] = Zero
 valid2 = Refl
 
-invalid : Not (balance [ MkEntry (MkAmount 100) Cr Bank,
-                         MkEntry (MkAmount 101) Dr Capital ] = Zero)
+invalid : Not (balance [ MkEntry 100 Cr Bank,
+                         MkEntry 101 Dr Capital ] = Zero)
 invalid = \ Refl impossible
 
 tx : Transaction
-tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry (MkAmount 100) Dr Bank,
-                                                                  MkEntry (MkAmount 100) Cr Capital ]
+tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Dr Bank,
+                                                                  MkEntry 100 Cr Capital ]
 
 book1 : BookOfAccounts
 book1 = BookTransactions [ tx ]

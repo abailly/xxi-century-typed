@@ -4,6 +4,7 @@ import Accounting.Amount
 
 import Control.Algebra
 import Data.Vect
+import Data.SortedMap as SMap
 import Date
 import Decidable.Order
 import public Decidable.Equality
@@ -12,6 +13,7 @@ import public Decidable.Equality
 %default total
 
 ||| Direction of a cash movement
+|||
 ||| It's either a _Debit_ (`Dr`) or a _Credit_ (`Cr`).
 ||| * A _Debit_ is an `Amount` that _enters_ an account
 ||| * A _Credit_ is an `Amount` that _exits_ an account
@@ -51,7 +53,6 @@ data Balance : Type where
   Bal : (n : Amount) -> (d : Direction) -> Balance
 
 -- Lemmas used in the definition of `compensate`
-
 
 notEqSuccIsNotEq : ((S left = S right) -> Void) -> (left = right) -> Void
 notEqSuccIsNotEq f Refl = f Refl
@@ -99,9 +100,11 @@ Group Balance where
   inverse (Bal n Dr) = Bal n Cr
   inverse (Bal n Cr) = Bal n Dr
 
+private
 directionInj : (Bal n d = Bal x y) -> d = y
 directionInj Refl = Refl
 
+private
 amountInj : (Bal n d = Bal m d') -> (n = m)
 amountInj Refl = Refl
 
@@ -114,6 +117,9 @@ DecEq Balance where
     decEq (Bal n d) (Bal x y) | (No contra, b) = No (contra . amountInj)
     decEq (Bal n d) (Bal x y) | (a, No contra) = No (contra . directionInj)
 
+Show Balance where
+  show Zero = "0"
+  show (Bal n d) = show d ++ " " ++ show n
 
 ||| The 5 basic categories of accounts
 data AccountType : Type  where
@@ -147,6 +153,10 @@ data Account : Type where
 
 Eq Account where
   (MkAccount lbl {type=t}) == (MkAccount lbl' {type=t'}) = lbl == lbl' && t == t'
+
+Ord Account where
+  compare (MkAccount x {type}) (MkAccount x' {type=type'}) =
+    compare x x'
 
 Show Account where
   show (MkAccount lbl {type=t}) = show t ++ ":" ++ lbl
@@ -257,6 +267,31 @@ export
 Show BookOfAccounts where
   show (BookTransactions txs) = unlines (toList $ map show txs)
 
+record AccountState where
+  constructor MkAccountState
+  account : Account
+  balance : Balance
+
+Show AccountState where
+  show (MkAccountState account Zero) = show account ++ " 0"
+  show (MkAccountState account bal) = show account ++ " " ++ show bal
+
+||| Compute the global balance of a `BookOfAccounts` producing a
+||| a `AccountState` for each account in the ledger.
+balances : BookOfAccounts -> List AccountState
+balances (BookTransactions txs) = SMap.values $ foldl accumulate SMap.empty txs
+  where
+    accEntries : SMap.SortedMap Account AccountState -> Entry -> SMap.SortedMap Account AccountState
+    accEntries bal (MkEntry amount direction account) =
+      case SMap.lookup account bal of
+        Nothing => SMap.insert account (MkAccountState account (Bal amount direction)) bal
+        Just (MkAccountState account balance) =>
+          let account' = MkAccountState account (balance <+> Bal amount direction)
+          in SMap.insert account account' bal
+
+    accumulate : SMap.SortedMap Account AccountState -> Transaction -> SMap.SortedMap Account AccountState
+    accumulate bal (Tx label date (MkEntries entries)) = foldl accEntries bal entries
+
 
 -- Simple values for testing
 
@@ -266,21 +301,23 @@ Capital = MkAccount "Capital" {type = Equity}
 Bank : Account
 Bank = MkAccount "Bank" {type = Asset}
 
-valid1 : balance [ MkEntry 100 Dr Bank,
-                   MkEntry 100 Cr Capital ] = Zero
-valid1 = Refl
+namespace CoreTest
+  %access private
+  valid1 : balance [ MkEntry 100 Dr Bank
+                   , MkEntry 100 Cr Capital ] = Zero
+  valid1 = Refl
 
-valid2 : balance [ MkEntry 100 Cr Bank,
-                  MkEntry 100 Dr Capital ] = Zero
-valid2 = Refl
+  valid2 : balance [ MkEntry 100 Cr Bank
+                   , MkEntry 100 Dr Capital ] = Zero
+  valid2 = Refl
 
-invalid : Not (balance [ MkEntry 100 Cr Bank,
-                         MkEntry 101 Dr Capital ] = Zero)
-invalid = \ Refl impossible
+  invalid : Not (balance [ MkEntry 100 Cr Bank
+                         , MkEntry 101 Dr Capital ] = Zero)
+  invalid = \ Refl impossible
 
-tx : Transaction
-tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Dr Bank,
-                                                                  MkEntry 100 Cr Capital ]
+  tx : Transaction
+  tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Dr Bank
+                                                                  , MkEntry 100 Cr Capital ]
 
-book1 : BookOfAccounts
-book1 = BookTransactions [ tx ]
+  book1 : BookOfAccounts
+  book1 = BookTransactions [ tx ]

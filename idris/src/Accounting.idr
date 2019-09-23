@@ -57,13 +57,14 @@ import public Accounting.Core
 import Accounting.Parse
 import Lightyear.Strings
 
-
 export
 readAccounts : IO ()
 readAccounts = do
-  [ _, file ] <- getArgs
+  [ _, file, action ] <- getArgs
   Right input <- readFile file
         | Left err => putStrLn ("failed to read file " ++ file ++ ": "  ++ show err)
   case parse parseBookOfAccounts input of
-    Right tx => putStrLn (show tx)
+    Right tx => case action of
+                  "register" => putStrLn (show tx)
+                  "balance" => putStrLn $ unlines $ map show (balances tx)
     Left err => putStrLn $ "error: "  ++ err

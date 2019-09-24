@@ -53,6 +53,7 @@
 ||| ```
 module Accounting
 
+import public Accounting.Book
 import public Accounting.Core
 import Accounting.Parse
 import Lightyear.Strings

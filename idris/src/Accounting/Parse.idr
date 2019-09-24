@@ -1,6 +1,7 @@
 module Accounting.Parse
 
 import public Accounting.Amount
+import public Accounting.Book
 import public Accounting.Core
 import Date
 

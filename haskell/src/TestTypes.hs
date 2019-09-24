@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
+module TestTypes where
 
 import           Control.Exception
 import           Data.Proxy
@@ -221,10 +222,3 @@ readOpenFile' :: (FH :^ (String := 'Open)) 'Open
 readOpenFile' = fGETC =>= \ x -> case x of
                                   Nothing -> pure ""
                                   Just c  -> pure (c :) <*> readOpenFile'
-
-
-
-
-
-
-

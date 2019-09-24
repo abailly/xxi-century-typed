@@ -1,0 +1,43 @@
+name: xxi-typed
+version: 0.32.0
+synopsis: HAskell code for XXIst Century Typed talk
+maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
+github: abailly/xxi-century-typed
+category: Development
+extra-source-files:
+  - CHANGELOG.md
+
+ghc-options: -Wall
+default-extensions:
+  - DuplicateRecordFields
+  - RecordWildCards
+  - GADTs
+  - FlexibleContexts
+  - FlexibleInstances
+  - OverloadedStrings
+
+dependencies:
+  - base >= 4.9 && < 5
+  - mtl
+  - text
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Quizz
+
+executable:
+  main: Main.hs
+  source-dirs: app
+  dependencies:
+    - xxi-typed
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - hspec == 2.*
+      - xxi-typed
+    build-tools: hspec-discover

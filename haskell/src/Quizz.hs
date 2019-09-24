@@ -105,9 +105,8 @@ answers k q =
 
 bridgeKeeperAssessment :: Knight -> Quizz -> Fate
 bridgeKeeperAssessment knight Quizz{previousQuestions} =
-  _foo (all answersAreCorrect previousQuestions)
-  -- if all answersAreCorrect previousQuestions
-  -- then CanCross knight
-  -- else IsDoomed knight
+  if all answersAreCorrect previousQuestions
+  then CanCross knight
+  else IsDoomed knight
   where
     answersAreCorrect (Question q _) = isCorrectAnswer q

@@ -1,0 +1,12 @@
+2019-01-01 Some transaction
+  Asset:Bank D 5000
+  Equity:Capital C 5000
+
+2019-01-02 Some other transaction
+  Expense:Office D 3500
+  Liability:Taxes D 500
+  Liability:AcmeInc C 4000
+
+2019-01-03 Pay expense
+  Asset:Bank C 4000
+  Liability:AcmeInc D 4000

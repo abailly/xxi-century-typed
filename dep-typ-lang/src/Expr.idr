@@ -45,16 +45,25 @@ data Expr : Type where
   Lam : Name -> Expr -> Expr
   App : Expr -> Expr -> Expr
 
-||| Values are `Expr` closed over the environment in which they are evaluated
-data Value : Type where
-  Closure : (Env Value) -> Name -> Expr -> Value
+mutual
+
+  ||| Neutral values are either free variables or application of neutral function
+  ||| to a `Value`
+  data Neutral : Type where
+    NVar : Name -> Neutral
+    NApp : Neutral -> Value -> Neutral
+
+  ||| Values are `Expr` closed over the environment in which they are evaluated
+  data Value : Type where
+    VClosure : (Env Value) -> Name -> Expr -> Value
+    VNeutral : Neutral -> Value
 
 mutual
 
   ||| Evaluation
   eval : Env Value -> Expr -> Either Message Value
   eval x (Var y) = lookupVar x y
-  eval x (Lam y z) = Right (Closure x y z)
+  eval x (Lam y z) = Right (VClosure x y z)
   eval x (App y z) = do
     fun <- eval x y
     arg <- eval x z
@@ -64,17 +73,36 @@ mutual
   ||| We cannot make neither this nor `eval` function `total` as they can
   ||| diverge
   doApply : Value -> Value -> Either Message Value
-  doApply (Closure env x body) arg = eval (extend env x arg) body
+  doApply (VClosure env x body) arg = eval (extend env x arg) body
+  doApply (VNeutral neut) arg = Right (VNeutral (NApp neut arg))
 
+  ||| Converts a `Value` back into a (syntactic) `Expr` taking care of bound names
+  readBack : List Name -> Value -> Either Message Expr
+  readBack used fun@(VClosure xs x y) = do
+    -- freshen variable to ensure it does not capture already bound names
+    let x' = freshen used x
+    val <- doApply fun (VNeutral (NVar x'))
+    exp <- readBack (x' :: used) val
+    Right (Lam x' exp)
+
+  readBack _    (VNeutral (NVar x)) = Right (Var x)
+  readBack used (VNeutral (NApp fun arg)) = do
+    f <- readBack used (VNeutral fun)
+    a <- readBack used arg
+    Right (App f a)
+
+normalize : Expr -> Either Message Expr
+normalize expr = eval initialEnv expr >>= readBack []
 
 addDefs : Env Value -> Env Expr -> Either Message (Env Value)
 addDefs env [] = Right env
 addDefs env ((name, expr) :: xs) = do v <- eval env expr
                                       addDefs (extend env name v) xs
 
-program : Env Expr -> Expr -> Either Message Value
+program : Env Expr -> Expr -> Either Message Expr
 program defs expr = do env <- addDefs initialEnv defs
-                       eval env expr
+                       val <- eval env expr
+                       readBack (map fst defs) val
 
 ||| Example: Church numerals
 

@@ -1,6 +1,6 @@
 module Expr
 
-%default covering
+%access public export
 
 ||| Identifiers
 Name : Type
@@ -39,11 +39,46 @@ lookupVar ((n, v) :: env') name =
 extend : Env val -> Name -> val -> Env val
 extend env name val = (name, val) :: env
 
-||| Basic (untyped) λ-calculus expressions
-data Expr : Type where
-  Var : Name -> Expr
-  Lam : Name -> Expr -> Expr
-  App : Expr -> Expr -> Expr
+mutual
+
+  ||| Basic (untyped) λ-calculus expressions
+  data Expr : Type where
+    Var : Name -> Expr
+    Lam : Name -> Expr -> Expr
+    App : Expr -> Expr -> Expr
+    -- builtin numbers
+    Zero : Expr
+    Add1 : Expr -> Expr
+    -- primitive recursion
+    Rec : Ty -> (tgt : Expr) -> (base : Expr) -> (step : Expr) -> Expr
+    -- type annotation
+    Ann : Expr -> Ty -> Expr
+
+  ||| Types
+  data Ty : Type where
+    -- primitive Natural types
+    TNat : Ty
+    -- function types
+    TArr : (dom : Ty) -> (cod : Ty) -> Ty
+
+  Show Expr where
+    show (Var x) = x
+    show (Lam x y) = "λ " ++ show x ++ "." ++ show y
+    show (App x y) = "(" ++ show x ++ " " ++ show y ++ ")"
+    show Zero = "0"
+    show (Add1 x) = "(" ++ show x ++ " + 1)"
+    show (Rec x tgt base step) = ""
+    show (Ann x y) = show x ++ " : " ++ show y
+
+  Show Ty where
+    show TNat = "Nat"
+    show (TArr dom cod) = show dom ++ " -> " ++ show cod
+
+  Eq Ty where
+    TNat == TNat = True
+    (TArr x y) == (TArr x' y') = x == x' && y == y'
+    _ == _ = False
+
 
 mutual
 

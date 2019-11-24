@@ -82,16 +82,39 @@ mutual
 
 mutual
 
+  record Normal where
+    constructor MkNormal
+    normalType : Ty
+    normalValue : Value
+
   ||| Neutral values are either free variables or application of neutral function
   ||| to a `Value`
   data Neutral : Type where
     NVar : Name -> Neutral
-    NApp : Neutral -> Value -> Neutral
+    NApp : Neutral -> Normal -> Neutral
+    NRec : Ty -> Neutral -> Normal -> Normal -> Neutral
 
   ||| Values are `Expr` closed over the environment in which they are evaluated
   data Value : Type where
+    VZero : Value
+    VAdd1 : Value -> Value
     VClosure : (Env Value) -> Name -> Expr -> Value
-    VNeutral : Neutral -> Value
+    VNeutral : Ty -> Neutral -> Value
+
+  Show Normal where
+    show (MkNormal normalType normalValue) = show normalValue ++ " : " ++ show normalType
+
+  Show Neutral where
+    show (NVar x) = x
+    show (NApp x y) = "(" ++ show x ++ " "++ show y ++ ")"
+    show (NRec ty tgt base step) = "rec[" ++ show ty ++ "] "++ show tgt ++ " " ++ show base ++ " " ++ show step
+
+  Show Value where
+    show VZero = "0"
+    show (VAdd1 x) = "(" ++ show x ++ " + 1)"
+    show (VClosure xs x y) = show x ++ " = " ++ show y ++ "[" ++ show xs ++ "]"
+    show (VNeutral x y) = show y ++ " : " ++ show x
+
 
 mutual
 
@@ -103,28 +126,53 @@ mutual
     fun <- eval x y
     arg <- eval x z
     doApply fun arg
+  eval x Zero = Right VZero
+  eval x (Add1 n) = VAdd1 <$> eval x n
+  eval x (Rec ty tgt base step) = do
+    tgt' <- eval x tgt
+    base' <- eval x base
+    step' <- eval x step
+    doRec ty tgt' base' step'
+
+  doRec : Ty -> Value -> Value -> Value -> Either Message Value
+  doRec ty VZero base _ = Right base
+  doRec ty (VAdd1 x) base step = do
+    f <- doApply step x
+    a <- doRec ty x base step
+    doApply f a
+  doRec ty (VNeutral TNat neut) base step =
+    Right $ VNeutral ty (NRec ty neut
+                         (MkNormal ty base)
+                         (MkNormal (TArr TNat (TArr ty ty)) step))
+
+  doRec ty tgt base step = failure $ "cannot compute primitive recursion [" ++ show ty ++ " " ++ show tgt ++ " " ++ show base ++ " " ++ show step
 
   ||| Apply a value to its args
   ||| We cannot make neither this nor `eval` function `total` as they can
   ||| diverge
   doApply : Value -> Value -> Either Message Value
   doApply (VClosure env x body) arg = eval (extend env x arg) body
-  doApply (VNeutral neut) arg = Right (VNeutral (NApp neut arg))
+  doApply (VNeutral (TArr dom cod) neut) arg = Right $ VNeutral cod (NApp neut (MkNormal dom arg))
+  doApply (VNeutral TNat neut) arg = failure $ "can't apply a Nat value " ++ show arg
+
+  ||| Read back normal form to Expr
+  readBackNormal : [Name] -> Normal -> Either Message Expr
+  readBackNormal used (MkNormal ty v) = readBack used t v
 
   ||| Converts a `Value` back into a (syntactic) `Expr` taking care of bound names
-  readBack : List Name -> Value -> Either Message Expr
+  readBack : List Name -> Ty -> Value -> Either Message Expr
   readBack used fun@(VClosure xs x y) = do
     -- freshen variable to ensure it does not capture already bound names
     let x' = freshen used x
-    val <- doApply fun (VNeutral (NVar x'))
+    val <- doApply fun (VNeutral TNat (NVar x'))
     exp <- readBack (x' :: used) val
     Right (Lam x' exp)
 
-  readBack _    (VNeutral (NVar x)) = Right (Var x)
-  readBack used (VNeutral (NApp fun arg)) = do
-    f <- readBack used (VNeutral fun)
-    a <- readBack used arg
-    Right (App f a)
+  readBack _    (VNeutral _ (NVar x)) = Right (Var x)
+  readBack used (VNeutral ty (NApp fun arg)) = do
+    f <- readBack used (VNeutral ty fun)
+    --a <- readBack used arg
+    Right (App f ?hole)
 
 normalize : Expr -> Either Message Expr
 normalize expr = eval initialEnv expr >>= readBack []

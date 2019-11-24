@@ -10,7 +10,9 @@ def rec mult : Nat -> Nat -> Nat =
   fun (zero -> λ _ . $zero
        | succ n -> λ m . add m (mult n m)) ;
 
-def rec Vec : U -> Π n : Nat . U =
-    λ A . λ n . Sum (nil | cons A (Vec A n)) ;
+def rec Vec : Π A : U . Π n : Nat . U =
+  λ A . λ n . Sum (nil | cons (Σ _ : A . Vec A n)) ;
 
-def rec append : Π A : U . Π m : Nat . Π n : Nat . Π xs : Vec A n . Π ys : Vec A m =  λ _ . λ _ . λ _ . fun ( nil -> λ ys . ys | cons )
+def rec append : Π A : U . Π m : Nat . Π n : Nat . Π xs : Vec A n . Π ys : Vec A m . Vec A (add m n) =
+  λ A . λ m . λ n . λ xs . fun ( nil -> λ _ . λ ys . ys
+                                | cons (_, s) -> λ _ . λ _. s)

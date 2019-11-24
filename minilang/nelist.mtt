@@ -1,4 +1,4 @@
-def rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A)) ;
+def rec NEList : Π B : U . Π A : B . B = λ B . λ A . Sum(S A | C (Σ a : A . NEList B A)) ;
 
 def elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a))
   -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b

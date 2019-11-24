@@ -1,10 +1,10 @@
 ;;; mil-mode.el --- sample major mode for editing Minilang files. -*- coding: utf-8; lexical-binding: t; -*-
 
-(defvar mil-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (key "C-c C-l") 'mil-load-file)
-    map)
-  "Minilang mode keymap")
+;; (defvar mil-mode-map
+;;   (let ((map (make-sparse-keymap)))
+;;     (define-key map (key "C-c C-l") 'mil-load-file)
+;;     map)
+;;   "Minilang mode keymap")
 
 ;; create the list for font-lock.
 ;; each category of keyword is given a particular face
@@ -44,8 +44,8 @@
   (rainbow-delimiters-mode)
   (set-syntax-table mil-mode-syntax-table)
 
-  ;; install new keymap
-  (use-local-map mil-mode-map)
+  ;; ;; install new keymap
+  ;; (use-local-map mil-mode-map)
   )
 
 ;; add the mode to the `features' list

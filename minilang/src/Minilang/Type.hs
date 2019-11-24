@@ -63,6 +63,7 @@ lookupType x (Context γ x' t)
   | otherwise             = lookupType x γ
 lookupType "Int"    EmptyContext = pure $ EPrim PrimInt
 lookupType "Double" EmptyContext = pure $ EPrim PrimDouble
+lookupType "String" EmptyContext = pure $ EPrim PrimString
 lookupType x        EmptyContext = throwM $ typingError $ "cannot find " <> show x <> " in empty context"
 
 

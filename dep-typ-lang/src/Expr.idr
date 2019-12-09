@@ -2,13 +2,19 @@ module Expr
 
 %access public export
 
-||| Identifiers
+%default covering
+
+||| Identifiers, simply strings at this stage
 Name : Type
 Name = String
 
+||| Simple-minded way of generating more identifiers
 nextName : Name -> Name
 nextName x = x ++ "'"
 
+||| Ensures `name` is fresh in given environment
+
+||| Returns the refreshed name
 freshen : List Name -> Name -> Name
 freshen used x =
   if x `elem` used
@@ -16,6 +22,8 @@ freshen used x =
   else x
 
 ||| Environments
+||| They are polymorphic as a `Name` can be associated to different type of
+||| "things"
 Env : Type -> Type
 Env val = List (Name, val)
 
@@ -29,6 +37,7 @@ Message = String
 failure : String -> Either Message a
 failure = Left
 
+||| Lookup a variable name in an environment
 lookupVar : Env val -> Name -> Either Message val
 lookupVar [] name = failure $ "Variable not found: " ++ name
 lookupVar ((n, v) :: env') name =
@@ -36,22 +45,45 @@ lookupVar ((n, v) :: env') name =
   then Right v
   else lookupVar env' name
 
+||| Extend the given environment, binding `name` to `val`
 extend : Env val -> Name -> val -> Env val
 extend env name val = (name, val) :: env
 
 mutual
 
-  ||| Basic (untyped) λ-calculus expressions
+  ||| Basic typed λ-calculus expressions
   data Expr : Type where
+    ||| Variable reference
+    |||
+    ||| ```
+    ||| x
+    ||| ```
     Var : Name -> Expr
+
+    ||| λ-abstraction: binds a variable in the context of an expression
+    ||| ```
+    ||| λ x . <expr>
+    ||| ```
     Lam : Name -> Expr -> Expr
+
+    ||| application
+    ||| ```
+    ||| (x y)
+    ||| ```
     App : Expr -> Expr -> Expr
-    -- builtin numbers
+
+    ||| Builtin natural numbers constructor
     Zero : Expr
     Add1 : Expr -> Expr
-    -- primitive recursion
+
+    ||| Primitive recursion over a type
+    |||
+    ||| @tgt the target of the recursion
+    ||| @base base value to apply `step`
+    ||| @step the function to apply at each step of the recursion
     Rec : Ty -> (tgt : Expr) -> (base : Expr) -> (step : Expr) -> Expr
-    -- type annotation
+
+    ||| Type annotations
     Ann : Expr -> Ty -> Expr
 
   ||| Types
@@ -65,9 +97,9 @@ mutual
     show (Var x) = x
     show (Lam x y) = "λ " ++ show x ++ "." ++ show y
     show (App x y) = "(" ++ show x ++ " " ++ show y ++ ")"
-    show Zero = "0"
-    show (Add1 x) = "(" ++ show x ++ " + 1)"
-    show (Rec x tgt base step) = ""
+    show Zero = "Z"
+    show (Add1 x) = "(S " ++ show x ++ ")"
+    show (Rec x tgt base step) = "rec[" ++ show x ++ "] " ++ show tgt ++ " " ++ show base ++ " " ++ show step
     show (Ann x y) = show x ++ " : " ++ show y
 
   Show Ty where
@@ -82,6 +114,7 @@ mutual
 
 mutual
 
+  ||| Normal forms are `Ty`ped  `Value`s
   record Normal where
     constructor MkNormal
     normalType : Ty
@@ -89,6 +122,8 @@ mutual
 
   ||| Neutral values are either free variables or application of neutral function
   ||| to a `Value`
+  ||| They are introduced when reading back lambdas after an evaluation step, to represent
+  ||| the fact we don't know the value of some variable
   data Neutral : Type where
     NVar : Name -> Neutral
     NApp : Neutral -> Normal -> Neutral
@@ -98,7 +133,7 @@ mutual
   data Value : Type where
     VZero : Value
     VAdd1 : Value -> Value
-    VClosure : (Env Value) -> Name -> Expr -> Value
+    VClosure : Env Value -> Name -> Expr -> Value
     VNeutral : Ty -> Neutral -> Value
 
   Show Normal where
@@ -133,6 +168,7 @@ mutual
     base' <- eval x base
     step' <- eval x step
     doRec ty tgt' base' step'
+  eval x (Ann e ty) = eval x e
 
   doRec : Ty -> Value -> Value -> Value -> Either Message Value
   doRec ty VZero base _ = Right base
@@ -145,7 +181,7 @@ mutual
                          (MkNormal ty base)
                          (MkNormal (TArr TNat (TArr ty ty)) step))
 
-  doRec ty tgt base step = failure $ "cannot compute primitive recursion [" ++ show ty ++ " " ++ show tgt ++ " " ++ show base ++ " " ++ show step
+  doRec ty tgt base step = failure $ "cannot compute primitive recursion [" ++ show ty ++ " " ++ show tgt ++ " " ++ show base ++ " " ++ show step ++ "]"
 
   ||| Apply a value to its args
   ||| We cannot make neither this nor `eval` function `total` as they can
@@ -153,66 +189,80 @@ mutual
   doApply : Value -> Value -> Either Message Value
   doApply (VClosure env x body) arg = eval (extend env x arg) body
   doApply (VNeutral (TArr dom cod) neut) arg = Right $ VNeutral cod (NApp neut (MkNormal dom arg))
-  doApply (VNeutral TNat neut) arg = failure $ "can't apply a Nat value " ++ show arg
+  doApply val arg = failure $ "can't apply value " ++ show val ++ " to argument " ++ show arg
 
   ||| Read back normal form to Expr
-  readBackNormal : [Name] -> Normal -> Either Message Expr
-  readBackNormal used (MkNormal ty v) = readBack used t v
+  readBackNormal : List Name -> Normal -> Either Message Expr
+  readBackNormal used (MkNormal ty v) = readBack used ty v
 
   ||| Converts a `Value` back into a (syntactic) `Expr` taking care of bound names
   readBack : List Name -> Ty -> Value -> Either Message Expr
-  readBack used fun@(VClosure xs x y) = do
-    -- freshen variable to ensure it does not capture already bound names
-    let x' = freshen used x
-    val <- doApply fun (VNeutral TNat (NVar x'))
-    exp <- readBack (x' :: used) val
-    Right (Lam x' exp)
+  readBack used TNat VZero = pure Zero
+  readBack used TNat (VAdd1 x) = Add1 <$> readBack used TNat x
+  readBack used (TArr dom cod) fun@(VClosure xs arg y) =
+    readBackLambda used dom cod fun arg
+  readBack used (TArr dom cod) fun =
+    readBackLambda used dom cod fun "x"
+  readBack used t1 (VNeutral t2 neu) =
+    if t1 == t2
+      then readBackNeutral used neu
+      else failure ("Mismatched types when reading back neutral: expected " ++ show t1 ++ ", found " ++ show t2)
+  readBack used ty val = failure ("Cannot read back expression from type " ++ show ty ++ " and value " ++ show val)
 
-  readBack _    (VNeutral _ (NVar x)) = Right (Var x)
-  readBack used (VNeutral ty (NApp fun arg)) = do
-    f <- readBack used (VNeutral ty fun)
-    --a <- readBack used arg
-    Right (App f ?hole)
+  readBackLambda : List Name -> Ty -> Ty -> Value -> Name -> Either Message Expr
+  readBackLambda  used dom cod fun arg =
+    let x = freshen used arg
+        xval = VNeutral dom (NVar x)
+    in Lam x <$> (doApply fun xval >>= readBack used cod)
 
-normalize : Expr -> Either Message Expr
-normalize expr = eval initialEnv expr >>= readBack []
+  readBackNeutral : List Name -> Neutral -> Either Message Expr
+  readBackNeutral used (NVar x) = pure $ Var x
+  readBackNeutral used (NApp x y) =
+    App <$> readBackNeutral used x <*> readBackNormal used y
+  readBackNeutral used (NRec ty neu base step) =
+    Rec ty <$>
+    readBackNeutral used neu <*>
+    readBackNormal used base <*>
+    readBackNormal used step
 
-addDefs : Env Value -> Env Expr -> Either Message (Env Value)
-addDefs env [] = Right env
-addDefs env ((name, expr) :: xs) = do v <- eval env expr
-                                      addDefs (extend env name v) xs
+Defs : Type
+Defs = Env Normal
 
-program : Env Expr -> Expr -> Either Message Expr
-program defs expr = do env <- addDefs initialEnv defs
-                       val <- eval env expr
-                       readBack (map fst defs) val
+noDefs : Defs
+noDefs = initialEnv
 
-||| Example: Church numerals
 
-churchDefs : Env Expr
-churchDefs = [ ("zero",
-                Lam "f"
-                  (Lam "x" (Var "x")))
-             , ("add1",
-                Lam "n"
-                  (Lam "f"
-                    (Lam "x"
-                      (App (Var "f")
-                        (App (App (Var "n")
-                                (Var "f"))
-                            (Var "x"))))))
-             , ("+",
-                Lam "j"
-                  (Lam "k"
-                    (Lam "f"
-                      (Lam "x"
-                        (App (App (Var "j")
-                               (Var "f"))
-                          (App (App (Var "k")
-                                 (Var "f"))
-                            (Var "x")))))))
-             ]
+-- program : Env Expr -> Expr -> Either Message Expr
+-- program defs expr = do env <- addDefs initialEnv defs
+--                        val <- eval env expr
+--                        readBack (map fst defs) val
 
-toChurch : Nat -> Expr
-toChurch Z = Var "zero"
-toChurch (S  n) = App (Var "add1") (toChurch n)
+-- ||| Example: Church numerals
+
+-- churchDefs : Env Expr
+-- churchDefs = [ ("zero",
+--                 Lam "f"
+--                   (Lam "x" (Var "x")))
+--              , ("add1",
+--                 Lam "n"
+--                   (Lam "f"
+--                     (Lam "x"
+--                       (App (Var "f")
+--                         (App (App (Var "n")
+--                                 (Var "f"))
+--                             (Var "x"))))))
+--              , ("+",
+--                 Lam "j"
+--                   (Lam "k"
+--                     (Lam "f"
+--                       (Lam "x"
+--                         (App (App (Var "j")
+--                                (Var "f"))
+--                           (App (App (Var "k")
+--                                  (Var "f"))
+--                             (Var "x")))))))
+--              ]
+
+-- toChurch : Nat -> Expr
+-- toChurch Z = Var "zero"
+-- toChurch (S  n) = App (Var "add1") (toChurch n)

@@ -11,9 +11,25 @@ Context = Env Ty
 initContext : Context
 initContext = []
 
+first : (a -> b) -> (a,c) -> (b,c)
+first f (a,b) = (f a,b)
+
+second : (a -> b) -> (c, a) -> (c, b)
+second f (a, b) = (a, f b)
+
+defsToContext : Defs -> Context
+defsToContext = map (second normalType)
+
+defsToEnv : Defs -> Env Value
+defsToEnv = map (second normalValue)
+
 mutual
 
   synth : Context -> Expr -> Either Message Ty
+  synth ctx Zero = pure TNat
+  synth ctx (Add1 x) = do
+    check ctx x TNat
+    pure TNat
   synth ctx (Var x) = lookupVar ctx x
   synth ctx (App fun arg) = do
     fty <- synth ctx fun
@@ -33,7 +49,7 @@ mutual
   synth ctx (Ann expr ty) = do
     check ctx expr ty
     Right ty
-  synth _ other = failure $ "can't infer type for expression " ++ show other
+  synth ctx other = failure $ "can't infer type for expression " ++ show other ++ ", context: " ++ show ctx
 
   check : Context -> Expr -> Ty -> Either Message ()
   check ctx (Lam x y) (TArr dom cod) =  check (extend ctx x dom) y cod
@@ -48,30 +64,40 @@ mutual
       then Right ()
       else failure $ "expected " ++ show ty ++" but found " ++ show ty'
 
-addDefs : Context -> List (Name, Expr) -> Either Message Context
-addDefs ctx [ ] = Right ctx
-addDefs ctx ((x, e) :: defs) = do
-  t <- synth ctx e
-  addDefs (extend ctx x t) defs
+normWithDefs : Defs -> Expr -> Either Message Normal
+normWithDefs defs e = do
+  ty <- synth (defsToContext defs) e
+  MkNormal ty <$> eval (defsToEnv defs) e
 
-testTypeChecking : Either Message (Ty, Ty)
-testTypeChecking = do
-  ctx <- addDefs initContext [ ("two",
-                                (Ann (Add1 (Add1 Zero)) TNat))
-                             , ("three",
-                                 (Ann (Add1 (Add1 (Add1 Zero)))
-                                   TNat))
-                             , ("+",
-                                 (Ann
-                                   (Lam "n"
-                                     (Lam "k"
-                                       (Rec TNat
-                                         (Var "n")
-                                         (Var "k")
-                                         (Lam "pred"
-                                           (Lam "almostSum"
-                                             (Add1 (Var "almostSum")))))))
-                                   (TArr TNat (TArr TNat TNat))))]
-  t1 <- synth ctx (App (Var "+") (Var "three"))
-  t2 <- synth ctx (App (App (Var "+") (Var "three")) (Var "two"))
-  Right (t1, t2)
+addDefs : Defs -> List (Name, Expr) -> Either Message Defs
+addDefs defs [ ] = Right defs
+addDefs defs ((x, e) :: more) = do
+  norm <- normWithDefs defs e
+  addDefs (extend defs x norm) more
+
+definedNames : Defs -> List Name
+definedNames = map fst
+
+globalDefs : Either Message Defs
+globalDefs = addDefs noDefs
+                    [ ("two",
+                       (Ann (Add1 (Add1 Zero)) TNat))
+                    , ("three",
+                        (Ann (Add1 (Add1 (Add1 Zero)))
+                          TNat))
+                    , ("+",
+                        (Ann
+                          (Lam "n"
+                            (Lam "k"
+                              (Rec TNat
+                                (Var "n")
+                                (Var "k")
+                                (Lam "pred"
+                                  (Lam "almostSum"
+                                    (Add1 (Var "almostSum")))))))
+                          (TArr TNat (TArr TNat TNat))))]
+
+testTypeChecking : Expr -> Defs -> Either Message Expr
+testTypeChecking e defs = do
+  norm <- normWithDefs defs e
+  readBackNormal (definedNames defs) norm

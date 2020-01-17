@@ -1,12 +1,10 @@
 module Tartlet.Expr
 
+import Env
+
 %access public export
 
 %default covering
-
-||| Identifiers, simply strings at this stage
-Name : Type
-Name = String
 
 data Expr : Type where
   Var : Name -> Expr
@@ -25,13 +23,15 @@ data Expr : Type where
   ||| Induction/recursion over natural numbers
   IndNat : Expr -> Expr -> Expr -> Expr -> Expr
 
-  Replace : Expr -> Expr -> Expr -> Expr
-
   ||| ???
   Equal : Expr -> Expr -> Expr -> Expr
 
-  ||| ????
+  ||| Equivalent of `Refl` a value denoting equality
+  ||| at type level.
   Same : Expr
+
+  ||| Use some equality to replace values within expressions
+  Replace : Expr -> Expr -> Expr -> Expr
 
   ||| Unit type, called `One` in minilang
   Trivial : Expr

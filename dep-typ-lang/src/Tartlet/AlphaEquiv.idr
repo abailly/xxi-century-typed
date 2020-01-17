@@ -5,18 +5,13 @@
 module Tartlet.AlphaEquiv
 
 import Expr
+import Env
 
 %default covering
-
-||| Environments
-||| They are polymorphic as a `Name` can be associated to different type of
-||| "things"
-Env : Type -> Type
-Env val = List (Name, val)
+%access export
 
 initialEnv : Env val
 initialEnv = []
-
 
 alphaEquivHelper : Integer -> Env Integer -> Expr -> Env Integer -> Expr -> Bool
 alphaEquivHelper l ns1 (Var x) ns2 (Var y) =

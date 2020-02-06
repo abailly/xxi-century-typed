@@ -3,7 +3,6 @@ module Tartlet.Expr
 import Env
 
 %access public export
-
 %default covering
 
 data Expr : Type where
@@ -68,3 +67,29 @@ data Expr : Type where
 
   ||| Successor
   S : Expr -> Expr
+
+
+Show Expr where
+  show (Var name) = name
+  show (Pi name ty body) = "Pi (" ++ name ++ " : " ++ show ty ++ "). " ++ show body
+  show (Sigma name ty body) = "Sigma (" ++ name ++ " : " ++ show ty ++ "). " ++ show body
+  show Nat = "Nat"
+  show (Lam name body) = "λ " ++ name ++ "." ++ show body
+  show (App l r) = "(" ++ show l ++ " " ++ show r ++ ")"
+  show (IndNat tgt mot base step) = "IntNat " ++ show tgt ++ " " ++ show mot ++ " " ++ show base ++ " " ++ show step
+  show (Equal ty from to) = "(= " ++ show ty ++ " " ++ show from ++ " " ++ show to ++ ")"
+  show Same = "Same"
+  show (Replace tgt mot base) = "Replace " ++ show tgt ++ " " ++ show mot ++ " " ++ show base
+  show Trivial = "Trivial"
+  show Sole = "Sole"
+  show Absurd = "Abzurd"
+  show (IndAbsurd tgt mot) = "IndAbsurd " ++ show tgt ++ " " ++ show mot
+  show Atom = "Atom"
+  show (Tick sym) = "'" ++ sym
+  show U = "U"
+  show (The ty e) = "The " ++ show ty ++ " " ++ show e
+  show (Pair a b) = "(" ++ show a ++ "," ++ show b ++ ")"
+  show (P1 e) = "(P1 " ++ show e ++ ")"
+  show (P2 e) = "(P2 " ++ show e ++ ")"
+  show Z = "Z"
+  show (S e) = "S " ++ show e

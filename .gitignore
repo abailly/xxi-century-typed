@@ -12,3 +12,4 @@ gorilla-space.js
 .#*
 *.ibc
 node_modules/
+/idris/accounting

@@ -4,6 +4,7 @@ import AlphaEquiv
 import Expr
 import Env
 
+%access public export
 %default covering
 
 mutual
@@ -45,23 +46,29 @@ mutual
     closureName : Name
     closureBody : Expr
 
-Show Value where
-  show (VPi ty closure) = ?hole
-  show (VLambda closure) = ?hole
-  show (VSigma ty closure) = ?hole
-  show (VPair value value') = ?hole
-  show (VNat) = ?hole
-  show VZ = ?hole
-  show (VS value) = ?hole
-  show (VEq ty value value') = ?hole
-  show (VSame) = ?hole
-  show (VTrivial) = ?hole
-  show (VSole) = ?hole
-  show (VAbsurd) = ?hole
-  show (VAtom) = ?hole
-  show (VTick string) = ?hole
-  show (VU) = ?hole
-  show (VNeutral ty Neutral) = ?hole
+  Show Value where
+    show (VPi ty closure) = "Π (" ++ show ty ++ "). " ++ show closure
+    show (VLambda closure) = "λ " ++ show closure
+    show (VSigma ty closure) = "Σ (" ++ show ty ++ "). " ++ show closure
+    show (VPair value value') = "(" ++ show value ++ "," ++ show value' ++ ")"
+    show (VNat) = "Nat"
+    show VZ = "Z"
+    show (VS value) = "S " ++ show value
+    show (VEq ty value value') = "= "++ show ty ++ " "++ show value ++ " " ++ show value'
+    show (VSame) = "Same"
+    show (VTrivial) = "Trivial"
+    show (VSole) = "Sole"
+    show (VAbsurd) = "Absurd"
+    show (VAtom) = "Atom"
+    show (VTick string) = "'" ++ string
+    show (VU) = "U"
+    show (VNeutral ty neut) = "? (" ++ show neut ++ ") : " ++ show ty
+
+  Show Closure where
+    show (MkClosure env name body) = "Closure"
+
+  Show Neutral where
+    show _ = "Neutral"
 
 data CtxEntry = Def Ty Value | IsA Ty
 
@@ -82,3 +89,11 @@ lookupType ((y, e) :: ctx) x =
          Def t _ => pure t
          IsA t =>  pure t
   else lookupType ctx x
+
+mkEnv : Ctx -> Env Value
+mkEnv [] = []
+mkEnv ((x, e) :: ctx) = ((x, v) :: mkEnv ctx)
+  where
+    v = case e of
+          Def _ v' => v'
+          IsA t => VNeutral t (NVar x)

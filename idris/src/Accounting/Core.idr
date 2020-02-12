@@ -14,30 +14,30 @@ import public Decidable.Equality
 
 ||| Direction of a cash movement
 |||
-||| It's either a _Debit_ (`Dr`) or a _Credit_ (`Cr`).
+||| It's either a _Debit_ (`Debit`) or a _Credit_ (`Credit`).
 ||| * A _Debit_ is an `Amount` that _enters_ an account
 ||| * A _Credit_ is an `Amount` that _exits_ an account
 data Direction : Type where
   ||| A Debit operation
-  Dr : Direction
+  Debit : Direction
 
   ||| A Credit operation
-  Cr : Direction
+  Credit : Direction
 
 Eq Direction where
-  Dr == Dr = True
-  Cr == Cr = True
+  Debit == Debit = True
+  Credit == Credit = True
   _  == _  = False
 
 Show Direction where
-  show Dr = "D"
-  show Cr = "C"
+  show Debit = "D"
+  show Credit = "C"
 
 DecEq Direction where
-  decEq Dr Dr = Yes Refl
-  decEq Cr Cr = Yes Refl
-  decEq Dr Cr = No $ \ Refl impossible
-  decEq Cr Dr = No $ \ Refl impossible
+  decEq Debit Debit = Yes Refl
+  decEq Credit Credit = Yes Refl
+  decEq Debit Credit = No $ \ Refl impossible
+  decEq Credit Debit = No $ \ Refl impossible
 
 
 ||| A Balance is a debit or a credit of a certain `Amount` or `Zero`
@@ -97,8 +97,8 @@ Monoid Balance where
 
 Group Balance where
   inverse Zero = Zero
-  inverse (Bal n Dr) = Bal n Cr
-  inverse (Bal n Cr) = Bal n Dr
+  inverse (Bal n Debit) = Bal n Credit
+  inverse (Bal n Credit) = Bal n Debit
 
 private
 directionInj : (Bal n d = Bal x y) -> d = y
@@ -238,18 +238,18 @@ Bank = MkAccount "Bank" {type = Asset}
 
 namespace CoreTest
   %access private
-  valid1 : balance [ MkEntry 100 Dr Bank
-                   , MkEntry 100 Cr Capital ] = Zero
+  valid1 : balance [ MkEntry 100 Debit Bank
+                   , MkEntry 100 Credit Capital ] = Zero
   valid1 = Refl
 
-  valid2 : balance [ MkEntry 100 Cr Bank
-                   , MkEntry 100 Dr Capital ] = Zero
+  valid2 : balance [ MkEntry 100 Credit Bank
+                   , MkEntry 100 Debit Capital ] = Zero
   valid2 = Refl
 
-  invalid : Not (balance [ MkEntry 100 Cr Bank
-                         , MkEntry 101 Dr Capital ] = Zero)
+  invalid : Not (balance [ MkEntry 100 Credit Bank
+                         , MkEntry 101 Debit Capital ] = Zero)
   invalid = \ Refl impossible
 
   tx : Transaction
-  tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Dr Bank
-                                                                  , MkEntry 100 Cr Capital ]
+  tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Debit Bank
+                                                                  , MkEntry 100 Credit Capital ]

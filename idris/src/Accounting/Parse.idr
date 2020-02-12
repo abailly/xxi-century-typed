@@ -52,7 +52,7 @@ parseAccount = do
 
 parseDirection : Parser Direction
 parseDirection =
-  char 'D' *> pure Dr <|> char 'C' *> pure Cr
+  char 'D' *> pure Debit <|> char 'C' *> pure Credit
 
 parseEntry : Parser Entry
 parseEntry = do

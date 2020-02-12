@@ -43,11 +43,11 @@ balanceLeftNeutral (Bal n d) = Refl
 -- to pattern match on the direction too.
 balanceRightInverse : (b : Balance) -> (b <+> inverse b = Zero)
 balanceRightInverse Zero      = Refl
-balanceRightInverse (Bal (MkAmount n) Dr) with (decEq n n)
+balanceRightInverse (Bal (MkAmount n) Debit) with (decEq n n)
   | (Yes prf)   = Refl
   | (No contra) = absurd (contra Refl)
 
-balanceRightInverse (Bal (MkAmount n) Cr) with (decEq n n)
+balanceRightInverse (Bal (MkAmount n) Credit) with (decEq n n)
   | (Yes prf) = Refl
   | (No contra) = absurd (contra Refl)
 

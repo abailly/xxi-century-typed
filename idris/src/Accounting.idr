@@ -38,8 +38,8 @@
 ||| Sale = Account "Sales" {type=Revenue}
 ||| Customer = Account "Customer" {type=Asset}
 |||
-||| Tx "Sell 1 Brouzouf" "1/1/2019" $ MkEntries [ MkEntry (100, Dr) Customer,
-|||                                               MkEntry (100, Cr) Sale ]
+||| Tx "Sell 1 Brouzouf" "1/1/2019" $ MkEntries [ MkEntry (100, Debit) Customer,
+|||                                               MkEntry (100, Credit) Sale ]
 ||| ```
 ||| eg. we increase our revenue by 100 and we record the fact the customer has
 ||| a debt of 100.
@@ -48,8 +48,8 @@
 ||| ```
 ||| Bank = Account "Bank" {type=Asset}
 |||
-||| Tx "Wire transfer" "2/1/2019" $ MkEntries [ MkEntry (100, Cr) Customer,
-|||                                             MkEntry (100, Dr) Bank ]
+||| Tx "Wire transfer" "2/1/2019" $ MkEntries [ MkEntry (100, Credit) Customer,
+|||                                             MkEntry (100, Debit) Bank ]
 ||| ```
 module Accounting
 

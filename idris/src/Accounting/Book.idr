@@ -86,8 +86,8 @@ namespace BookTest
   %access private
 
   tx : Transaction
-  tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Dr Bank
-                                                                  , MkEntry 100 Cr Capital ]
+  tx = Tx "Some transaction" (MkDate 2019 January 01) $ MkEntries [ MkEntry 100 Debit Bank
+                                                                  , MkEntry 100 Credit Capital ]
 
   book1 : BookOfAccounts
   book1 = BookTransactions [ tx ]

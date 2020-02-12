@@ -22,10 +22,10 @@ class (Monad tc, MonadThrow tc) =>  TypeChecker tc where
   emit :: Event -> tc ()
 
 data Event = CheckD CheckDEvent
-           | CheckT CheckTEvent
-           | Check  CheckEvent
-           | CheckI CheckIEvent
-  deriving (Eq, Show)
+    | CheckT CheckTEvent
+    | Check CheckEvent
+    | CheckI CheckIEvent
+    deriving (Eq, Show)
 
 instance Displayable Event where
   display (CheckD e) = display e
@@ -34,7 +34,7 @@ instance Displayable Event where
   display (CheckI e) = display e
 
 data TypingError = TypingError Text
-  deriving (Eq, Show)
+    deriving (Eq, Show)
 
 instance Exception TypingError
 
@@ -81,9 +81,9 @@ bindType p     t v  γ             = throwM $ typingError $ "don't know how to b
 
 -- ** Check Declaration Correctness
 
-data CheckDEvent = CheckingDecl Decl  Int  Env  Context
-                 | BoundType Binding Value Value Int Context
-  deriving (Eq,Show)
+data CheckDEvent = CheckingDecl Decl Int Env Context
+    | BoundType Binding Value Value Int Context
+    deriving (Eq, Show)
 
 instance HasLevel CheckDEvent where
   getLevel (CheckingDecl _ l _ _) = l
@@ -135,8 +135,8 @@ checkD l d@(RDecl p a m) ρ γ = do
 -- ** Check Type Well-Formedness
 
 data CheckTEvent = CheckingIsType AST Int Env Context
-                 | CheckedIsType  AST Int Env Context
-  deriving (Eq, Show)
+    | CheckedIsType AST Int Env Context
+    deriving (Eq, Show)
 
 instance HasLevel CheckTEvent where
   getLevel (CheckingIsType _ l _ _ ) = l
@@ -189,8 +189,8 @@ checkDependentT l p a b ρ γ = do
 -- ** Check Type assignment
 
 data CheckEvent = CheckingHasType AST Value Int Env Context
-                | CheckedHasType AST Value Int Env Context
-  deriving (Eq, Show)
+    | CheckedHasType AST Value Int Env Context
+    deriving (Eq, Show)
 
 instance HasLevel CheckEvent where
   getLevel (CheckingHasType _ _ l _ _ ) = l
@@ -214,7 +214,7 @@ check
   :: (TypeChecker tc)
   => Int -> AST -> Value -> Env -> Context -> tc ()
 
-check l a@(Ctor c_i (Just m)) t@(ESum (c, ν)) ρ γ = do
+check l a@(Ctor c_i (Just m)) t@(ESum (SumClos (c, ν))) ρ γ = do
   checkingHasType a t l ρ γ
   case choose c c_i of
     Just (Choice _ (Just a_i)) -> do
@@ -222,7 +222,7 @@ check l a@(Ctor c_i (Just m)) t@(ESum (c, ν)) ρ γ = do
       checkedHasType a t l ρ γ
     _             -> throwM $ typingError ("invalid ctor " <> show c_i <> " among " <> show c <> " while expecting type " <> show (pretty t) )
 
-check l a@(Ctor c_i Nothing) t@(ESum (c, _)) ρ γ = do
+check l a@(Ctor c_i Nothing) t@(ESum (SumClos (c, _))) ρ γ = do
   checkingHasType a t l ρ γ
   case choose c c_i of
     Just (Choice _ Nothing) ->
@@ -239,7 +239,7 @@ check l Unit     EOne  ρ  γ = checkingHasType Unit EOne l ρ γ >> checkedHasT
 
 check l One      EU    ρ  γ = checkingHasType One EU l ρ γ >> checkedHasType One EU l ρ γ
 
-check l a@(Case cs) ty@(EPi esum@(ESum (cs', ν)) g) ρ γ = do
+check l a@(Case cs) ty@(EPi esum@(ESum (SumClos (cs', ν))) g) ρ γ = do
   checkingHasType a ty l ρ γ
   when (length cs /= length cs') $
     throwM $ typingError ("number of ctors in case " <> show cs <> " must be same than number in " <> show cs')
@@ -283,7 +283,7 @@ check l m t ρ γ = do
   let
     norm  = normalize l t :: Normal
     norm' = normalize l t' :: Normal
-  when (norm /= norm') $ throwM $
+  when (not $ same norm norm') $ throwM $
     typingError $ "[" <> show l <> "] expr " <> show m <>
     " does not have type "<> show (pretty t) <>
     ", inferred type is " <> show (pretty t') <>
@@ -308,9 +308,9 @@ checkDependent  l e p a b ρ γ = do
 -- ** Inter Type of an Expression
 
 data CheckIEvent = InferringType AST Int Env Context
-                 | ResolvingVariable Name Int Env Context
-                 | InferredType AST Value Int Env Context
-  deriving (Eq, Show)
+    | ResolvingVariable Name Int Env Context
+    | InferredType AST Value Int Env Context
+    deriving (Eq, Show)
 
 instance HasLevel CheckIEvent where
   getLevel (InferringType _ l _ _)      = l

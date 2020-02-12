@@ -44,7 +44,7 @@ spec = parallel $ describe "Normalizer" $ do
   it "normalizes case neutral application with env" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
 
-    normalize 0 (Eval.NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+    normalize 0 (Eval.NCase (CaseClos ([ Clause "A" (Abs (B "x") (Var "x")) ], extended)) (NV $ NVar  1))
       `shouldBe` NNCase ( [Clause "A" (Abs (B "x") (Var "x"))]
                         , ExtendPat EmptyEnv (B "x") (NNeut (NNV (NVar 1)))
                         ) (NNV (NVar 1))
@@ -65,11 +65,21 @@ spec = parallel $ describe "Normalizer" $ do
       `shouldBe` NSig (NVar 0) NU (NI 12)
 
   it "normalizes Sum definitions" $ do
-    normalize 0 (ESum ([ Choice "true" (Just Unit), Choice "false" Nothing]
-                     , emptyEnv))
+    normalize 0 (ESum (SumClos ([ Choice "true" (Just Unit), Choice "false" Nothing]
+                               , emptyEnv)))
       `shouldBe` NSum ([ Choice "true" (Just Unit), Choice "false" Nothing], EmptyEnv)
 
   it "normalizes Case expressions" $ do
-    normalize 0 (ECase ([ Clause "true" Unit, Clause "false" Unit]
-                     , emptyEnv))
+    normalize 0 (ECase (CaseClos ([ Clause "true" Unit, Clause "false" Unit]
+                                 , emptyEnv)))
       `shouldBe` NCase ([ Clause "true" Unit, Clause "false" Unit], EmptyEnv)
+
+  describe "normal forms equality" $ do
+
+    it "compares expression for Sum" $ do
+      let extended = ExtendPat emptyEnv (B "bar") (EI 12)
+          n1 = normalize 0 (ESum (SumClos ([ Choice "true" (Just Unit), Choice "false" Nothing]
+                                          , emptyEnv)))
+          n2 = normalize 0 (ESum (SumClos ([ Choice "true" (Just Unit), Choice "false" Nothing]
+                                          , extended)))
+      same n1 n2 `shouldBe` True

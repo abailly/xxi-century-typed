@@ -13,45 +13,55 @@ import           Minilang.Primitives
 type Env = Env' Value
 
 data Context = EmptyContext
-             | Context Context Name Value
-  deriving (Eq, Show)
+    | Context Context Name Value
+    deriving (Eq, Show)
 
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that
 -- we can add whatever specialised information we need
 data Value = EU
-           | EUnit
-           | EOne
-           | EPrim PrimType
-           | EI Integer
-           | ED Double
-           | ES String
-           | ENeut Neutral
-           | EAbs FunClos
-           | ECtor Name (Maybe Value)
-           | EPi Value FunClos
-           | ESig Value FunClos
-           | EPair Value Value
-           | ESum SumClos
-           | ECase CaseClos
-  deriving (Eq, Show)
+    | EUnit
+    | EOne
+    | EPrim PrimType
+    | EI Integer
+    | ED Double
+    | ES String
+    | ENeut Neutral
+    | EAbs FunClos
+    | ECtor Name (Maybe Value)
+    | EPi Value FunClos
+    | ESig Value FunClos
+    | EPair Value Value
+    | ESum SumClos
+    | ECase CaseClos
+    deriving (Eq, Show)
 
-type SumClos = ( [ Choice ], Env)
+newtype SumClos = SumClos ( [ Choice ], Env)
+  deriving (Eq)
 
-type CaseClos = ( [ Clause ], Env)
+instance Show SumClos where
+  show (SumClos (cs,_)) = show cs
 
-data FunClos = Cl Binding AST Env | ClComp FunClos Name | ClComp0 FunClos Name
-  deriving (Eq, Show)
+newtype CaseClos = CaseClos ( [ Clause ], Env)
+  deriving (Eq)
+
+instance Show CaseClos where
+  show (CaseClos (cs, _)) = show cs
+
+data FunClos = Cl Binding AST Env
+    | ClComp FunClos Name
+    | ClComp0 FunClos Name
+    deriving (Eq, Show)
 
 newtype NVar = NVar Int
   deriving (Eq, Show)
 
 data Neutral = NV NVar
-             | NAp Neutral Value
-             | NP1 Neutral
-             | NP2 Neutral
-             | NCase CaseClos Neutral
-  deriving (Eq, Show)
+    | NAp Neutral Value
+    | NP1 Neutral
+    | NP2 Neutral
+    | NCase CaseClos Neutral
+    deriving (Eq, Show)
 
 eval
   :: AST -> Env -> Value
@@ -69,8 +79,8 @@ eval (Ap u v)      ρ = app (eval u ρ) (eval v ρ)
 eval (Var x)       ρ = rho ρ x
 eval (P1 e)        ρ = p1 (eval e ρ)
 eval (P2 e)        ρ = p2 (eval e ρ)
-eval (Case cs)     ρ = ECase (cs,ρ)
-eval (Sum cs)      ρ = ESum (cs,ρ)
+eval (Case cs)     ρ = ECase $ CaseClos (cs,ρ)
+eval (Sum cs)      ρ = ESum $ SumClos (cs,ρ)
 eval (Ctor n e)    ρ = ECtor n (flip eval ρ <$> e)
 eval (Def d m)     ρ = eval m (extend d ρ)
 eval (Err err)     _ = error $ "trying to evaluate parse error :" ++ show err
@@ -78,7 +88,7 @@ eval (Err err)     _ = error $ "trying to evaluate parse error :" ++ show err
 app
   :: Value -> Value -> Value
 app (EAbs f@Cl{})     v          = inst f v
-app c@(ECase (cs,ρ)) (ECtor n v) = maybe (app m' EUnit) (app m') v
+app c@(ECase (CaseClos (cs,ρ))) (ECtor n v) = maybe (app m' EUnit) (app m') v
   where
     m'         = eval m ρ
     Clause _ m = maybe (error $ "invalid constructor " ++ show n ++ " in case " ++ show c) id $
@@ -103,7 +113,7 @@ p2
   :: Value -> Value
 p2 (ENeut k)   = ENeut $ NP2 k
 p2 (EPair _ y) = y
-p2 v           = error $ "don't know how to apply first projection to value " ++ show v
+p2 v           = error $ "don't know how to apply second projection to value " ++ show v
 
 rho
   :: Env -> Name -> Value

@@ -73,8 +73,8 @@ instance Pretty Value where
   pretty (EPi v f)       = "Π" <+> pretty v <+> "." <+> pretty f
   pretty (ESig v f)      = "Σ" <+> pretty v <+> "." <+> pretty f
   pretty (EPair l r)     = parens (pretty l  <> "," <+> pretty r)
-  pretty (ESum (cs, ρ))  = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
-  pretty (ECase (cs, ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
+  pretty (ESum (SumClos (cs, _)))  = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)))
+  pretty (ECase (CaseClos (cs, _))) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
 
 instance Pretty FunClos where
   pretty (Cl b e ρ)    = angles ("λ" <+> pretty b <+> "." <+> pretty e <+> "," <+> pretty ρ)
@@ -88,7 +88,7 @@ instance  Pretty Neutral where
   pretty (NV x)            = pretty x
   pretty (NP1 nt)          = "π1." <> pretty nt
   pretty (NP2 nt)          = "π2." <> pretty nt
-  pretty (Eval.NCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
+  pretty (Eval.NCase (CaseClos (cs,_)) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt)
   pretty (NAp nt v)        = parens (pretty nt <+> pretty v)
 
 -- ** Normal Forms
@@ -108,8 +108,8 @@ instance Pretty Normal where
   pretty (NPrim p)     = pretty p
   pretty (NCtor n Nothing)   = "$" <> pretty n
   pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)
-  pretty (NSum (cs,ρ)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)) <> "," <+> pretty ρ)
-  pretty (Norm.NCase (cs,ρ)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)) <> "," <+> pretty ρ)
+  pretty (NSum (cs,_)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)))
+  pretty (Norm.NCase (cs,_)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
 
 
 instance  Pretty NNeutral where

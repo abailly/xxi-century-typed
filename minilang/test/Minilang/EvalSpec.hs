@@ -75,7 +75,7 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
     eval (Ap (Case [ Clause "A" (Abs (B "x") (Var "x")) ])
            (Var "x")) extended
-      `shouldBe` ENeut (NCase ([ Clause "A" (Abs (B "x") (Var "x")) ], extended) (NV $ NVar  1))
+      `shouldBe` ENeut (NCase (CaseClos ([ Clause "A" (Abs (B "x") (Var "x")) ], extended)) (NV $ NVar  1))
 
   it "evaluates application of neutral to value as neutral" $ do
     let extended = ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1)
@@ -93,18 +93,20 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval (Case [ Clause "foo" (Abs (C $ I 12) (Var "x"))
                , Clause "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
                ])
-      extended `shouldBe` ECase ([ Clause "foo" (Abs (C $ I 12) (Var "x"))
-                                 , Clause "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
-                                 ]
-                                , extended)
+      extended `shouldBe` ECase (CaseClos
+                                  ([ Clause "foo" (Abs (C $ I 12) (Var "x"))
+                                   , Clause "bar" (Abs (B "z") (Ap (Var "y") (Var "z")))
+                                   ]
+                                  , extended))
 
   it "evaluates Sum definition" $ do
     let extended = ExtendPat (ExtendPat emptyEnv (B "x") (ENeut $ NV $ NVar  1))
                    (B "y") (ENeut $ NV $ NVar  2)
 
     eval (Sum [ Choice "true" (Just Unit), Choice "false" Nothing])
-      extended `shouldBe` ESum ([ Choice "true" (Just Unit), Choice "false" Nothing]
-                                , extended)
+      extended `shouldBe` ESum (SumClos
+                                 ([ Choice "true" (Just Unit), Choice "false" Nothing]
+                                 , extended))
 
   it "evaluates declaration continuation in extended env" $ do
     eval (Def (Decl (B "id")

@@ -10,9 +10,9 @@ type Name = Text
 -- ** Evaluation Environment
 
 data Env' value = EmptyEnv
-         | ExtendPat (Env' value) Binding value
-         | ExtendDecl (Env' value) Decl
-  deriving (Eq)
+    | ExtendPat (Env' value) Binding value
+    | ExtendDecl (Env' value) Decl
+    deriving (Eq)
 
 instance (Show value) => Show (Env' value) where
   show e = "{ " <> show' e <> " }"

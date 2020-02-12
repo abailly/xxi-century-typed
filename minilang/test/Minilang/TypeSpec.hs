@@ -102,7 +102,7 @@ spec = parallel $ describe "Type Checker" $ do
                            , Clause "false" (Abs Wildcard (Ctor "true" Nothing))
                            ]))
                    (Ap (Var "not") (Ctor "false" Nothing))))
-          (ESum ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
+          (ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv)))
           EmptyEnv EmptyContext
           `shouldReturn` ()
 

@@ -52,13 +52,15 @@ instance MonadREPL Haskeline where
 completion :: CompletionFunc IO
 completion = completion' . first reverse
 
-data CompleteWith = SetUnset String | LoadFile | AllCommands
+data CompleteWith = SetUnset String
+    | LoadFile
+    | AllCommands
 
 completion' :: CompletionFunc IO
 completion' (inputString ,_) =
   case matchedCompletionRule inputString of
     SetUnset com:_ -> setUnsetCompletion com
-    LoadFile:_     -> completeLoadWithFiles
+    LoadFile:_     -> completeLoadWithFiles (drop 6 inputString)
     _              -> allCommandCompletions
 
   where
@@ -70,8 +72,8 @@ completion' (inputString ,_) =
       , (const True, AllCommands)
       ]
 
-    completeLoadWithFiles = do
-      files <- filter (".mtt" `isSuffixOf`) <$> listDirectory "."
+    completeLoadWithFiles prefix = do
+      files <- filter (prefix `isPrefixOf`) . filter (".mtt" `isSuffixOf`) <$> listDirectory "."
       pure ("", fmap (\ fp -> Completion (":load " <> fp) fp True) files)
 
     setUnsetCompletion com =

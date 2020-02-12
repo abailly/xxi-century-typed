@@ -25,3 +25,7 @@ spec = parallel $ describe "MiniLang Haskeline REPL" $ do
     it "returns list of files when input ':load' "$ do
       (fmap replacement) . snd <$> completion  ("daol:", "") `shouldReturn`
          [ ":load bool.mtt", ":load nelist.mtt", ":load vector.mtt" ]
+
+    it "returns filtered list of files when input ':load xxx' "$ do
+      (fmap replacement) . snd <$> completion  ("v daol:", "") `shouldReturn`
+         [ ":load vector.mtt" ]

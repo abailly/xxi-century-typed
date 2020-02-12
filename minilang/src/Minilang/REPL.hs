@@ -78,17 +78,22 @@ handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
   output (renderStrict $ layoutPretty defaultLayoutOptions $ "Context: " <> pretty gamma)
 handleCommand (Load file) = do
   t <- load file
-  env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
-  case runParser program (ParserState debugParser) "" (unpack t) of
-    Left err   -> output (pack $ show err)
-    Right e -> do
-      (do
-          (ρ',γ') <- loadProgram e ρ γ
-          setEnv (env { rho = ρ', gamma = γ' }))
-        `catch` \ (TypingError err) -> output err
+  case t of
+    Left err -> output (pack $ show err)
+    Right prog -> do
+      env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+      case runParser program (ParserState debugParser) "" (unpack prog) of
+        Left err   -> output (pack $ show err)
+        Right e -> do
+          (do
+              (ρ',γ') <- loadProgram e ρ γ
+              setEnv (env { rho = ρ', gamma = γ' }))
+            `catch` \ (TypingError err) -> output err
 
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
+handleCommand Help =
+  output ""
 
 -- * Haskeline REPL
 
@@ -103,6 +108,8 @@ withTerminal =
 
 -- | Pure IO REPL
 -- Used for testing purposes
+
+-- |
 withHandles
   :: Handle -> Handle -> IO ()
 withHandles hin hout =

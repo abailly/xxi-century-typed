@@ -27,6 +27,11 @@ spec = parallel $ describe "MiniLang REPL" $ do
       , "defined Nat : U"
       ]
 
+  it "shows error when trying to load a non-existent file" $ do
+    withInput [ ":load foo" ] `shouldBe` [ "Bye!"
+                                         , "REPLError \"cannot load file foo in Pure interpreter\""
+                                         ]
+
   around withTempFile $
     it "evaluates single MiniLang term read from IO" $ \ fileName -> do
     let

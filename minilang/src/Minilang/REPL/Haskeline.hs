@@ -1,20 +1,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# OPTIONS_GHC "-fno-warn-orphans" #-}
 
 module Minilang.REPL.Haskeline where
 
 
-import           Control.Arrow                           (first)
 import           Control.Exception                       (throw)
 import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans                     (lift)
+import           Data.Bifunctor
 import           Data.List                               (isPrefixOf,
                                                           isSuffixOf)
-import           Data.Text                               (Text, pack, unpack)
+import           Data.Text                               (pack, unpack)
 import           Data.Text.IO                            as Text
 import           Minilang.REPL.Types
 import           Minilang.Type
@@ -44,7 +45,7 @@ instance MonadREPL Haskeline where
       Just (pack -> t) -> pure $ interpret t
   output = hoist . outputStrLn . unpack
   prompt = pure ()
-  load   = hoist . lift . Text.readFile
+  load   = fmap (bimap FileError id) . hoist . lift . try . Text.readFile
 
   getEnv = get
   setEnv = put
@@ -91,22 +92,6 @@ completion' (inputString ,_) =
                 , Completion ":set"  ":set - Set some properties of the REPL" True
                 , Completion ":unset"  ":unset - Unset some properties of the REPL" True
                 ])
-
-interpret
-  :: Text -> In
-interpret ":q"                        = EOF
-interpret ":quit"                     = EOF
-interpret ":e"                        = Com DumpEnv
-interpret ":env"                      = Com DumpEnv
-interpret ":c"                        = Com ClearEnv
-interpret ":clear"                    = Com ClearEnv
-interpret ":set step"                 = Com $ Set $ StepTypeChecker True
-interpret ":unset step"               = Com $ Set $ StepTypeChecker False
-interpret ":set debug"                = Com $ Set $ DebugParser True
-interpret ":unset debug"              = Com $ Set $ DebugParser False
-interpret (unpack -> (':':'l':' ':file)) = Com $ Load file
-interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load file
-interpret t                           = In t
 
 instance MonadThrow (InputT IO) where
   throwM = Exc.throwIO

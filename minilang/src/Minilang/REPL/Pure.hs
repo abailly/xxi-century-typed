@@ -11,10 +11,11 @@ import           Minilang.REPL.Types
 import           Minilang.Type
 
 
-data PureEnv = PureEnv { inputText  :: [Text]
-                       , outputText :: [Text]
-                       , pureREPL   :: REPLEnv
-                       }
+data PureEnv = PureEnv
+    { inputText  :: [Text]
+    , outputText :: [Text]
+    , pureREPL   :: REPLEnv
+    }
 
 newtype PureREPL a = PureREPL { runPure :: CatchT (State PureEnv) a }
   deriving (Functor, Applicative, Monad, MonadState PureEnv, MonadCatch)
@@ -24,13 +25,13 @@ instance MonadREPL PureREPL where
     ins <- inputText <$> get
     case ins of
       []     -> pure EOF
-      (t:ts) -> modify (\ e -> e { inputText = ts }) >> pure (In t)
+      (t:ts) -> modify (\ e -> e { inputText = ts }) >> pure (interpret t)
 
   output t  = modify $ \ e -> e { outputText = t : outputText e }
   prompt    = pure ()
   getEnv    = get >>= pure . pureREPL
   setEnv e' = modify $ \ e -> e { pureREPL = e' }
-  load      = undefined
+  load f    = pure $ Left $ REPLError $ pack $ "cannot load file " <> f <> " in Pure interpreter"
 
 instance MonadThrow PureREPL where
   throwM e = throw e

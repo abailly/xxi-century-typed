@@ -4,6 +4,7 @@ import           Control.Exception
 import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Parser
+import           Minilang.Primitives
 import           Test.Hspec
 
 spec :: Spec
@@ -16,6 +17,14 @@ spec = parallel $ describe "Expressions Evaluator" $ do
     eval U      emptyEnv `shouldBe` EU
     eval Unit   emptyEnv `shouldBe` EUnit
     eval One    emptyEnv `shouldBe` EOne
+
+  describe "Builtin Types" $ do
+    it "evaluates Int as a primitive type"  $ do
+      eval (Var "Int") emptyEnv `shouldBe` EPrim PrimInt
+    it "evaluates Double as a primitive type"  $ do
+      eval (Var "Double") emptyEnv `shouldBe` EPrim PrimDouble
+    it "evaluates String as a primitive type"  $ do
+      eval (Var "String") emptyEnv `shouldBe` EPrim PrimString
 
   it "evaluates pairs to pairs of values" $ do
     eval (Pair (D 12) Unit) emptyEnv `shouldBe` EPair (ED 12) EUnit

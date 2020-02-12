@@ -117,7 +117,6 @@ p2 v           = error $ "don't know how to apply second projection to value " +
 
 rho
   :: Env -> Name -> Value
-rho EmptyEnv x = error $ "name " ++ show x ++ " is not defined in empty environment"
 rho (ExtendPat ρ b v) x
   | x `inPat` b = proj x b v
   | otherwise   = rho ρ x
@@ -127,6 +126,10 @@ rho (ExtendDecl ρ (Decl b _a m)) x
 rho ρ'@(ExtendDecl ρ (RDecl b _a m)) x
   | x `inPat` b = proj x b (eval m ρ')
   | otherwise   = rho ρ x
+rho EmptyEnv "Int" = EPrim PrimInt
+rho EmptyEnv "Double" = EPrim PrimDouble
+rho EmptyEnv "String" = EPrim PrimString
+rho EmptyEnv x = error $ "name " ++ show x ++ " is not defined in empty environment"
 
 inPat
   :: Name -> Binding -> Bool

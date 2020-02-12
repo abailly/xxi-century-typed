@@ -61,9 +61,9 @@ lookupType
 lookupType x (Context γ x' t)
   | x == x'               = pure t
   | otherwise             = lookupType x γ
-lookupType "Int"    EmptyContext = pure $ EPrim PrimInt
-lookupType "Double" EmptyContext = pure $ EPrim PrimDouble
-lookupType "String" EmptyContext = pure $ EPrim PrimString
+lookupType "Int"    EmptyContext = pure $ EU
+lookupType "Double" EmptyContext = pure $ EU
+lookupType "String" EmptyContext = pure $ EU
 lookupType x        EmptyContext = throwM $ typingError $ "cannot find " <> show x <> " in empty context"
 
 
@@ -354,7 +354,7 @@ checkI l a@(Ap m n) ρ γ = do
       let
         v = inst g (eval n ρ)
       inferredType a l ρ γ v
-    other -> throwM $ typingError $ "expected type of  "<> show (pretty m) <> " to be a product type (π x : A.f x), but found " <> show (pretty other)
+    other -> throwM $ typingError $ "expected type of  "<> show (pretty m) <> " to be a product type (Π x : A.f x), but found " <> show (pretty other)
 
 checkI _ (I _) _ _ = pure $ EPrim PrimInt
 

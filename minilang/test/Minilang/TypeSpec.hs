@@ -56,10 +56,10 @@ spec = parallel $ describe "Type Checker" $ do
           `shouldReturn` EPrim PrimDouble
 
       it "resolves Int as primitive type #Int" $
-        lookupType "Int" EmptyContext `shouldReturn` EPrim PrimInt
+        lookupType "Int" EmptyContext `shouldReturn` EU
 
       it "resolves Double as primitive type #Double" $
-        lookupType "Double" EmptyContext `shouldReturn` EPrim PrimDouble
+        lookupType "Double" EmptyContext `shouldReturn` EU
 
       it "types primitive string as #String" $
         checkI 0 (S "foo") EmptyEnv EmptyContext

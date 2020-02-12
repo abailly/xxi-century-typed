@@ -12,7 +12,7 @@ spec = parallel $ describe "MiniLang Haskeline REPL" $ do
   describe "Completion" $ do
     it "returns all commands when input ':' "$ do
       (fmap replacement) . snd <$> completion  (":", "") `shouldReturn`
-         [ ":quit", ":env", ":clear", ":load", ":set", ":unset" ]
+         [ ":quit", ":env", ":clear", ":load", ":set", ":unset", ":help" ]
 
     it "returns sub-commands when input ':set' "$ do
       (fmap replacement) . snd <$> completion  ("tes:", "") `shouldReturn`

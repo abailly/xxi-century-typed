@@ -6,6 +6,7 @@ import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Trans  (lift)
+import           Data.Text            (unpack)
 import           Data.Text.IO         as Text
 import           Minilang.REPL.Types
 import           Minilang.Type
@@ -27,7 +28,7 @@ instance MonadREPL (CONSOLE IO) where
   prompt    = get >>= lift . (\ h -> hPutStr h "λΠ> " >> hFlush h) . outputHandle
   getEnv    = get >>= pure . repl
   setEnv e' = modify $ \ e -> e { repl = e' }
-  load      = lift . try . Text.readFile
+  load      = lift . try . Text.readFile . unpack
 
 instance (MonadThrow m) => MonadThrow (CONSOLE m)  where
   throwM = lift . throwM

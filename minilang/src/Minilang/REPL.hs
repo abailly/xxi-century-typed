@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# OPTIONS_GHC "-fno-warn-orphans" #-}
 
@@ -93,7 +94,7 @@ handleCommand (Load file) = do
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 handleCommand Help =
-  output ""
+  output helpText
 
 -- * Haskeline REPL
 

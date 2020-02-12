@@ -45,7 +45,7 @@ instance MonadREPL Haskeline where
       Just (pack -> t) -> pure $ interpret t
   output = hoist . outputStrLn . unpack
   prompt = pure ()
-  load   = fmap (bimap FileError id) . hoist . lift . try . Text.readFile
+  load   = fmap (bimap FileError id) . hoist . lift . try . Text.readFile . unpack
 
   getEnv = get
   setEnv = put
@@ -91,6 +91,7 @@ completion' (inputString ,_) =
                 , Completion ":load"  ":load - Load a file into the REPL" True
                 , Completion ":set"  ":set - Set some properties of the REPL" True
                 , Completion ":unset"  ":unset - Unset some properties of the REPL" True
+                , Completion ":help"  ":help - Provide help on commands" True
                 ])
 
 instance MonadThrow (InputT IO) where

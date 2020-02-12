@@ -31,7 +31,7 @@ instance MonadREPL PureREPL where
   prompt    = pure ()
   getEnv    = get >>= pure . pureREPL
   setEnv e' = modify $ \ e -> e { pureREPL = e' }
-  load f    = pure $ Left $ REPLError $ pack $ "cannot load file " <> f <> " in Pure interpreter"
+  load f    = pure $ Left $ REPLError $ "cannot load file " <> f <> " in Pure interpreter"
 
 instance MonadThrow PureREPL where
   throwM e = throw e

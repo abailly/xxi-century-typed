@@ -2,7 +2,7 @@
 module Minilang.REPL.Types where
 
 import           Control.Exception (Exception)
-import           Data.Text         hiding (replicate)
+import           Data.Text         as Text hiding (replicate)
 import           Minilang.Env
 import           Minilang.Eval     hiding (rho)
 
@@ -26,7 +26,7 @@ class (Monad m) => MonadREPL m where
   prompt :: m ()
 
   -- | Read given file
-  load :: FilePath -> m (Either REPLError Text)
+  load :: Text -> m (Either REPLError Text)
 
 -- | Possible error in REPL interactions
 data REPLError = FileError IOError
@@ -56,7 +56,7 @@ data In = EOF
 data Command = ClearEnv
     | DumpEnv
     | Set Flag
-    | Load FilePath
+    | Load Text
     | Help
 
 
@@ -79,6 +79,26 @@ interpret ":set step"                 = Com $ Set $ StepTypeChecker True
 interpret ":unset step"               = Com $ Set $ StepTypeChecker False
 interpret ":set debug"                = Com $ Set $ DebugParser True
 interpret ":unset debug"              = Com $ Set $ DebugParser False
-interpret (unpack -> (':':'l':' ':file)) = Com $ Load file
-interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load file
+interpret (unpack -> (':':'l':' ':file)) = Com $ Load $ strip $ pack file
+interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load $ strip $ pack file
 interpret t                           = In t
+
+
+helpText :: Text
+helpText =
+  Text.unlines [ "REPL Commands Help:"
+               , "   :h(elp)          : Display this help"
+               , "   :q(uit)          : Exit the interpreter"
+               , "   :e(nv)           : Displays the current interpreter's environment"
+               , "                      This dumps both the Environment, where values are defined,"
+               , "                      and the typing Context, where types are defined. "
+               , "   :c(lear)         : Clear the current interpreter's environment"
+               , "   :set <option>    : Set an option modifying the interpreter's behaviour"
+               , "   :unset <option>  : Remove an option that's been set previously"
+               , "   :l(oad) <file>   : load content of <file> into the interpreter, parsing and type-checking it"
+               , ""
+               , "Options: "
+               , "   step             : Run the typechecker step-by-step, pausing at each rule application and"
+               , "                      waiting for user to hit <enter> key to continue"
+               , "   debug            : Debug parser, displaying the trail of rules tried and triggered"
+               ]

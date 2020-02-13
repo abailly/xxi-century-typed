@@ -13,42 +13,43 @@ import           Text.Parsec
 import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
 
-data AST = U  -- universe
-         | One
-         | Unit
-         | I Integer | D Double | S String
-         | Abs Binding AST
-         | Ctor Text (Maybe AST)
-         | Pi Binding AST AST
-         | Sigma Binding AST AST
-         | Pair AST AST
-         | Sum [ Choice ]
-         | Case [ Clause ]
-         | Var Text
-         | Ap AST AST
-         | P1 AST
-         | P2 AST
-         | Def Decl AST
-         | Err ParseError
-  deriving (Eq, Show, Generic)
+data AST = U
+    | One
+    | Unit
+    | I Integer
+    | D Double
+    | S String
+    | Abs Binding AST
+    | Ctor Text (Maybe AST)
+    | Pi Binding AST AST
+    | Sigma Binding AST AST
+    | Pair AST AST
+    | Sum [Choice]
+    | Case [Clause]
+    | Var Text
+    | Ap AST AST
+    | P1 AST
+    | P2 AST
+    | Def Decl AST
+    | Err ParseError
+    deriving (Eq, Show, Generic)
 
 data Decl = Decl Binding AST AST
-          | RDecl Binding AST AST
-  deriving (Eq, Show, Generic)
+    | RDecl Binding AST AST
+    deriving (Eq, Show, Generic)
 
 data Binding = Pat Binding Binding
-             | B Text
-             | C AST
-               -- ^A Constant
-             | Wildcard
-  deriving (Eq, Show, Generic)
+    | B Text
+    | C AST
+    | Wildcard
+    deriving (Eq, Show, Generic)
 
 
 data Choice = Choice Text (Maybe AST)
-  deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic)
 
 data Clause = Clause Text AST
-  deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic)
 
 choose :: [ Choice ] -> Text -> Maybe Choice
 choose (c@(Choice t _):cs) n
@@ -88,8 +89,10 @@ debugParse parser input =
 
 -- * Parser
 
-data ParserState = ParserState { debugParser :: Bool }
-  deriving (Eq, Show)
+data ParserState = ParserState
+    { debugParser :: Bool
+    }
+    deriving (Eq, Show)
 
 type MLParser a = Parsec String ParserState a
 
@@ -101,18 +104,21 @@ expr
     :: MLParser AST
 expr =
   debug "expr:" (
-  (try def <?> "declaration")
+  (def <?> "declaration")
     <|> (abstraction <?> "abstraction")
     <|> (dependent_product <?> "dependent product")
-    <|> try (dependent_sum  <?> "dependent sum")
+    <|> (dependent_sum  <?> "dependent sum")
     <|> (projection  <?> "projection")
     <|> (labelled_sum  <?> "labelled sum")
-    <|> try case_match
-    <|> try fun_type
-    <|> try pair
+    <|> (case_match <?> "case_match")
+    -- try is needed because expressions are prefixes of function types
+    <|> try (fun_type <?> "fun_type")
+    -- try is needed because parenthesized expressions are prefixes of
+    -- pairs
+    <|> try (pair <?> "pair")
     <|> (ctor_expr <?> "constructor")
     <|> try application
-    <|> (try term  <?> "term")
+    <|> (term  <?> "term")
     <?> "expression")
 
 debug :: String -> MLParser a -> MLParser a
@@ -146,10 +152,10 @@ term
   :: MLParser AST
 term = debug "term" ((string_literal  <?> "string")
    <|> (number  <?> "number")
-   <|> (try unit  <?> "unit")
-   <|> (try one  <?> "one")
-   <|> (try ctor  <?> "ctor")
-   <|> (try variable <?> "identifier")
+   <|> (unit  <?> "unit")
+   <|> (one  <?> "one")
+   <|> (ctor  <?> "ctor")
+   <|> (variable <?> "identifier")
    <|> (lpar *> expr <* rpar <?> "subexpression"))
 
 dependent_product
@@ -184,16 +190,13 @@ application
 application = debug "application" $ ((do
   l    <- term
   r:rs <- many1 term
-  pure $ app l (r:rs)) <?> "application")
-  where
-    app l []     = l
-    app l [r]    = Ap l r
-    app l (r:rs) = app (Ap l r) rs
+  pure $ foldl Ap l (r:rs)) <?> "application")
 
 projection
   :: MLParser AST
-projection = try (P1 <$> (pi1 >> dot *> expr))
-         <|> P2 <$> (pi2 >> dot *> expr)
+projection = debug "projection" $
+             (P1 <$> (pi1 >> dot *> expr))
+             <|> P2 <$> (pi2 >> dot *> expr)
 
 labelled_sum
   :: MLParser AST
@@ -204,8 +207,8 @@ labelled_sum = sum >> lpar *> (Sum <$> ctors) <* rpar
 
 case_match
   :: MLParser AST
-case_match = fun >> lpar *> (Case <$> ctors) <* rpar
-             <?> "case match"
+case_match = debug "case_match" $
+  fun >> lpar *> (Case <$> ctors) <* rpar
   where
     ctors = clause `sepBy` pipe
     clause = Clause
@@ -216,8 +219,7 @@ case_match = fun >> lpar *> (Case <$> ctors) <* rpar
 
 pair
   :: MLParser AST
-pair = (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
-       <?> "pair"
+pair = debug "pair" $ (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
 
 binding
   :: MLParser Binding
@@ -255,7 +257,7 @@ variable = try $ do
     "U"   -> pure U
     other -> pure $ Var other
 
-unit   = reservedOp "()" *> pure Unit <?> "unit"
+unit = reservedOp "()" *> pure Unit <?> "unit"
 
 one = reservedOp "[]" *> pure One <?>  "One"
 
@@ -307,12 +309,12 @@ lpar   = lex (char '(')  >> pure () <?> "left parenthesis"
 rpar   = lex (char ')')  >> pure () <?> "right parenthesis"
 rarrow = (void (lex (string "->")) <|> void (lex (char '→'))) >> pure () <?> "right arrow"
 pi     = lex (char 'Π')  >> pure ()  <?> "Pi"
-pi1    = string "π1"  >> spaces >> pure () <?> "Pi.1"
-pi2    = string "π2"  >> spaces >> pure () <?> "Pi.2"
+pi1    = try (string "π1"  >> spaces >> pure () <?> "Pi.1")
+pi2    = try (string "π2"  >> spaces >> pure () <?> "Pi.2")
 sum    = lex (string "Sum")  >> pure () <?> "Sum"
-fun    = lex (string "fun")  >> pure () <?> "fun"
-define = lex (string "def")  >> pure ()  <?> "def"
-recur  = lex (string "rec")  >> pure ()  <?> "rec"
+fun    = try (lex (string "fun")  >> pure () <?> "fun")
+define = try (lex (string "def")  >> pure ()  <?> "def")
+recur  = try (lex (string "rec")  >> pure ()  <?> "rec")
 sigma  = lex (char 'Σ')  >> pure ()  <?> "Sigma"
 equal  = lex (char '=')  >> pure ()  <?> "equal"
 spaces1 = skipMany1 space <?> "spaces"

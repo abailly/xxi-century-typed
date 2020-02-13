@@ -48,7 +48,7 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "abc fge 12" `shouldBe` (Ap (Ap (Var "abc") (Var "fge")) (I 12))
       parseProgram False "abc fge 12 k" `shouldBe` parseProgram False "((abc fge) 12) k"
       parseProgram False "abc fge 12 k bool" `shouldBe` parseProgram False "(((abc fge) 12) k) bool"
-      parseProgram False "abc (fge 12)" `shouldBe` (Ap (Var "abc") (Ap (Var "fge") (I 12)))
+      parseProgram True "abc (fge 12)" `shouldBe` (Ap (Var "abc") (Ap (Var "fge") (I 12)))
       parseProgram False "(g n1) (natrec C a g n1)"
         `shouldBe` (Ap (Ap (Var "g") (Var "n1"))
                      (Ap (Ap (Ap (Ap (Var "natrec")  (Var "C")) (Var "a")) (Var "g")) (Var "n1")))

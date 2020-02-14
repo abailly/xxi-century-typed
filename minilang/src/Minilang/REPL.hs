@@ -47,7 +47,7 @@ handleUserInput
   :: (TypeChecker m, MonadCatch m, MonadREPL m)
   => Text -> m ()
 handleUserInput txt = do
-  env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+  repl@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
   case runParser single_decl (ParserState debugParser) "" (unpack txt) of
     Right dec -> do
       let
@@ -57,7 +57,7 @@ handleUserInput txt = do
       (do
           γ' <- checkD 0 dec ρ γ
           let ρ' = extend dec ρ
-          setEnv (env { rho = ρ', gamma = γ' })
+          setEnv (repl { rho = ρ', gamma = γ' })
           output (renderStrict $ layoutPretty defaultLayoutOptions $ "defined " <> pretty sym <> " : " <> pretty typ))
         `catch` \ (TypingError err) -> output err
     Left _ ->
@@ -82,13 +82,13 @@ handleCommand (Load file) = do
   case t of
     Left err -> output (pack $ show err)
     Right prog -> do
-      env@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+      repl@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
       case runParser program (ParserState debugParser) "" (unpack prog) of
         Left err   -> output (pack $ show err)
         Right e -> do
           (do
               (ρ',γ') <- loadProgram e ρ γ
-              setEnv (env { rho = ρ', gamma = γ' }))
+              setEnv (repl { rho = ρ', gamma = γ' }))
             `catch` \ (TypingError err) -> output err
 
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })

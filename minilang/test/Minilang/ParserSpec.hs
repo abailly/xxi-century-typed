@@ -48,7 +48,7 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "abc fge 12" `shouldBe` (Ap (Ap (Var "abc") (Var "fge")) (I 12))
       parseProgram False "abc fge 12 k" `shouldBe` parseProgram False "((abc fge) 12) k"
       parseProgram False "abc fge 12 k bool" `shouldBe` parseProgram False "(((abc fge) 12) k) bool"
-      parseProgram True "abc (fge 12)" `shouldBe` (Ap (Var "abc") (Ap (Var "fge") (I 12)))
+      parseProgram False "abc (fge 12)" `shouldBe` (Ap (Var "abc") (Ap (Var "fge") (I 12)))
       parseProgram False "(g n1) (natrec C a g n1)"
         `shouldBe` (Ap (Ap (Var "g") (Var "n1"))
                      (Ap (Ap (Ap (Ap (Var "natrec")  (Var "C")) (Var "a")) (Var "g")) (Var "n1")))
@@ -61,7 +61,12 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parse Dependent Product" $ do
       parseProgram False "Π abc : U . abc" `shouldBe` Pi (B "abc") U (Var "abc")
       parseProgram False "Πabc:U.abc" `shouldBe` Pi (B "abc") U (Var "abc")
+
+    it "parse Function type" $ do
       parseProgram False "Unit -> []" `shouldBe` Pi Wildcard  (Var "Unit") One
+      parseProgram False "(A : U) -> A" `shouldBe` Pi (B "A") U (Var "A")
+      parseProgram False "(A : U) → (b : A) → ()" `shouldBe` Pi (B "A") U (Pi (B "b") (Var "A") Unit)
+      parseProgram False "(_ : A) -> B" `shouldBe` parseProgram False "A -> B"
 
     it "parse Dependent Sum" $ do
       parseProgram False "Σ abc : U . abc" `shouldBe` Sigma (B "abc") U (Var "abc")

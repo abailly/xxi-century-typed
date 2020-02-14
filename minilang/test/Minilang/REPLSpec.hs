@@ -5,7 +5,8 @@ import           Data.Monoid       ((<>))
 import           Data.Text.IO
 import           Minilang.REPL
 import           Prelude           hiding (lines, readFile, writeFile)
-import           System.Directory  (removeFile)
+import           System.Directory  (getTemporaryDirectory, removeFile)
+import           System.FilePath   ((<.>), (</>))
 import           System.IO         (IOMode (..), hClose, withFile)
 import           System.Posix.Temp (mkstemp)
 import           Test.Hspec
@@ -52,5 +53,5 @@ withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =
   bracket mkTempFile rmTempFile
   where
-    mkTempFile    = mkstemp "test-repl" >>= \ (fp, h) -> hClose h >> pure fp
-    rmTempFile fn = removeFile fn >> removeFile (fn <> ".out")
+    mkTempFile    = getTemporaryDirectory >>= \ dir -> mkstemp (dir </> "test-repl") >>= \ (fp, h) -> hClose h >> pure fp
+    rmTempFile fn = removeFile fn >> removeFile (fn <.> "out")

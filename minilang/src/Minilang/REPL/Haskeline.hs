@@ -111,20 +111,20 @@ instance TypeChecker Haskeline where
 
 printE
   :: Event -> REPLEnv -> InputT IO REPLEnv
-printE e env@REPLEnv{..} =
+printE e repl@REPLEnv{..} =
   let
     prefix depth = replicate (2 * depth) ' ' <> display e
     doPrint depth = void (getInputLineWithInitial (prefix depth) ("", ""))
   in
     if stepTypeCheck
     then case e of
-      (CheckD CheckingDecl{})      -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
-      (CheckD BoundType{})         -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
-      (CheckT CheckingIsType{})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
-      (CheckT CheckedIsType {})    -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
-      (Check  CheckingHasType{})   -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
-      (Check  CheckedHasType{} )   -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
-      (CheckI InferringType {})    -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
-      (CheckI ResolvingVariable{}) -> doPrint curIndent >> pure (env { curIndent = curIndent + 1})
-      (CheckI InferredType{})      -> doPrint (curIndent - 1) >> pure (env { curIndent = curIndent - 1})
-    else pure env
+      (CheckD CheckingDecl{})      -> doPrint curIndent >> pure (repl { curIndent = curIndent + 1})
+      (CheckD BoundType{})         -> doPrint (curIndent - 1) >> pure (repl { curIndent = curIndent - 1})
+      (CheckT CheckingIsType{})    -> doPrint curIndent >> pure (repl { curIndent = curIndent + 1})
+      (CheckT CheckedIsType {})    -> doPrint (curIndent - 1) >> pure (repl { curIndent = curIndent - 1})
+      (Check  CheckingHasType{})   -> doPrint curIndent >> pure (repl { curIndent = curIndent + 1})
+      (Check  CheckedHasType{} )   -> doPrint (curIndent - 1) >> pure (repl { curIndent = curIndent - 1})
+      (CheckI InferringType {})    -> doPrint curIndent >> pure (repl { curIndent = curIndent + 1})
+      (CheckI ResolvingVariable{}) -> doPrint curIndent >> pure (repl { curIndent = curIndent + 1})
+      (CheckI InferredType{})      -> doPrint (curIndent - 1) >> pure (repl { curIndent = curIndent - 1})
+    else pure repl

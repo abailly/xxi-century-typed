@@ -177,10 +177,14 @@ type_ascription = (,) <$> binding <*> (colon *> expr)
 fun_type
   :: MLParser AST
 fun_type = debug "function type" $ do
-  l <- try application <|> term
+  l <- funTypeLhs
   r <- (rarrow *> expr <?> "right-hand side of function type")
 
-  pure $ Pi Wildcard l r
+  pure $ l r
+  where
+    nonDependentType = Pi Wildcard <$> (try application <|> term)
+    dependentType = uncurry Pi <$> (lpar *> type_ascription <* rpar)
+    funTypeLhs = try dependentType <|> nonDependentType
 
 ctor_expr
   :: MLParser AST

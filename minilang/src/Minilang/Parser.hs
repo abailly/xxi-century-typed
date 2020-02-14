@@ -160,15 +160,19 @@ term = debug "term" ((string_literal  <?> "string")
 
 dependent_product
   :: MLParser AST
-dependent_product = debug "dependent product" $ pi >> (Pi <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_product = debug "dependent product" $ pi >> (uncurry Pi <$> type_ascription <*> (dot *> expr))
 
 dependent_sum
   :: MLParser AST
-dependent_sum = debug "dependent sum" $ sigma >> (Sigma <$> binding <*> (colon *> expr) <*> (dot *> expr))
+dependent_sum = debug "dependent sum" $ sigma >> (uncurry Sigma <$> type_ascription <*> (dot *> expr))
 
 abstraction
   :: MLParser AST
 abstraction = debug "abstraction" $ lambda >> (Abs <$> binding <*> (dot *> expr))
+
+type_ascription
+  :: MLParser (Binding, AST)
+type_ascription = (,) <$> binding <*> (colon *> expr)
 
 fun_type
   :: MLParser AST

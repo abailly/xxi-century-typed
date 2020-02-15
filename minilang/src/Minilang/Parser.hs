@@ -215,7 +215,7 @@ labelled_sum = sum >> lpar *> (Sum <$> ctors) <* rpar
 case_match
   :: MLParser AST
 case_match = debug "case_match" $
-  fun >> lpar *> (Case <$> ctors) <* rpar
+  (fun <|> case_) >> lpar *> (Case <$> ctors) <* rpar
   where
     ctors = clause `sepBy` pipe
     clause = Clause
@@ -289,22 +289,23 @@ identNext :: MLParser Char
 identNext = identInitial <|> digit
 
 isReserved :: Text -> Bool
-isReserved "λ"   = True
-isReserved "|"   = True
-isReserved "->"  = True
-isReserved "="   = True
-isReserved "Π"   = True
-isReserved "π1"  = True
-isReserved "π2"  = True
-isReserved "Sum" = True
-isReserved "fun" = True
-isReserved "rec" = True
-isReserved "def" = True
-isReserved "Σ"   = True
-isReserved _     = False
+isReserved "λ"    = True
+isReserved "|"    = True
+isReserved "->"   = True
+isReserved "="    = True
+isReserved "Π"    = True
+isReserved "π1"   = True
+isReserved "π2"   = True
+isReserved "Sum"  = True
+isReserved "fun"  = True
+isReserved "case" = True
+isReserved "rec"  = True
+isReserved "def"  = True
+isReserved "Σ"    = True
+isReserved _      = False
 
 lambda, dot, colon, scolon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum, fun, rarrow, define, recur, spaces1
+  ,lpar, rpar, pipe, sum, fun, case_, rarrow, define, recur, spaces1
   :: MLParser ()
 lambda = lex (char 'λ') >> pure () <?> "lambda"
 dot    = lex (char '.')  >> pure () <?> "dot"
@@ -320,6 +321,7 @@ pi1    = try (string "π1"  >> spaces >> pure () <?> "Pi.1")
 pi2    = try (string "π2"  >> spaces >> pure () <?> "Pi.2")
 sum    = lex (string "Sum")  >> pure () <?> "Sum"
 fun    = try (lex (string "fun")  >> pure () <?> "fun")
+case_  = try (lex (string "case")  >> pure () <?> "case")
 define = try (lex (string "def")  >> pure ()  <?> "def")
 recur  = try (lex (string "rec")  >> pure ()  <?> "rec")
 sigma  = lex (char 'Σ')  >> pure ()  <?> "Sigma"

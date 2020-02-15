@@ -179,7 +179,6 @@ fun_type
 fun_type = debug "function type" $ do
   l <- funTypeLhs
   r <- (rarrow *> expr <?> "right-hand side of function type")
-
   pure $ l r
   where
     nonDependentType = Pi Wildcard <$> (try application <|> term)

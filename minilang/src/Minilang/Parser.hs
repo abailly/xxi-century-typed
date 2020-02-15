@@ -10,6 +10,7 @@ import qualified Debug.Trace
 import           GHC.Generics          (Generic)
 import           Prelude               hiding (lex, pi, sum)
 import           Text.Parsec
+import           Text.Parsec.Error     (Message (..), newErrorMessage)
 import           Text.Parsec.Language  (haskellDef)
 import qualified Text.Parsec.Token     as Tokens
 
@@ -128,6 +129,16 @@ debug lbl act = do
     then getInput >>= \ s -> Debug.Trace.trace (lbl <> " :: " <> take 15 s <> (if length s > 15 then " ..." else "")) act
     else act
 
+lineCol :: SourcePos -> (Line, Column)
+lineCol pos = (sourceLine pos, sourceColumn pos)
+
+skipErrorTo :: [ MLParser () ] -> MLParser AST
+skipErrorTo anchors = do
+  start <- lineCol <$> getPosition
+  skipped <- manyTill anyChar (choice $ try . lookAhead <$> anchors)
+  end <- getPosition
+  pure $ Err $ newErrorMessage (Message $ "found '" <> skipped <> "' between " <> show start <> " and " <> show (lineCol end)) end
+
 def
   :: MLParser AST
 def = debug "definition" $ define >> Def <$> single_decl <*> fmap (fromMaybe Unit) (optionMaybe (scolon *> expr))
@@ -146,7 +157,10 @@ decl = debug "simple declaration" $ (declaration Decl <?> "declaration")
 
 declaration
   :: (Binding -> AST -> AST -> b) -> MLParser b
-declaration f = f <$> binding <*> (colon *> expr) <*> (equal *> expr)
+declaration f = f <$> binding <*> (colon *> expr) <*> (equal *>
+                                                        (try expr
+                                                         -- ... or skip to possible end of expression
+                                                         <|> skipErrorTo [ eof, scolon ]))
 
 term
   :: MLParser AST
@@ -214,15 +228,16 @@ labelled_sum = sum >> lpar *> (Sum <$> ctors) <* rpar
 
 case_match
   :: MLParser AST
-case_match = debug "case_match" $
-  (fun <|> case_) >> lpar *> (Case <$> ctors) <* rpar
+case_match = debug "case_match" $ do
+  case_ >> (lpar *> (Case <$> ctors) <* rpar)
   where
     ctors = clause `sepBy` pipe
     clause = Clause
-           <$> identifier
-           <*> (Abs
-                <$> (binding <|> pure Wildcard)
-                <*> (rarrow *> expr))
+             <$> identifier
+             <*> (try (Abs
+                      <$> (fromMaybe Wildcard <$> optionMaybe binding)
+                      <*> (rarrow *> expr))
+                  <|> skipErrorTo [ pipe, rpar ])
 
 pair
   :: MLParser AST
@@ -231,9 +246,9 @@ pair = debug "pair" $ (lpar *> (Pair <$> expr <*> (comma *> expr)) <* rpar)
 binding
   :: MLParser Binding
 binding = debug "binding" ((string "_" >> spaces *> pure Wildcard <?> "wildcard")
-  <|> try (B <$> identifier <?> "variable")
   <|> (C <$> number <?> "constant")
   <|> (lpar *> (Pat <$> binding <*> (comma *> binding)) <* rpar <?> "pattern")
+  <|> (B <$> identifier <?> "variable")
   <?> "binding")
 
 -- * Lexer
@@ -271,7 +286,7 @@ one = reservedOp "[]" *> pure One <?>  "One"
 ctor = char '$' >> Ctor <$> identifier <*> pure Nothing
 
 identifier :: MLParser Text
-identifier = debug "identifier" $ do
+identifier = debug "identifier" $ try $ do
   i <- pack <$> lex ident
   if isReserved i
     then fail (unpack i ++ " is a keyword")
@@ -297,7 +312,6 @@ isReserved "Π"    = True
 isReserved "π1"   = True
 isReserved "π2"   = True
 isReserved "Sum"  = True
-isReserved "fun"  = True
 isReserved "case" = True
 isReserved "rec"  = True
 isReserved "def"  = True
@@ -305,7 +319,7 @@ isReserved "Σ"    = True
 isReserved _      = False
 
 lambda, dot, colon, scolon, pi, sigma, equal, pi1, pi2, comma
-  ,lpar, rpar, pipe, sum, fun, case_, rarrow, define, recur, spaces1
+  ,lpar, rpar, pipe, sum, case_, rarrow, define, recur, spaces1
   :: MLParser ()
 lambda = lex (char 'λ') >> pure () <?> "lambda"
 dot    = lex (char '.')  >> pure () <?> "dot"
@@ -317,13 +331,12 @@ lpar   = lex (char '(')  >> pure () <?> "left parenthesis"
 rpar   = lex (char ')')  >> pure () <?> "right parenthesis"
 rarrow = (void (lex (string "->")) <|> void (lex (char '→'))) >> pure () <?> "right arrow"
 pi     = lex (char 'Π')  >> pure ()  <?> "Pi"
-pi1    = try (string "π1"  >> spaces >> pure () <?> "Pi.1")
-pi2    = try (string "π2"  >> spaces >> pure () <?> "Pi.2")
+pi1    = try (string "π1")  >> spaces >> pure () <?> "Pi.1"
+pi2    = try (string "π2")  >> spaces >> pure () <?> "Pi.2"
 sum    = lex (string "Sum")  >> pure () <?> "Sum"
-fun    = try (lex (string "fun")  >> pure () <?> "fun")
-case_  = try (lex (string "case")  >> pure () <?> "case")
-define = try (lex (string "def")  >> pure ()  <?> "def")
-recur  = try (lex (string "rec")  >> pure ()  <?> "rec")
+case_  = try (lex $ string "case")  >> pure () <?> "case"
+define = try (lex $ string "def")  >> pure ()  <?> "def"
+recur  = try (lex $ string "rec")  >> pure ()  <?> "rec"
 sigma  = lex (char 'Σ')  >> pure ()  <?> "Sigma"
 equal  = lex (char '=')  >> pure ()  <?> "equal"
 spaces1 = skipMany1 space <?> "spaces"

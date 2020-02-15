@@ -1,10 +1,12 @@
 module Minilang.ParserSpec where
 
-import           Data.Monoid     ((<>))
-import qualified Data.Text       as Text
+import           Data.Monoid       ((<>))
+import qualified Data.Text         as Text
 import           Minilang.Parser
 import           Minilang.Pretty
 import           Test.Hspec
+import           Text.Parsec.Error
+import           Text.Parsec.Pos
 
 spec :: Spec
 spec = parallel $ describe "Minilang Core" $ do
@@ -254,10 +256,32 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . case(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
 
   describe "Error handling" $ do
+    describe "skipErrorTo" $ do
 
-    it "inserts an Err node in AST when encountering an error in def" $ do
-      pendingWith "err node"
-      -- parseProgram False "def x : Unit -> [] = case (tt -> ();()"
-      --   `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
-      --                   (Err "")
-      --                  ) Unit
+      it "consumes tokens until some parser succeeds then yields an Error" $ do
+        let fragment = do
+              a <- skipErrorTo [scolon]
+              b <- scolon *> term
+              pure $ Ap a b
+
+        doParse fragment "fooo ; bar"
+          `shouldBe`
+          Ap (Err $ newErrorMessage (Message "found 'fooo ' between (1,1) and (1,6)") (newPos "" 1 6))
+          (Var "bar")
+
+    it "inserts an Err node in AST on error in def" $ do
+      let errorNode = Err $ newErrorMessage (Message "found 'case (tt -> ()' between (1,22) and (1,36)") (newPos "" 1 36)
+
+      parseProgram False "def x : Unit -> [] = case (tt -> ();()"
+        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+                         errorNode
+                       ) Unit
+
+    it "inserts an Err node in AST on error in case clause" $ do
+      let errorNode = Err $ newErrorMessage (Message "found '-> ' between (1,31) and (1,34)") (newPos "" 1 34)
+
+      parseProgram False "def x : Unit -> [] = case (tt -> | ff -> ());()"
+        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+                        (Case [ Clause "tt" errorNode
+                              , Clause "ff" (Abs Wildcard Unit)
+                              ])) Unit

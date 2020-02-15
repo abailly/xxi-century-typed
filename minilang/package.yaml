@@ -79,5 +79,6 @@ tests:
     - haskeline
     - hspec
     - hspec-discover
+    - parsec
     - text
     - unix

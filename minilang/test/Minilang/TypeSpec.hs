@@ -111,9 +111,9 @@ spec = parallel $ describe "Type Checker" $ do
           e = parseProgram False $
               Text.unlines [ "def Unit : U = Sum(tt);"
                            , "def rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ _ : A . NEList A));"
-                           , "def head : Π A:U . NEList A -> A = λ A . fun(S a -> a | C (a,_) -> a);"
+                           , "def head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);"
                            , "def l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
-                           , "def x : Unit -> [] = fun(tt -> ());"
+                           , "def x : Unit -> [] = case(tt -> ());"
                            , "x (head Unit l)"
                            ]
         check 0 e EOne EmptyEnv EmptyContext

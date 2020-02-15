@@ -251,7 +251,7 @@ spec = parallel $ describe "Minilang Core" $ do
       show (pretty (parseProgram False "def rec Nat : U = Sum (zero | succ Nat) ;\ndef id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
         `shouldBe` "def rec Nat : U = Sum(zero| succ Nat) ;\ndef id : Π A : U . A → A = λ A . λ x . x ;\n()"
       show (pretty (parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
-        `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
+        `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . case(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
 
   describe "Error handling" $ do
 

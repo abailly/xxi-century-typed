@@ -30,7 +30,7 @@ instance Pretty AST where
   pretty (Sigma p t e)     = "Σ" <+> pretty p <+> ":" <+> pretty t <+> "." <+> pretty e
   pretty (Pair e1 e2)      = parens (pretty e1 <> "," <+> pretty e2)
   pretty (Sum cs)          = "Sum" <> parens (hsep $ punctuate "|" (fmap prettySum cs))
-  pretty (Case cs)         = "fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))
+  pretty (Case cs)         = "case" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))
   pretty (Var n)           = pretty n
   pretty (Ap e1 e2)        = parens $ pretty e1 <+> pretty e2
   pretty (P1 e)            = "π1." <> pretty e
@@ -74,7 +74,7 @@ instance Pretty Value where
   pretty (ESig v f)      = "Σ" <+> pretty v <+> "." <+> pretty f
   pretty (EPair l r)     = parens (pretty l  <> "," <+> pretty r)
   pretty (ESum (SumClos (cs, _)))  = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)))
-  pretty (ECase (CaseClos (cs, _))) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
+  pretty (ECase (CaseClos (cs, _))) = "case" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
 
 instance Pretty FunClos where
   pretty (Cl b e ρ)    = angles ("λ" <+> pretty b <+> "." <+> pretty e <+> "," <+> pretty ρ)
@@ -88,7 +88,7 @@ instance  Pretty Neutral where
   pretty (NV x)            = pretty x
   pretty (NP1 nt)          = "π1." <> pretty nt
   pretty (NP2 nt)          = "π2." <> pretty nt
-  pretty (Eval.NCase (CaseClos (cs,_)) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt)
+  pretty (Eval.NCase (CaseClos (cs,_)) nt) = angles ("case" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt)
   pretty (NAp nt v)        = parens (pretty nt <+> pretty v)
 
 -- ** Normal Forms
@@ -109,14 +109,14 @@ instance Pretty Normal where
   pretty (NCtor n Nothing)   = "$" <> pretty n
   pretty (NCtor n (Just nf)) = parens ("$" <> pretty n <+> pretty nf)
   pretty (NSum (cs,_)) = "Sum" <> parens (hsep (punctuate "|" (fmap prettySum cs)))
-  pretty (Norm.NCase (cs,_)) = "fun" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
+  pretty (Norm.NCase (cs,_)) = "case" <> parens (hsep (punctuate "|" (fmap prettyFun cs)))
 
 
 instance  Pretty NNeutral where
   pretty (NNV x)            = pretty x
   pretty (NNPi1 nt)          = "π1." <> pretty nt
   pretty (NNPi2 nt)          = "π2." <> pretty nt
-  pretty (NNCase (cs,ρ) nt) = angles ("fun" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
+  pretty (NNCase (cs,ρ) nt) = angles ("case" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))  <+> pretty nt <> "," <+> pretty ρ)
   pretty (NNAp nt v)        = parens (pretty nt <+> pretty v)
 
 

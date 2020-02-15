@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+# -*- mode: python -*-
+import os
+import sys
+
+import argparse
+import select
+import shlex
+import subprocess
+import sys
+import signal
+import time
+
+
+def run_tests():
+    return os.system("stack install --fast --test")
+
+def tcr():
+    if run_tests() == 0:
+        os.system("git commit -a -m \"working\"")
+    else:
+        os.system("git reset --hard HEAD")
+
+# When we receive ctrl-c, kill the watcher
+process = None
+done = False
+def signal_handler(sig, frame):
+    done = True
+    if process:
+        process.kill()
+
+signal.signal(signal.SIGINT, signal_handler)
+
+osname = os.uname().sysname
+if osname == 'Darwin':
+    cmd = "fswatch . --exclude '\.#.*' --exclude '.*~' --exclude '/\..+' --exclude '\.stack-work'"
+else:
+    cmd = "inotifywait -m -r -e modify -e create -e move -e delete . --exclude '\.#.*|.*~|/\..+|\.stack-work'"
+
+tcr()
+
+while not done:
+    # start the file watcher subprocess
+    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
+    poll = select.poll()
+    poll.register(process.stdout, select.POLLIN)
+
+    # wait for output or subprocess exit
+    while process.poll() is None:
+        if poll.poll(1000):
+            time.sleep(0.5) # debounce because we tend to save lots of files at once
+            # When we have new output, print it and run the tests
+            available = process.stdout.peek(1024)
+            if len(available) > 0:
+                print(process.stdout.read(len(available)).decode("utf-8"))
+                tcr()
+
+    if process.returncode != 0:
+        sys.exit(0)

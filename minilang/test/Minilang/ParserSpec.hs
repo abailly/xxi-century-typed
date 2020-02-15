@@ -94,7 +94,7 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses Case choices" $ do
       parseProgram False "case (foo 12 -> h1 | bar x -> h2)" `shouldBe` Case [ Clause "foo" (Abs (C $ I 12) (Var "h1")) , Clause "bar" (Abs (B "x") (Var "h2"))]
-      parseProgram False "fun (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
+      parseProgram False "case (foo -> 12 | bar x -> h2)" `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
 
     it "parses Pattern" $ do
       parseProgram False "λ (abc, xyz) . abc" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")

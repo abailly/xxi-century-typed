@@ -106,13 +106,13 @@ spec = parallel $ describe "Minilang Core" $ do
       parseProgram False "-- this is a comment\n()" `shouldBe` Unit
       parseProgram False "λ -- this is a comment\n(abc, xyz) . abc"
         `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Var "abc")
-      parseProgram False "fun -- a comment\n (foo -- a comment \n-> 12 | bar x -> h2)"
+      parseProgram False "case -- a comment\n (foo -- a comment \n-> 12 | bar x -> h2)"
         `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
 
     it "parses multiline comments" $ do
-      parseProgram False "fun {- this is a multiline \n comment -} (foo -- a comment \n-> 12 | bar x -> h2)"
+      parseProgram False "case {- this is a multiline \n comment -} (foo -- a comment \n-> 12 | bar x -> h2)"
         `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
-      parseProgram False "{- this is a multiline comment -}\ndef x : Unit -> [] = fun (tt -> ())"
+      parseProgram False "{- this is a multiline comment -}\ndef x : Unit -> [] = case (tt -> ())"
         `shouldBe`  Def (Decl (B "x") (Pi Wildcard (Var "Unit") One) (Case [Clause "tt" (Abs Wildcard Unit)])) Unit
 
   describe "Declarations" $ do
@@ -131,13 +131,13 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing])
 
     it "parses some declaration" $ do
-      parseProgram False "def x : Unit -> [] = fun (tt -> ());()"
+      parseProgram False "def x : Unit -> [] = case (tt -> ());()"
         `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
                         (Case [ Clause "tt" (Abs Wildcard Unit)])
                        ) Unit
 
     it "parses Bool elimination" $ do
-      parseDecl "elimBool : Π C : Bool → U . C false → C true → Π b : Bool . C b  = λ C . λ h0 . λ h1 . fun (true → h1 | false → h0)"
+      parseDecl "elimBool : Π C : Bool → U . C false → C true → Π b : Bool . C b  = λ C . λ h0 . λ h1 . case (true → h1 | false → h0)"
         `shouldBe` Decl (B "elimBool")
                    (Pi (B "C")
                      (Pi Wildcard (Var "Bool") U)
@@ -158,7 +158,7 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")])
 
     it "parses recursive-inductive universe def" $ do
-      parseDecl "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , fun (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
+      parseDecl "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , case (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
        `shouldBe` RDecl (Pat (B "V") (B "T"))
                   (Sigma (B "X") U
                    (Pi Wildcard (Var "X") U))
@@ -179,7 +179,7 @@ spec = parallel $ describe "Minilang Core" $ do
 
     it "parses natRec " $ do
 
-      parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . fun (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
+      parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
       `shouldBe` (Def
                   (RDecl (B "natrec")
                    (Pi (B "C")
@@ -216,7 +216,7 @@ spec = parallel $ describe "Minilang Core" $ do
                       Unit))
 
     it "parses another program" $ do
-      parseProgram False "def Unit : U = Sum (tt); def elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . fun (tt -> h); ()"
+      parseProgram False "def Unit : U = Sum (tt); def elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h); ()"
         `shouldBe` (Def (Decl (B "Unit") U
                          (Sum [Choice "tt" Nothing]))
                      (Def (Decl (B "elimUnit")
@@ -228,8 +228,8 @@ spec = parallel $ describe "Minilang Core" $ do
     it "parses a multiline program" $ do
       parseProgram False ( Text.unlines [ "def rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
                                         , "def elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a)) -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b "
-                                        , "  = λ A . λ  C . λ  h0 . λ h1 . fun (S a -> h0 a | C a -> h1 a);"
-                                        , "def select : NEList Bool -> U = fun (S _ -> Unit | C _ -> Unit);"
+                                        , "  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a);"
+                                        , "def select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit);"
                                         , "()"
                                         ])
 
@@ -250,14 +250,14 @@ spec = parallel $ describe "Minilang Core" $ do
         `shouldBe` "def id : Π A : U . A → A = λ A . λ x . x ;\n()"
       show (pretty (parseProgram False "def rec Nat : U = Sum (zero | succ Nat) ;\ndef id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
         `shouldBe` "def rec Nat : U = Sum(zero| succ Nat) ;\ndef id : Π A : U . A → A = λ A . λ x . x ;\n()"
-      show (pretty (parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . fun (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
+      show (pretty (parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
         `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . fun(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
 
   describe "Error handling" $ do
 
     it "inserts an Err node in AST when encountering an error in def" $ do
       pendingWith "err node"
-      -- parseProgram False "def x : Unit -> [] = fun (tt -> ();()"
+      -- parseProgram False "def x : Unit -> [] = case (tt -> ();()"
       --   `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
       --                   (Err "")
       --                  ) Unit

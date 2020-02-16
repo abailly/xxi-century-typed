@@ -5,17 +5,21 @@ import qualified Data.Text         as Text
 import           Minilang.Parser
 import           Minilang.Pretty
 import           Test.Hspec
+import           Test.QuickCheck   as QC
 import           Text.Parsec.Error
 import           Text.Parsec.Pos
 
+
 spec :: Spec
-spec = parallel $ describe "Minilang Core" $ do
+spec = parallel $ describe "Minilang Parser" $ do
 
   describe "Parsing Terms and Expressions" $ do
 
     it "parse Number" $ do
       parseProgram False "12" `shouldBe` I 12
       parseProgram False "12.4" `shouldBe` D 12.4
+      parseProgram False "-12" `shouldBe` I (-12)
+      parseProgram False "-42.3" `shouldBe` D (-42.3)
 
     it "parse String" $ do
       parseProgram False "\"123\"" `shouldBe` S "123"
@@ -255,6 +259,9 @@ spec = parallel $ describe "Minilang Core" $ do
       show (pretty (parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
         `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . case(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
 
+    it "is inverse to parsing" $ property $ prop_parsingIsInvertToPrettyPrinter
+    it "has parsing as inverse" $ property $ prop_prettyPrintingIsInverseToParsing
+
   describe "Error handling" $ do
     describe "skipErrorTo" $ do
 
@@ -273,7 +280,8 @@ spec = parallel $ describe "Minilang Core" $ do
       let errorNode = Err $ newErrorMessage (Message "found 'case (tt -> ()' between (1,22) and (1,36)") (newPos "" 1 36)
 
       parseProgram False "def x : Unit -> [] = case (tt -> ();()"
-        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+        `shouldBe` Def (Decl (B "x")
+                         (Pi Wildcard (Var "Unit") One )
                          errorNode
                        ) Unit
 
@@ -285,3 +293,41 @@ spec = parallel $ describe "Minilang Core" $ do
                         (Case [ Clause "tt" errorNode
                               , Clause "ff" (Abs Wildcard Unit)
                               ])) Unit
+
+
+newtype TestAST = T { unAst :: AST }
+  deriving (Eq, Show)
+
+arbitraryAst :: Gen AST
+arbitraryAst = unAst <$> arbitrary
+
+leafAST :: [ (Int, Gen AST) ]
+leafAST = [ (1, pure One)
+          , (1, pure Unit)
+          , (1, I <$> arbitrary)
+          , (1, D <$> arbitrary)
+          ]
+
+genAST :: Int ->  Gen AST
+genAST 0 = frequency leafAST
+genAST n =
+  frequency $ leafAST <> [ (3, Ap <$> genAST (n-1) <*> genAST (n-1)) ]
+
+instance Arbitrary TestAST where
+  arbitrary = do
+    h <- QC.choose (0, 3)
+    T <$> genAST h
+
+prop_parsingIsInvertToPrettyPrinter :: TestAST -> Property
+prop_parsingIsInvertToPrettyPrinter (T ast) =
+  let pp = show (pretty ast)
+      parsed = parseProgram False (Text.pack pp)
+      msg = "from : " <> show ast <> ", pretty: " <> pp <> ", back to: " <> show parsed
+  in collect (height ast) $ counterexample msg $ parsed == ast
+
+prop_prettyPrintingIsInverseToParsing :: TestAST -> Property
+prop_prettyPrintingIsInverseToParsing (T ast) =
+  let pp = show (pretty ast)
+      parsed = parseProgram False (Text.pack pp)
+      msg = "from : " <> show ast <> ", pretty: " <> pp <> ", pretty parsed is: " <> show (pretty parsed)
+  in counterexample msg $ pp == show (pretty parsed)

@@ -45,7 +45,6 @@ data Binding = Pat Binding Binding
     | Wildcard
     deriving (Eq, Show, Generic)
 
-
 data Choice = Choice Text (Maybe AST)
     deriving (Eq, Show, Generic)
 
@@ -63,6 +62,40 @@ branch (c@(Clause t _):cs) n
   | t == n    = Just c
   | otherwise = branch cs n
 branch [] _ = Nothing
+
+class HasHeight a where
+  height :: a -> Int
+
+instance HasHeight AST where
+  height (Ap l r)             = 1 + max (height l) (height r)
+  height (Abs bind body)      = 1 + max (height bind) (height body)
+  height (Ctor _ Nothing)     = 1
+  height (Ctor _ (Just e))    = 1 + height e
+  height (Pi bind ty body)    = 1 + maximum [ height bind, height ty, height body]
+  height (Sigma bind ty body) = 1 + maximum [ height bind, height ty, height body]
+  height (Pair l r)           = 1 + max (height l) (height r)
+  height (Sum cs)             = 1 + maximum (fmap height cs)
+  height (Case cs)            = 1 + maximum (fmap height cs)
+  height (P1 e)               = 1 + height e
+  height (P2 e)               = 1 + height e
+  height (Def d e)            = 1 + max (height d) (height e)
+  height _                    = 1
+
+instance HasHeight Binding where
+  height (Pat l r) = 1 + max (height l) (height r)
+  height (C ast)   = height ast
+  height _         = 1
+
+instance HasHeight Clause where
+  height (Clause _ e) = height e
+
+instance HasHeight Choice where
+  height (Choice _ (Just e)) = height e
+  height (Choice _ Nothing)  = 0
+
+instance HasHeight Decl where
+  height (Decl bind ty body)  = 1 + maximum [ height bind, height ty, height body]
+  height (RDecl bind ty body) = 1 + maximum [ height bind, height ty, height body]
 
 -- | Top-level parser for MiniLang.
 -- Reads a /MiniLang/ expression and returns its AST.
@@ -170,7 +203,7 @@ term = debug "term" ((string_literal  <?> "string")
    <|> (one  <?> "one")
    <|> (ctor  <?> "ctor")
    <|> (variable <?> "identifier")
-   <|> (lpar *> expr <* rpar <?> "subexpression"))
+   <|> ((lpar *> expr <* rpar) <?> "subexpression"))
 
 dependent_product
   :: MLParser AST
@@ -269,7 +302,20 @@ ws = Tokens.whiteSpace lexer
 number, string_literal, variable, unit, ctor, one
   :: MLParser AST
 
-number = either I D <$> Tokens.naturalOrFloat lexer
+number = try $ do
+  optSign <- optionMaybe sign <* spaces
+  num <- Tokens.naturalOrFloat lexer
+  pure $ makeNumber optSign num
+  where
+    sign = char '+' <|> char '-'
+
+    makeNumber Nothing    (Left int)  = I int
+    makeNumber Nothing    (Right dbl) = D dbl
+    makeNumber (Just '+') (Left int)  = I int
+    makeNumber (Just '-') (Left int)  = I (negate int)
+    makeNumber (Just '+') (Right dbl) = D dbl
+    makeNumber (Just '-') (Right dbl) = D (negate dbl)
+    makeNumber _          _           = error "should not happen but"
 
 string_literal = S <$> Tokens.stringLiteral lexer
 

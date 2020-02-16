@@ -80,5 +80,6 @@ tests:
     - hspec
     - hspec-discover
     - parsec
+    - QuickCheck
     - text
     - unix

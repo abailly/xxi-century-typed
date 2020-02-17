@@ -1,9 +1,14 @@
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 module Minilang.Eval where
 
 import           Control.Applicative ((<|>))
+import           Data.Aeson          hiding (Value)
 import           Data.Maybe          (fromJust)
 import           Data.Monoid         ((<>))
+import           GHC.Generics
 import           Minilang.Env
 import           Minilang.Parser
 import           Minilang.Primitives
@@ -14,7 +19,7 @@ type Env = Env' Value
 
 data Context = EmptyContext
     | Context Context Name Value
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that
@@ -34,16 +39,16 @@ data Value = EU
     | EPair Value Value
     | ESum SumClos
     | ECase CaseClos
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype SumClos = SumClos ( [ Choice ], Env)
-  deriving (Eq)
+  deriving (Eq, Generic, ToJSON, FromJSON)
 
 instance Show SumClos where
   show (SumClos (cs,_)) = show cs
 
 newtype CaseClos = CaseClos ( [ Clause ], Env)
-  deriving (Eq)
+  deriving (Eq, Generic, ToJSON, FromJSON)
 
 instance Show CaseClos where
   show (CaseClos (cs, _)) = show cs
@@ -51,17 +56,17 @@ instance Show CaseClos where
 data FunClos = Cl Binding AST Env
     | ClComp FunClos Name
     | ClComp0 FunClos Name
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype NVar = NVar Int
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Neutral = NV NVar
     | NAp Neutral Value
     | NP1 Neutral
     | NP2 Neutral
     | NCase CaseClos Neutral
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 eval
   :: AST -> Env -> Value

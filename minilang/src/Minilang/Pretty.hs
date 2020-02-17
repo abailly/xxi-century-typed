@@ -1,12 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Minilang.Pretty
-  (pretty)
+  (pretty, render)
 where
 
+import           Data.Text                             (Text)
 import           Data.Text.Prettyprint.Doc
+import           Data.Text.Prettyprint.Doc.Render.Text
 import           Minilang.Env
-import           Minilang.Eval             as Eval
-import           Minilang.Normalize        as Norm
+import           Minilang.Eval                         as Eval
+import           Minilang.Normalize                    as Norm
 import           Minilang.Parser
 import           Minilang.Primitives
 
@@ -145,3 +147,7 @@ instance Pretty PrimType where
   pretty PrimInt    = "#Int"
   pretty PrimDouble = "#Double"
   pretty PrimString = "#String"
+
+
+render :: (Pretty a) => a -> Text
+render = renderStrict . layoutPretty defaultLayoutOptions . pretty

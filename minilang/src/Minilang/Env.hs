@@ -1,8 +1,11 @@
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Minilang.Env where
 
+import           Data.Aeson
 import           Data.Monoid     ((<>))
 import           Data.Text       (Text)
+import           GHC.Generics
 import           Minilang.Parser
 
 type Name = Text
@@ -12,7 +15,7 @@ type Name = Text
 data Env' value = EmptyEnv
     | ExtendPat (Env' value) Binding value
     | ExtendDecl (Env' value) Decl
-    deriving (Eq)
+    deriving (Eq, Generic, ToJSON, FromJSON)
 
 instance (Show value) => Show (Env' value) where
   show e = "{ " <> show' e <> " }"

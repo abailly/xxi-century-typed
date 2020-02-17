@@ -9,26 +9,23 @@
 module Minilang.REPL where
 
 import           Control.Monad.Catch
-import           Control.Monad.Catch.Pure              (CatchT (..))
+import           Control.Monad.Catch.Pure (CatchT (..))
 import           Control.Monad.State
-import           Data.Text                             hiding (replicate)
-import           Data.Text.Prettyprint.Doc
-import           Data.Text.Prettyprint.Doc.Render.Text
+import           Data.Text                hiding (replicate)
 import           Minilang.Env
-import           Minilang.Eval                         hiding (rho)
+import           Minilang.Eval            hiding (rho)
 import           Minilang.Parser
+import           Minilang.Pretty          (render)
 import           Minilang.REPL.Haskeline
 import           Minilang.REPL.IO
 import           Minilang.REPL.Pure
 import           Minilang.REPL.Types
 import           Minilang.Type
-import           System.Console.Haskeline              (defaultBehavior,
-                                                        defaultSettings,
-                                                        historyFile,
-                                                        runInputTBehavior,
-                                                        setComplete)
-import           System.IO                             (Handle)
-import           Text.Parsec                           (runParser)
+import           System.Console.Haskeline (defaultBehavior, defaultSettings,
+                                           historyFile, runInputTBehavior,
+                                           setComplete)
+import           System.IO                (Handle)
+import           Text.Parsec              (runParser)
 
 -- | Run a REPL session
 runREPL
@@ -39,7 +36,7 @@ runREPL = go
       prompt
       raw <- input
       case raw of
-        EOF     -> output "Bye!"
+        EOF     -> output Bye
         In txt  -> handleUserInput txt >> go
         Com cmd -> handleCommand cmd >> go
 
@@ -58,43 +55,43 @@ handleUserInput txt = do
           γ' <- checkD 0 dec ρ γ
           let ρ' = extend dec ρ
           setEnv (repl { rho = ρ', gamma = γ' })
-          output (renderStrict $ layoutPretty defaultLayoutOptions $ "defined " <> pretty sym <> " : " <> pretty typ))
-        `catch` \ (TypingError err) -> output err
+          output (Defined sym typ)
+        `catch` \ (TypingError err) -> output (Msg err))
     Left _ ->
       case runParser expr (ParserState debugParser) "" (unpack txt) of
-        Left err   -> output (pack $ show err)
+        Left err   -> output (Msg $ pack $ show err)
         Right e -> do
           (do
               t <- checkI 0 e ρ γ
               let v = eval e ρ
-              output (renderStrict $ layoutPretty defaultLayoutOptions $ (pretty v <+> "::" <+> pretty t)))
-            `catch` \ (TypingError err) -> output err
+              output (Evaluated v t))
+            `catch` \ (TypingError err) -> output (Msg err)
 
 handleCommand
   :: (TypeChecker m, MonadCatch m, MonadREPL m)
   => Command -> m ()
 handleCommand ClearEnv = getEnv >>= \e -> setEnv (e { rho = EmptyEnv, gamma =  EmptyContext })
 handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
-  output (renderStrict $ layoutPretty defaultLayoutOptions $ "Environment: " <> pretty rho)
-  output (renderStrict $ layoutPretty defaultLayoutOptions $ "Context: " <> pretty gamma)
+  output (Msg $ "Environment: " <> render rho)
+  output (Msg $ "Context: " <> render gamma)
 handleCommand (Load file) = do
   t <- load file
   case t of
-    Left err -> output (pack $ show err)
+    Left err -> output (Msg $ pack $ show err)
     Right prog -> do
       repl@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
       case runParser program (ParserState debugParser) "" (unpack prog) of
-        Left err   -> output (pack $ show err)
+        Left err   -> output (Msg $ pack $ show err)
         Right e -> do
           (do
               (ρ',γ') <- loadProgram e ρ γ
               setEnv (repl { rho = ρ', gamma = γ' }))
-            `catch` \ (TypingError err) -> output err
+            `catch` \ (TypingError err) -> output (Msg err)
 
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 handleCommand Help =
-  output helpText
+  output (Msg helpText)
 
 -- * Haskeline REPL
 

@@ -1,10 +1,16 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ViewPatterns   #-}
 module Minilang.REPL.Types where
 
-import           Control.Exception (Exception)
-import           Data.Text         as Text hiding (replicate)
+import           Control.Exception         (Exception)
+import           Data.Aeson                (FromJSON, ToJSON)
+import           Data.Text                 as Text hiding (replicate)
+import           Data.Text.Prettyprint.Doc
+import           GHC.Generics
 import           Minilang.Env
-import           Minilang.Eval     hiding (rho)
+import           Minilang.Eval             hiding (rho)
+import           Minilang.Parser           (AST, Binding)
+import           Minilang.Pretty           ()
 
 
 class (Monad m) => MonadREPL m where
@@ -20,7 +26,7 @@ class (Monad m) => MonadREPL m where
   input  :: m In
 
   -- | Produces some output
-  output :: Text -> m ()
+  output :: Out -> m ()
 
   -- | Prompt for some input
   prompt :: m ()
@@ -51,17 +57,30 @@ initialREPL = REPLEnv EmptyEnv EmptyContext 0 False False
 data In = EOF
     | In Text
     | Com Command
-        -- ^A REPL command
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Command = ClearEnv
     | DumpEnv
     | Set Flag
     | Load Text
     | Help
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+data Out = Defined Binding AST
+    | Evaluated Value Value
+    | Msg Text
+    | Bye
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+instance Pretty Out where
+  pretty (Defined b a)   = "defined" <+> pretty b <+> colon <+> pretty a
+  pretty (Msg txt)       = pretty txt
+  pretty (Evaluated v t) = pretty v <+> "::" <+> pretty t
+  pretty Bye             = "Bye!"
 
 data Flag = StepTypeChecker Bool
     | DebugParser Bool
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 
 -- | "Parse" given `Text` into some input for the REPL

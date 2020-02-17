@@ -7,6 +7,7 @@ import           Control.Monad.Catch
 import           Control.Monad.Catch.Pure (CatchT (..))
 import           Control.Monad.State
 import           Data.Text                hiding (replicate)
+import           Minilang.Pretty
 import           Minilang.REPL.Types
 import           Minilang.Type
 
@@ -27,7 +28,7 @@ instance MonadREPL PureREPL where
       []     -> pure EOF
       (t:ts) -> modify (\ e -> e { inputText = ts }) >> pure (interpret t)
 
-  output t  = modify $ \ e -> e { outputText = t : outputText e }
+  output t  = modify $ \ e -> e { outputText = render t : outputText e }
   prompt    = pure ()
   getEnv    = get >>= pure . pureREPL
   setEnv e' = modify $ \ e -> e { pureREPL = e' }

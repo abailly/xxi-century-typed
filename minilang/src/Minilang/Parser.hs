@@ -1,5 +1,9 @@
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Minilang.Parser where
 
+import           Data.Aeson            (FromJSON, ToJSON)
 import           Data.Either           (fromRight)
 import           Data.Functor          (void)
 import           Data.Functor.Identity (Identity)
@@ -8,6 +12,7 @@ import           Data.Monoid           ((<>))
 import           Data.Text             (Text, pack, unpack)
 import qualified Debug.Trace
 import           GHC.Generics          (Generic)
+import           Minilang.JSON         ()
 import           Prelude               hiding (lex, pi, sum)
 import           Text.Parsec
 import           Text.Parsec.Error     (Message (..), newErrorMessage)
@@ -35,21 +40,24 @@ data AST = U
     | Err ParseError
     deriving (Eq, Show, Generic)
 
+deriving anyclass instance ToJSON AST
+deriving anyclass instance FromJSON AST
+
 data Decl = Decl Binding AST AST
     | RDecl Binding AST AST
-    deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Binding = Pat Binding Binding
     | B Text
     | C AST
     | Wildcard
-    deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Choice = Choice Text (Maybe AST)
-    deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Clause = Clause Text AST
-    deriving (Eq, Show, Generic)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 choose :: [ Choice ] -> Text -> Maybe Choice
 choose (c@(Choice t _):cs) n

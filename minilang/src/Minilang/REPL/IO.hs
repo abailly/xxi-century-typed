@@ -8,6 +8,7 @@ import           Control.Monad.State
 import           Control.Monad.Trans  (lift)
 import           Data.Text            (unpack)
 import           Data.Text.IO         as Text
+import           Minilang.Pretty      (render)
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           System.IO            (Handle, hFlush)
@@ -24,7 +25,7 @@ newtype CONSOLE m a = CONSOLE { runConsole :: StateT IOEnv m a }
 
 instance MonadREPL (CONSOLE IO) where
   input     = get >>= lift . (\ h -> (interpret <$> hGetLine h) `catch` \ (isEOFError -> True) -> pure EOF) . inputHandle
-  output a  = get >>= lift . flip hPutStrLn a . outputHandle
+  output a  = get >>= lift . flip hPutStrLn (render a) . outputHandle
   prompt    = get >>= lift . (\ h -> hPutStr h "λΠ> " >> hFlush h) . outputHandle
   getEnv    = get >>= pure . repl
   setEnv e' = modify $ \ e -> e { repl = e' }

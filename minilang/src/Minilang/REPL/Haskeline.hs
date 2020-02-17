@@ -17,6 +17,7 @@ import           Data.List                               (isPrefixOf,
                                                           isSuffixOf)
 import           Data.Text                               (pack, unpack)
 import           Data.Text.IO                            as Text
+import           Minilang.Pretty                         (render)
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           System.Console.Haskeline                (Completion (Completion, replacement),
@@ -37,13 +38,14 @@ newtype Haskeline a = Haskeline { runHaskeline :: StateT REPLEnv (InputT IO) a }
 hoist :: InputT IO a -> Haskeline a
 hoist m = Haskeline $ StateT $ \ s -> m >>= \ a -> pure (a,s)
 
+
 instance MonadREPL Haskeline where
   input  = do
     i <- hoist (getInputLineWithInitial "λΠ> " ("",""))
     case i of
       Nothing          -> pure EOF
       Just (pack -> t) -> pure $ interpret t
-  output = hoist . outputStrLn . unpack
+  output = hoist . outputStrLn . unpack . render
   prompt = pure ()
   load   = fmap (bimap FileError id) . hoist . lift . try . Text.readFile . unpack
 

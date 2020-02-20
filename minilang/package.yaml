@@ -33,9 +33,7 @@ default-extensions:
 
 ghc-options: -Wall -fno-warn-orphans -Werror
 
-library:
-  source-dirs: src
-  dependencies:
+dependencies:
   - aeson
   - async
   - base
@@ -49,12 +47,16 @@ library:
   - mtl
   - parsec
   - prettyprinter
+  - stm
   - text
   - unix
   - wai
   - wai-websockets
   - warp
   - websockets
+
+library:
+  source-dirs: src
 
 
 executables:

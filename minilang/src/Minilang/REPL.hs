@@ -15,7 +15,6 @@ import           Data.Text                hiding (replicate)
 import           Minilang.Env
 import           Minilang.Eval            hiding (rho)
 import           Minilang.Parser
-import           Minilang.Pretty          (render)
 import           Minilang.REPL.Haskeline
 import           Minilang.REPL.IO
 import           Minilang.REPL.Pure
@@ -72,8 +71,7 @@ handleCommand
   => Command -> m ()
 handleCommand ClearEnv = getEnv >>= \e -> setEnv (e { rho = EmptyEnv, gamma =  EmptyContext })
 handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
-  output (Msg $ "Environment: " <> render rho)
-  output (Msg $ "Context: " <> render gamma)
+  output (CurrentEnv rho gamma)
 handleCommand (Load file) = do
   t <- load file
   case t of

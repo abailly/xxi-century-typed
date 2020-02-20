@@ -68,15 +68,19 @@ data Command = ClearEnv
 
 data Out = Defined Binding AST
     | Evaluated Value Value
+    | CurrentEnv Env Context
     | Msg Text
     | Bye
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 instance Pretty Out where
-  pretty (Defined b a)   = "defined" <+> pretty b <+> colon <+> pretty a
-  pretty (Msg txt)       = pretty txt
-  pretty (Evaluated v t) = pretty v <+> "::" <+> pretty t
-  pretty Bye             = "Bye!"
+  pretty (Defined b a)      = "defined" <+> pretty b <+> colon <+> pretty a
+  pretty (Msg txt)          = pretty txt
+  pretty (Evaluated v t)    = pretty v <+> "::" <+> pretty t
+  pretty (CurrentEnv e c)   = vcat [ "Environment:" <+> pretty e
+                                   , "Context:" <+> pretty c
+                                   ]
+  pretty Bye                = "Bye!"
 
 data Flag = StepTypeChecker Bool
     | DebugParser Bool

@@ -12,6 +12,7 @@ import           Minilang.Eval               (Context (EmptyContext),
 import           Minilang.Parser
 import           Minilang.REPL.Net
 import           Minilang.REPL.Types
+import           Minilang.Server.Types
 import           Network.HTTP.Types          (status400)
 import           Network.Wai                 (responseLBS)
 import           Network.Wai.Handler.Warp    as Warp

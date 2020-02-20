@@ -2,7 +2,6 @@
 -- | A version of REPL that interacts through a websocket.
 module Minilang.REPL.Net where
 
-import           Control.Concurrent.Async
 import           Control.Concurrent.STM         (atomically)
 import           Control.Concurrent.STM.TVar
 import           Control.Monad.Catch
@@ -26,13 +25,6 @@ data ServerConfig = ServerConfig
     -- ^The port to listen on. If 0, a random port will be assigned.
     }
     deriving (Eq, Show)
-
-data Server = Server
-    { serverThread :: Maybe (Async ())
-    -- ^If the server is running, this will contain the underlying
-    , serverPort   :: Int
-    -- ^The actual port this server is listening on. Useful when
-    }
 
 data NetEnv = NetEnv
     { connection :: WS.Connection

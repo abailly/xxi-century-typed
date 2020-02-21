@@ -40,6 +40,7 @@ dependencies:
   - bytestring
   - containers
   - concurrency
+  - data-default
   - directory
   - exceptions
   - filepath
@@ -52,6 +53,7 @@ dependencies:
   - unix
   - wai
   - wai-app-static
+  - wai-extra
   - wai-websockets
   - warp
   - websockets

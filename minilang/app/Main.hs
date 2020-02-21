@@ -2,6 +2,7 @@ module Main where
 
 import           Minilang.IO
 import           Minilang.REPL
+import           Minilang.Server
 import           Options.Applicative
 import           System.IO             (stdin, stdout)
 import           System.Posix.IO       (stdInput)
@@ -45,7 +46,11 @@ runModeOption =
 
 main :: IO ()
 main = do
-  hasTty <- queryTerminal stdInput
-  if hasTty
-    then withTerminal
-    else runEval stdin stdout
+  Options{..} <- execParser optionsParser
+  case runMode of
+    Local -> do
+      hasTty <- queryTerminal stdInput
+      if hasTty
+        then withTerminal
+        else runEval stdin stdout
+    Server -> startServer serverPort >>= waitServer

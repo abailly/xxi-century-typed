@@ -37,6 +37,10 @@ stopServer :: Server -> IO ()
 stopServer (Server (Just th) _) = cancel th
 stopServer _                    = pure ()
 
+waitServer :: Server -> IO ()
+waitServer (Server (Just th) _) = wait th
+waitServer _                    = pure ()
+
 -- | Serve static resources under `public/` directory
 staticResources :: Application
 staticResources = staticApp (defaultFileServerSettings "public")

@@ -94,6 +94,7 @@ tests:
     - haskeline
     - hspec
     - hspec-discover
+    - http-conduit
     - http-types
     - parsec
     - QuickCheck

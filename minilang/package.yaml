@@ -73,6 +73,7 @@ executables:
     dependencies:
     - base
     - minilang
+    - optparse-applicative
     - text
     - unix
 

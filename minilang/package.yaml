@@ -51,6 +51,7 @@ dependencies:
   - text
   - unix
   - wai
+  - wai-app-static
   - wai-websockets
   - warp
   - websockets

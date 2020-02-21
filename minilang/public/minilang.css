@@ -1,0 +1,25 @@
+html {
+    font-family: Inconsolata, Courier;
+}
+
+div#minilang {
+    min-height: 1em;
+    max-height: 90%;
+}
+
+div.output {
+    width: 90%;
+    padding: 0 1em 0 1em;
+}
+
+.connected {
+    background-color: #aaf;
+}
+
+input {
+    font-family: Inconsolata;
+    font-size: 12pt;
+    border: none;
+    width: 90%;
+    margin: 1em;
+}

@@ -9,17 +9,31 @@ div#minilang {
 
 div.output {
     width: 90%;
-    padding: 0 1em 0 1em;
+    padding: 1em 1em 0 1em;
+}
+
+div.command {
+    height: 2em;
+}
+
+.command input {
+    display: inline-block;
+    font-family: Inconsolata;
+    font-size: 12pt;
+    border: none;
+    width: 90%;
+    margin: 0em 1em 0em 1em;
 }
 
 .connected {
     background-color: #aaf;
 }
 
-input {
-    font-family: Inconsolata;
-    font-size: 12pt;
-    border: none;
-    width: 90%;
-    margin: 1em;
+.disconnected {
+    background-color: #faa;
+}
+
+.command img {
+    display: inline-block;
+    height: 100%;
 }

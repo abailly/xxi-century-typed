@@ -1,15 +1,40 @@
-var websocket = (function() {
-    const host = window.location.host;
-    const ws = new WebSocket("ws://" + host + "/repl/1235");
-    ws.binaryType = "arraybuffer";
-    return ws;
-})();
+var websocket = undefined;
+
+function connect() {
+    websocket = (function() {
+        const host = window.location.host;
+        const ws = new WebSocket("ws://" + host + "/repl/1235");
+        ws.binaryType = "arraybuffer";
+        return ws;
+    })();
+
+    websocket.onopen = function(e) {
+        document.getElementById("command").classList.remove("disconnected");
+        document.getElementById("command").classList.add("connected");
+        document.getElementById("connect").src = "images/connected.png";
+        document.getElementById("connect").removeEventListener("click", connect);
+    };
+
+    websocket.onclose = function(e) {
+        document.getElementById("command").classList.remove("connected");
+        document.getElementById("command").classList.add("disconnected");
+        document.getElementById("connect").src = "images/connect.png";
+        document.getElementById("connect").addEventListener("click", connect);
+    };
+
+    websocket.onmessage = function(e) {
+        const reader = new FileReader();
+        reader.addEventListener('loadend', readMessageAndAppend(reader));
+
+        if(e.data instanceof ArrayBuffer) {
+            reader.readAsText(new Blob([e.data]));
+        } else {
+            reader.readAsText(e.data);
+        }
+    };
+}
 
 var commandHistory = [];
-
-websocket.onopen = function(e) {
-    document.getElementById("command").classList.add("connected");
-};
 
 function appendOutput(text) {
     const root = document.getElementById("minilang");
@@ -23,17 +48,6 @@ function readMessageAndAppend(reader) {
     return () => {
         appendOutput(document.createTextNode(JSON.stringify(reader.result)));
     };
-};
-
-websocket.onmessage = function(e) {
-    const reader = new FileReader();
-    reader.addEventListener('loadend', readMessageAndAppend(reader));
-
-    if(e.data instanceof ArrayBuffer) {
-        reader.readAsText(new Blob([e.data]));
-    } else {
-        reader.readAsText(e.data);
-    }
 };
 
 function makeCommand(val) {
@@ -64,3 +78,6 @@ function sendCommand(e) {
 };
 
 document.getElementById("command").addEventListener("keyup", sendCommand);
+document.getElementById("connect").addEventListener("click", connect);
+
+connect();

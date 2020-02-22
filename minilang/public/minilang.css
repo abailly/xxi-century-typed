@@ -3,8 +3,8 @@ html {
 }
 
 div#minilang {
-    min-height: 1em;
-    max-height: 90%;
+    height: 90vh;
+    overflow-y: auto;
 }
 
 div.output {

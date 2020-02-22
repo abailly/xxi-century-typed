@@ -64,7 +64,7 @@ clientHandler envs cnx = do
   let path = WS.requestPath $ WS.pendingRequest cnx
   replEnv <- findOrCreateREPL path
   conn <- WS.acceptRequest cnx
-  evalStateT (runNet runREPL) (NetEnv conn replEnv)
+  WS.withPingThread conn 30 (pure ()) $ evalStateT (runNet runREPL) (NetEnv conn replEnv)
   where
     findOrCreateREPL path = atomically $ do
       envMaps <- readTVar envs

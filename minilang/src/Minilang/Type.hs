@@ -357,14 +357,22 @@ checkI l a@(Ap m n) ρ γ = do
     other -> throwM $ typingError $ "expected type of  "<> show (pretty m) <> " to be a product type (Π x : A.f x), but found " <> show (pretty other)
 
 checkI _ (I _) _ _ = pure $ EPrim PrimInt
-
 checkI _ (D _) _ _ = pure $ EPrim PrimDouble
-
 checkI _ (S _) _ _ = pure $ EPrim PrimString
+
+checkI l c@(Ctor c_i Nothing) ρ γ = do
+  inferringType c l ρ γ
+  typ <- lookupCtor c_i ρ
+  inferredType c l ρ γ typ
 
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 
+-- | Lookup a constructor's definition in the current environment.
+-- We look through all the environment's bindings' definitions to find a
+-- `Sum` instance where the given contstructor is defined.
+lookupCtor :: (TypeChecker tc) => Name -> Env -> tc Value
+lookupCtor _ctor _ρ = pure EU
 
 -- * Programs
 

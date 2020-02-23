@@ -48,6 +48,7 @@ dependencies:
   - stm
   - text
   - unix
+  - unordered-containers
   - wai
   - wai-app-static
   - wai-extra

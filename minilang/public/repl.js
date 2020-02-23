@@ -41,12 +41,25 @@ function appendOutput(text) {
     const sub = document.createElement("div");
     sub.classList.add("output");
     sub.appendChild(text);
-    root.appendChild(sub);
+    if(root.firstChild) {
+        root.insertBefore(sub, root.firstChild);
+    } else {
+        root.appendChild(sub);
+    }
 };
+
+function formatResult(text) {
+    const result = JSON.parse(text);
+    console.log(result.contents);
+    if (result.tag === "Msg") {
+        return result.contents;
+    }
+    return text;
+}
 
 function readMessageAndAppend(reader) {
     return () => {
-        appendOutput(document.createTextNode(JSON.stringify(reader.result)));
+        appendOutput(document.createTextNode(formatResult(reader.result)));
     };
 };
 
@@ -55,6 +68,8 @@ function makeCommand(val) {
         return {"tag":"Com","contents":{"tag":"DumpEnv"}};
     } else if(val === ":clear") {
         return {"tag":"Com","contents":{"tag":"ClearEnv"}};
+    } else if(val === ":help") {
+        return {"tag":"Com","contents":{"tag":"Help"}};
     } else {
         return {"tag":"In","contents":val};
     }

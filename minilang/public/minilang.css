@@ -9,7 +9,8 @@ div#minilang {
 
 div.output {
     width: 90%;
-    padding: 1em 1em 0 1em;
+    white-space: pre-wrap;
+    padding: 0em 1em 0 1em;
 }
 
 div.command {
@@ -18,6 +19,7 @@ div.command {
 
 .command input {
     display: inline-block;
+    vertical-align: middle;
     font-family: Inconsolata;
     font-size: 12pt;
     border: none;
@@ -35,5 +37,6 @@ div.command {
 
 .command img {
     display: inline-block;
-    height: 100%;
+    vertical-align: middle;
+    height: 80%;
 }

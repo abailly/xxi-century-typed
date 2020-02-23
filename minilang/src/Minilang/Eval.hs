@@ -17,11 +17,13 @@ import           Minilang.Primitives
 
 type Env = Env' Value
 
-data Context = EmptyContext
-    | Context Context Name Value
+data Context' v = EmptyContext
+    | Context (Context' v) Name v
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-emptyContext :: Context
+type Context = Context' Value
+
+emptyContext :: Context' v
 emptyContext = EmptyContext
 
 -- should probably be possible to have a single AST structure

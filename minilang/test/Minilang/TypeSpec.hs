@@ -72,7 +72,6 @@ spec = parallel $ describe "Type Checker" $ do
         γ <- checkD 0 dec EmptyEnv EmptyContext
         print γ
         let ρ = extend dec EmptyEnv
-        pending
         t <- checkI 0 (Ctor "true" Nothing) ρ γ
         print t
         t `shouldBe` (ESum $ SumClos ([ Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))

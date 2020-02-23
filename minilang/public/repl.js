@@ -50,7 +50,6 @@ function appendOutput(text) {
 
 function formatResult(text) {
     const result = JSON.parse(text);
-    console.log(result.contents);
     if (result.tag === "Msg") {
         return result.contents;
     }

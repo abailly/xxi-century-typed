@@ -21,9 +21,9 @@ data Context' v = EmptyContext
     | Context (Context' v) Name v
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-instance Foldable Context' where
-  foldMap _ EmptyContext    = mempty
-  foldMap f (Context ρ _ v) = f v <> foldMap f ρ
+toList :: Context' v -> [ (Name, v) ]
+toList EmptyContext    = []
+toList (Context ρ n v) = (n,v) : toList ρ
 
 type Context = Context' Value
 

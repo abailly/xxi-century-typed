@@ -7,8 +7,8 @@ import           Control.Exception           (bracket)
 import           Control.Monad               (forM)
 import           Data.Aeson                  (eitherDecode, encode)
 import           Minilang.Env
-import           Minilang.Eval               (Context (EmptyContext),
-                                              SumClos (..), Value (..))
+import           Minilang.Eval               (SumClos (..), Value (..),
+                                              emptyContext)
 import           Minilang.Parser
 import           Minilang.REPL.Net
 import           Minilang.REPL.Types
@@ -60,7 +60,7 @@ spec = around withServer $ describe "MiniLang Network REPL" $ do
 
     it "allows retrieving empty initial env" $ \ Server{serverPort} -> do
       let inp = [ Com DumpEnv ]
-          expectedOutput = [ Right $ CurrentEnv EmptyEnv EmptyContext ]
+          expectedOutput = [ Right $ CurrentEnv EmptyEnv emptyContext ]
       res <- runTestClient serverPort "newenv" inp
 
       res `shouldBe` expectedOutput

@@ -65,6 +65,18 @@ spec = parallel $ describe "Type Checker" $ do
         checkI 0 (S "foo") EmptyEnv EmptyContext
           `shouldReturn` EPrim PrimString
 
+    describe "Type inference" $ do
+
+      it "can infer type of a 'naked' constructor as enclosing declaration" $ do
+        let dec =  Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing])
+        γ <- checkD 0 dec EmptyEnv EmptyContext
+        print γ
+        let ρ = extend dec EmptyEnv
+        pending
+        t <- checkI 0 (Ctor "true" Nothing) ρ γ
+        print t
+        t `shouldBe` EU
+
     describe "Check a declaration is correct" $ do
 
       it "checks a recursive declaration is correct given env and empty context" $ do

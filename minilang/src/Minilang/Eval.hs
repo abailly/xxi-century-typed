@@ -5,7 +5,10 @@
 module Minilang.Eval where
 
 import           Control.Applicative ((<|>))
+import           Control.Arrow       (second)
+import           Control.Monad       (foldM)
 import           Data.Aeson          hiding (Value)
+import qualified Data.HashMap.Strict as H
 import           Data.Maybe          (fromJust)
 import           Data.Monoid         ((<>))
 import           GHC.Generics
@@ -19,11 +22,21 @@ type Env = Env' Value
 
 data Context' v = EmptyContext
     | Context (Context' v) Name v
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
+    deriving (Eq, Show)
 
 toList :: Context' v -> [ (Name, v) ]
 toList EmptyContext    = []
 toList (Context ρ n v) = (n,v) : toList ρ
+
+instance (ToJSON v) => ToJSON (Context' v) where
+  toJSON = object . fmap (second toJSON) . toList
+
+instance (FromJSON v) => FromJSON (Context' v) where
+  parseJSON = withObject "Context" $ \ h -> foldM mkContext emptyContext (H.toList h)
+    where
+      mkContext ctx (k,v) = do
+        val <- parseJSON v
+        pure $ Context ctx k val
 
 type Context = Context' Value
 

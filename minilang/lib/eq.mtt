@@ -1,0 +1,5 @@
+Eq : (A: U) -> (x : A) -> (y : A) -> U =
+  λ A . λ x . λ y . Sum (Refl A);
+
+sym : (A : U) -> (x : A) -> (y : A) -> (Eq A x y) -> (Eq A y x) =
+  λ A . λ x .λ y. case (Refl x -> $Refl x)

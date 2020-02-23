@@ -372,7 +372,17 @@ checkI l e ρ γ =
 -- We look through all the environment's bindings' definitions to find a
 -- `Sum` instance where the given contstructor is defined.
 lookupCtor :: (TypeChecker tc) => Name -> Env -> tc Value
-lookupCtor _ctor _ρ = pure EU
+lookupCtor c_i (ExtendDecl ρ (Decl _ _ e@(Sum cs))) =
+  case choose cs c_i of
+    Just (Choice _ Nothing) -> pure (eval e ρ)
+    _                       -> lookupCtor c_i ρ
+lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e@(Sum cs))) =
+  case choose cs c_i of
+    Just (Choice _ Nothing) -> pure (eval e ρ)
+    _                       -> lookupCtor c_i ρ
+lookupCtor c_i _ = throwM $ typingError $ "cannot find constructor " <> show (pretty c_i)
+
+
 
 -- * Programs
 

@@ -21,6 +21,9 @@ data Context = EmptyContext
     | Context Context Name Value
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+emptyContext :: Context
+emptyContext = EmptyContext
+
 -- should probably be possible to have a single AST structure
 -- shared by all stages and indexed with a result type, so that
 -- we can add whatever specialised information we need

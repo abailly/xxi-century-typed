@@ -365,6 +365,11 @@ checkI l c@(Ctor c_i Nothing) ρ γ = do
   typ <- lookupCtor c_i ρ
   inferredType c l ρ γ typ
 
+checkI l c@(Ctor c_i (Just _)) ρ γ = do
+  inferringType c l ρ γ
+  typ <- lookupCtor c_i ρ
+  inferredType c l ρ γ typ
+
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 

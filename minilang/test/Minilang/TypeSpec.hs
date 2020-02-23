@@ -75,7 +75,7 @@ spec = parallel $ describe "Type Checker" $ do
         pending
         t <- checkI 0 (Ctor "true" Nothing) ρ γ
         print t
-        t `shouldBe` EU
+        t `shouldBe` (ESum $ SumClos ([ Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
     describe "Check a declaration is correct" $ do
 

@@ -67,13 +67,11 @@ spec = parallel $ describe "Type Checker" $ do
 
     describe "Type inference" $ do
 
-      it "can infer type of a 'naked' constructor as enclosing declaration" $ do
+      it "can infer type of zero-arg constructor" $ do
         let dec =  Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing])
         γ <- checkD 0 dec EmptyEnv EmptyContext
-        print γ
         let ρ = extend dec EmptyEnv
         t <- checkI 0 (Ctor "true" Nothing) ρ γ
-        print t
         t `shouldBe` (ESum $ SumClos ([ Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
     describe "Check a declaration is correct" $ do

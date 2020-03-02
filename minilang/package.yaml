@@ -40,6 +40,7 @@ dependencies:
   - data-default
   - directory
   - exceptions
+  - fast-logger
   - filepath
   - haskeline
   - mtl
@@ -47,6 +48,8 @@ dependencies:
   - prettyprinter
   - stm
   - text
+  - time
+  - unagi-chan
   - unix
   - unordered-containers
   - wai

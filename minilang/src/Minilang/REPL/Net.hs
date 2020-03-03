@@ -16,6 +16,7 @@ import           Data.Text.Encoding             (decodeUtf8With)
 import           Data.Text.Encoding.Error       (lenientDecode)
 import           Minilang.Log
 import           Minilang.REPL                  (runREPL)
+import           Minilang.REPL.Store            (MonadStore (..), store)
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           Network.Wai                    (Application)
@@ -40,12 +41,17 @@ data NetEnv = NetEnv
 newtype Net m a = Net { runNet :: StateT NetEnv m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadState NetEnv)
 
+instance MonadStore (Net IO) where
+  write _ = pure ()
+
 instance MonadREPL (Net IO) where
   input     = gets connection >>= lift . wsReceive
-  output a  = gets connection >>= lift . wsSend a
+  output a  = store a >> gets connection >>= lift . wsSend a
   prompt    = pure ()
   getEnv    = gets repl >>= lift . atomically . readTVar
   setEnv e' = gets repl >>= lift . atomically . flip writeTVar e'
+  -- TODO what does this mean? perhaps it coiuld be used to load some
+  -- virtual files edited by user in their env?
   load      = const (pure (Right "") )
 
 instance (MonadThrow m) => MonadThrow (Net m)  where

@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveAnyClass #-}
 module Minilang.Type where
 
 import           Control.Monad       (forM_, when)
 import           Control.Monad.Catch
+import           Data.Aeson          (FromJSON, ToJSON)
 import           Data.Monoid         ((<>))
 import           Data.Text           (Text, pack)
+import           GHC.Generics
 import           Minilang.Env
 import           Minilang.Eval
 import           Minilang.Normalize
@@ -83,7 +86,7 @@ bindType p     t v  γ             = throwM $ typingError $ "don't know how to b
 
 data CheckDEvent = CheckingDecl Decl Int Env Context
     | BoundType Binding Value Value Int Context
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 instance HasLevel CheckDEvent where
   getLevel (CheckingDecl _ l _ _) = l

@@ -28,7 +28,7 @@ startServer serverPort = do
   envs <- newTVarIO mempty
   logger <- newLog "minilang"
   loggerMiddleware <- runHTTPLog logger
-  let app = loggerMiddleware $ runNetREPL envs staticResources
+  let app = loggerMiddleware $ runNetREPL logger envs staticResources
   (port, action) <- startWarp serverPort app
   thread <- async action
   logInfo logger $ object [ "action" .= ("Started" :: Text), "port" .= port ]

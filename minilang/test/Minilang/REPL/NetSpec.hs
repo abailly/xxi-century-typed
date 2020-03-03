@@ -9,6 +9,7 @@ import           Data.Aeson                  (eitherDecode, encode)
 import           Minilang.Env
 import           Minilang.Eval               (SumClos (..), Value (..),
                                               emptyContext)
+import           Minilang.Log
 import           Minilang.Parser
 import           Minilang.REPL.Net
 import           Minilang.REPL.Types
@@ -24,7 +25,7 @@ startServer :: IO Server
 startServer = do
   (port, socket) <- openFreePort
   envs <- newTVarIO mempty
-  let app = runNetREPL envs (\ _ resp -> resp $ responseLBS status400 [] "Not a WebSocket request")
+  let app = runNetREPL fakeLogger envs (\ _ resp -> resp $ responseLBS status400 [] "Not a WebSocket request")
   thread <- async $ Warp.runSettingsSocket defaultSettings socket app
   threadDelay 300000
   pure $ Server (Just thread) port

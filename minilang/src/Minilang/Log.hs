@@ -9,7 +9,7 @@ module Minilang.Log
   ( -- * Types
     LoggerEnv
     -- * Constructor & Destructor
-  , newLog, stopLogger
+  , newLog, stopLogger, fakeLogger
     -- * Logging functions
   , logInfo, logError, withLog
   )where
@@ -31,13 +31,16 @@ import           System.IO                     (Handle, stdout)
 data LoggerEnv m = LoggerEnv
     { logger     :: Maybe Logger
     , loggerId   :: Text
-    , logInfo    :: forall a . (ToJSON a, MonadIO m) => a -> m ()
-    , logError   :: forall a . (ToJSON a, MonadIO m) => a -> m ()
-    , withLog    :: forall a b . (ToJSON a, MonadIO m) => a -> m b -> m b
-    , stopLogger ::   (MonadIO m) => m ()
+    , logInfo    :: forall a . (ToJSON a) => a -> m ()
+    , logError   :: forall a . (ToJSON a) => a -> m ()
+    , withLog    :: forall a b . (ToJSON a) => a -> m b -> m b
+    , stopLogger :: m ()
     }
 
 type Logger = InChan BS.ByteString
+
+fakeLogger :: (MonadIO m) => LoggerEnv m
+fakeLogger = LoggerEnv Nothing "foo" (const $ pure ()) (const $ pure ()) (\ _ -> id) (pure ())
 
 -- |Starts an asynchronous log-processing thread and returns an initialised `LoggerEnv`.
 newLog :: (MonadIO m) => Text -> m (LoggerEnv m)

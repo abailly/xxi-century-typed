@@ -7,9 +7,14 @@ import           Control.Concurrent.STM.TVar
 import           Control.Monad.Catch
 import           Control.Monad.State
 import           Control.Monad.Trans            (lift)
-import           Data.Aeson                     (eitherDecode, encode)
+import           Data.Aeson                     (eitherDecode, encode, object,
+                                                 (.=))
 import           Data.ByteString                (ByteString)
 import           Data.Map                       as Map
+import           Data.Text                      (Text)
+import           Data.Text.Encoding             (decodeUtf8With)
+import           Data.Text.Encoding.Error       (lenientDecode)
+import           Minilang.Log
 import           Minilang.REPL                  (runREPL)
 import           Minilang.REPL.Types
 import           Minilang.Type
@@ -28,11 +33,12 @@ data ServerConfig = ServerConfig
 
 data NetEnv = NetEnv
     { connection :: WS.Connection
+    , logger     :: LoggerEnv IO
     , repl       :: TVar REPLEnv
     }
 
 newtype Net m a = Net { runNet :: StateT NetEnv m a }
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadState NetEnv)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadState NetEnv)
 
 instance MonadREPL (Net IO) where
   input     = gets connection >>= lift . wsReceive
@@ -49,7 +55,8 @@ instance (MonadCatch m) => MonadCatch (Net m)  where
   Net m `catch` f = Net $ m `catch` \ e -> runNet (f e)
 
 instance TypeChecker (Net IO) where
-  emit = const $ pure()
+  emit (CheckD ev) = gets logger >>= \ env -> liftIO (logInfo env ev)
+  emit _           = pure ()
 
 wsReceive :: WS.Connection -> IO In
 wsReceive cnx =
@@ -59,12 +66,16 @@ wsSend :: Out -> WS.Connection -> IO ()
 wsSend out cnx =
   WS.sendBinaryData cnx (encode out)
 
-clientHandler :: TVar (Map ByteString (TVar REPLEnv)) -> WS.PendingConnection -> IO ()
-clientHandler envs cnx = do
+safeDecodeUtf8 :: ByteString -> Text
+safeDecodeUtf8 = decodeUtf8With lenientDecode
+
+clientHandler :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> WS.PendingConnection -> IO ()
+clientHandler loggerEnv envs cnx = do
   let path = WS.requestPath $ WS.pendingRequest cnx
   replEnv <- findOrCreateREPL path
+  logInfo loggerEnv $ object [ "action" .= ("StartedREPL" :: Text), "path" .= safeDecodeUtf8 path ]
   conn <- WS.acceptRequest cnx
-  WS.withPingThread conn 30 (pure ()) $ evalStateT (runNet runREPL) (NetEnv conn replEnv)
+  WS.withPingThread conn 30 (pure ()) $ evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv)
   where
     findOrCreateREPL path = atomically $ do
       envMaps <- readTVar envs
@@ -74,5 +85,5 @@ clientHandler envs cnx = do
       writeTVar envs (Map.insert path newEnv envMaps)
       pure newEnv
 
-runNetREPL :: TVar (Map ByteString (TVar REPLEnv)) -> Application -> Application
-runNetREPL envs = websocketsOr WS.defaultConnectionOptions (clientHandler envs)
+runNetREPL :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> Application -> Application
+runNetREPL loggerEnv envs = websocketsOr WS.defaultConnectionOptions (clientHandler loggerEnv envs)

@@ -1,0 +1,57 @@
+name:                hstore
+version:             0.1.0.0
+github:              "abailly/hstore"
+license:             BSD3
+author:              "Arnaud Bailly"
+maintainer:          "arnaud@pankzsoft.com"
+copyright:           "2020 Arnaud Bailly"
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+synopsis:            A backend agnostic event-sourcing store with couple implementations
+category:            Database
+
+description:         Please see the README on GitHub at <https://github.com/abailly/hstore#readme>
+
+dependencies:
+- async
+- base
+- binary
+- bytestring
+- cereal
+- clock
+- mtl
+- stm
+- text
+
+default-extensions:
+- ExistentialQuantification
+- GADTs
+- GeneralizedNewtypeDeriving
+- ImplicitParams
+- MultiParamTypeClasses
+- RankNTypes
+- RecordWildCards
+- ScopedTypeVariables
+
+library:
+  source-dirs: src
+
+tests:
+  hstore-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - directory
+    - filepath
+    - hstore
+    - hspec
+    - hspec-discover
+    - QuickCheck
+    - unix

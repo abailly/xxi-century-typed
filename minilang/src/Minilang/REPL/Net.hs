@@ -11,17 +11,19 @@ import           Data.Aeson                     (eitherDecode, encode, object,
                                                  (.=))
 import           Data.ByteString                (ByteString)
 import           Data.Map                       as Map
-import           Data.Text                      (Text)
+import           Data.Text                      (Text, unpack)
 import           Data.Text.Encoding             (decodeUtf8With)
 import           Data.Text.Encoding.Error       (lenientDecode)
+import           HStore.FileOps
 import           Minilang.Log
 import           Minilang.REPL                  (runREPL)
-import           Minilang.REPL.Store            (MonadStore (..), store)
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           Network.Wai                    (Application)
 import           Network.Wai.Handler.WebSockets
 import qualified Network.WebSockets             as WS
+import           System.Directory               (getCurrentDirectory)
+import           System.FilePath                (takeFileName, (</>))
 
 -- | Configuration of the WS server
 data ServerConfig = ServerConfig
@@ -36,17 +38,18 @@ data NetEnv = NetEnv
     { connection :: WS.Connection
     , logger     :: LoggerEnv IO
     , repl       :: TVar REPLEnv
+    , storage    :: FileStorage
     }
 
 newtype Net m a = Net { runNet :: StateT NetEnv m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadState NetEnv)
 
-instance MonadStore (Net IO) where
-  write _ = pure ()
+doStore :: a -> Net IO ()
+doStore _ = pure ()
 
 instance MonadREPL (Net IO) where
   input     = gets connection >>= lift . wsReceive
-  output a  = store a >> gets connection >>= lift . wsSend a
+  output a  = doStore a >> gets connection >>= lift . wsSend a
   prompt    = pure ()
   getEnv    = gets repl >>= lift . atomically . readTVar
   setEnv e' = gets repl >>= lift . atomically . flip writeTVar e'
@@ -81,7 +84,10 @@ clientHandler loggerEnv envs cnx = do
   replEnv <- findOrCreateREPL path
   logInfo loggerEnv $ object [ "action" .= ("StartedREPL" :: Text), "path" .= safeDecodeUtf8 path ]
   conn <- WS.acceptRequest cnx
-  WS.withPingThread conn 30 (pure ()) $ evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv)
+  storageFile <- mkStorageFile path
+  withStorage storageFile $ \ fileStorage ->
+    WS.withPingThread conn 30 (pure ()) $
+    evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv fileStorage)
   where
     findOrCreateREPL path = atomically $ do
       envMaps <- readTVar envs
@@ -90,6 +96,11 @@ clientHandler loggerEnv envs cnx = do
         Just e  -> pure e
       writeTVar envs (Map.insert path newEnv envMaps)
       pure newEnv
+
+    mkStorageFile path = do
+      let f = takeFileName (unpack (safeDecodeUtf8 path))
+      dir <- getCurrentDirectory
+      pure $ defaultOptions { storageFilePath = dir </> f }
 
 runNetREPL :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> Application -> Application
 runNetREPL loggerEnv envs = websocketsOr WS.defaultConnectionOptions (clientHandler loggerEnv envs)

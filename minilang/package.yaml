@@ -43,6 +43,7 @@ dependencies:
   - fast-logger
   - filepath
   - haskeline
+  - hstore
   - mtl
   - parsec
   - prettyprinter

@@ -35,6 +35,7 @@ dependencies:
   - async
   - base
   - bytestring
+  - cereal
   - containers
   - concurrency
   - data-default

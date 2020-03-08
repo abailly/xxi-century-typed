@@ -10,10 +10,14 @@ import           Control.Monad.Trans            (lift)
 import           Data.Aeson                     (eitherDecode, encode, object,
                                                  (.=))
 import           Data.ByteString                (ByteString)
+import qualified Data.ByteString.Lazy           as LBS
 import           Data.Map                       as Map
-import           Data.Text                      (Text, unpack)
+import           Data.Serialize                 hiding (encode)
+import           Data.Text                      (Text, pack, unpack)
 import           Data.Text.Encoding             (decodeUtf8With)
 import           Data.Text.Encoding.Error       (lenientDecode)
+import           HStore                         (StorageResult (..),
+                                                 Versionable (..), store)
 import           HStore.FileOps
 import           Minilang.Log
 import           Minilang.REPL                  (runREPL)
@@ -44,8 +48,34 @@ data NetEnv = NetEnv
 newtype Net m a = Net { runNet :: StateT NetEnv m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadState NetEnv)
 
-doStore :: a -> Net IO ()
-doStore _ = pure ()
+instance Serialize Out where
+  put out = do
+    let bs = encode out
+    putWord64be (fromIntegral $ LBS.length bs)
+    putLazyByteString bs
+
+  get = do
+    len <- getWord64be
+    bs <- getLazyByteString (fromIntegral len)
+    case eitherDecode bs of
+      Right out -> pure out
+      Left err  -> fail err
+
+
+instance Versionable Out
+
+doStore :: Out -> Net IO Out
+doStore out = do
+  fs <- gets storage
+  res <- liftIO $ store fs (pure $ Right out) handleStorageResult
+  case res of
+    WriteSucceed a -> pure a
+    err            -> pure $ Msg (pack $ show err)
+  where
+    handleStorageResult (Right (WriteSucceed a)) = pure a
+    handleStorageResult (Right err)              = pure $ Msg $ pack $ show err
+    handleStorageResult (Left err)               = pure $ Msg (pack err)
+
 
 instance MonadREPL (Net IO) where
   input     = gets connection >>= lift . wsReceive

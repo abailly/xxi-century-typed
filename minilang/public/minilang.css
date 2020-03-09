@@ -54,5 +54,5 @@ div.command {
 .command img {
     display: inline-block;
     vertical-align: middle;
-    width: 15%;
+    height: 2em;
 }

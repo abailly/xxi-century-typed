@@ -62,12 +62,8 @@ data In = EOF
 data Command = ClearEnv
     | DumpEnv
     | Set Flag
-    | Load Content
+    | Load Text
     | Help
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-data Content = File Text
-    | Data Text
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Out = Defined Binding AST
@@ -106,8 +102,8 @@ interpret ":set step"                 = Com $ Set $ StepTypeChecker True
 interpret ":unset step"               = Com $ Set $ StepTypeChecker False
 interpret ":set debug"                = Com $ Set $ DebugParser True
 interpret ":unset debug"              = Com $ Set $ DebugParser False
-interpret (unpack -> (':':'l':' ':file)) = Com $ Load $ File $ strip $ pack file
-interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load $ File $ strip $ pack file
+interpret (unpack -> (':':'l':' ':file)) = Com $ Load $ strip $ pack file
+interpret (unpack -> (':':'l':'o':'a':'d':' ':file)) = Com $ Load $ strip $ pack file
 interpret t                           = In t
 
 

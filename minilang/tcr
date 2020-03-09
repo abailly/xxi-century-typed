@@ -13,7 +13,7 @@ import time
 
 
 def run_tests():
-    return os.system("stack install --fast --test")
+    return os.system("stack install --fast --test minilang")
 
 def tcr():
     if run_tests() == 0:

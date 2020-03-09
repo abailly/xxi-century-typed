@@ -35,7 +35,7 @@ div.command {
     background-color: #faa;
 }
 
-.command > img {
+.command img {
     display: inline-block;
     vertical-align: middle;
     height: 80%;

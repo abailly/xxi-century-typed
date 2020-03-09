@@ -18,6 +18,7 @@ textarea#program {
 }
 
 div#repl {
+    position: relative;
     width: 50vw;
     float: right;
 }

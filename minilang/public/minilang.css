@@ -19,6 +19,7 @@ textarea#program {
 
 div#repl {
     width: 50vw;
+    float: right;
 }
 
 div.output {

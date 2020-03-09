@@ -7,7 +7,7 @@ div#minilang {
     overflow-y: auto;
 }
 
-div#edit {
+div.edit {
     width: 50vw;
     height: 90vh;
 }

@@ -9,6 +9,7 @@ div#minilang {
 
 div#edit {
     width: 50%;
+    height: 100vh;
 }
 
 textarea#program {

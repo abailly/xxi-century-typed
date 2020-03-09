@@ -10,6 +10,7 @@ div#minilang {
 div.edit {
     width: 50vw;
     height: 90vh;
+    float: left;
 }
 
 textarea#program {
@@ -19,7 +20,6 @@ textarea#program {
 
 div#repl {
     width: 50vw;
-    float: right;
 }
 
 div.output {

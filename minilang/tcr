@@ -33,9 +33,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 osname = os.uname().sysname
 if osname == 'Darwin':
-    cmd = "fswatch . --exclude '\.#.*' --exclude '.*~' --exclude '/\..+' --exclude '\.stack-work'"
+    cmd = "fswatch . --exclude '\.#.*' --exclude '.*~' --exclude '/\..+' --exclude '\.newenv.*' --exclude '\.stack-work'"
 else:
-    cmd = "inotifywait -m -r -e modify -e create -e move -e delete . --exclude '\.#.*|.*~|/\..+|\.stack-work'"
+    cmd = "inotifywait -m -r -e modify -e create -e move -e delete . --exclude '\.#.*|.*~|/\..+|\.newenv.*|\.stack-work'"
 
 tcr()
 

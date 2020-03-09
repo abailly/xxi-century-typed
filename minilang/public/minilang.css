@@ -7,6 +7,10 @@ div#minilang {
     overflow-y: auto;
 }
 
+div#repl {
+    width: 50%;
+}
+
 div.output {
     width: 90%;
     white-space: pre-wrap;

@@ -72,12 +72,12 @@ handleCommand
 handleCommand ClearEnv = getEnv >>= \e -> setEnv (e { rho = EmptyEnv, gamma =  EmptyContext })
 handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
   output (CurrentEnv rho gamma)
-handleCommand (Load file) = do
+handleCommand (Load (File file)) = do
   t <- load file
   case t of
     Left err   -> output (Msg $ pack $ show err)
     Right prog -> loadProgramInEnv prog
-
+handleCommand (Load (Data prog)) = loadProgramInEnv prog
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 handleCommand Help =

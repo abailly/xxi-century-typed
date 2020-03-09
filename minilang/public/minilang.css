@@ -7,6 +7,10 @@ div#minilang {
     overflow-y: auto;
 }
 
+div#edit {
+    width: 50%;
+}
+
 div#repl {
     width: 50%;
 }

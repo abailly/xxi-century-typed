@@ -75,21 +75,27 @@ handleCommand DumpEnv  = getEnv >>= \ REPLEnv{..} -> do
 handleCommand (Load file) = do
   t <- load file
   case t of
-    Left err -> output (Msg $ pack $ show err)
-    Right prog -> do
-      repl@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
-      case runParser program (ParserState debugParser) "" (unpack prog) of
-        Left err   -> output (Msg $ pack $ show err)
-        Right e -> do
-          (do
-              (ρ',γ') <- loadProgram e ρ γ
-              setEnv (repl { rho = ρ', gamma = γ' }))
-            `catch` \ (TypingError err) -> output (Msg err)
+    Left err   -> output (Msg $ pack $ show err)
+    Right prog -> loadProgramInEnv prog
 
 handleCommand (Set (StepTypeChecker st)) = getEnv >>= \e -> setEnv (e { stepTypeCheck = st })
 handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser = st })
 handleCommand Help =
   output (Msg helpText)
+
+
+loadProgramInEnv
+  :: (TypeChecker m, MonadCatch m, MonadREPL m)
+  => Text -> m ()
+loadProgramInEnv prog = do
+  repl@REPLEnv{rho=ρ,gamma=γ,debugParser} <- getEnv
+  case runParser program (ParserState debugParser) "" (unpack prog) of
+    Left err   -> output (Msg $ pack $ show err)
+    Right e -> do
+      (do
+          (ρ',γ') <- loadProgram e ρ γ
+          setEnv (repl { rho = ρ', gamma = γ' }))
+        `catch` \ (TypingError err) -> output (Msg err)
 
 -- * Haskeline REPL
 

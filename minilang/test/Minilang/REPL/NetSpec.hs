@@ -70,20 +70,20 @@ spec = around withServer $ describe "MiniLang Network REPL" $ do
   it "evaluates definition and returns defined symbol" $ \ Server{serverPort} -> do
     let inp = [ In "Unit : U = Sum(tt)" ]
         expectedOutput = [ Right $ Defined (B "Unit") U ]
-    res <- runTestClient serverPort "newenv1" inp
+    res <- runTestClient serverPort ".newenv1" inp
 
     res `shouldBe` expectedOutput
 
   it "allows retrieving empty initial env" $ \ Server{serverPort} -> do
     let inp = [ Com DumpEnv ]
         expectedOutput = [ Right $ CurrentEnv EmptyEnv emptyContext ]
-    res <- runTestClient serverPort "newenv2" inp
+    res <- runTestClient serverPort ".newenv2" inp
 
     res `shouldBe` expectedOutput
 
   it "can reconnect to existing environment" $ \ Server{serverPort} -> do
     let inp = [ In "Unit : U = Sum(tt)" ]
-    _ <- runTestClient serverPort  "newenv3" inp
-    res <- runTestClient serverPort  "newenv3" [ In "Unit" ]
+    _ <- runTestClient serverPort  ".newenv3" inp
+    res <- runTestClient serverPort  ".newenv3" [ In "Unit" ]
 
     res `shouldBe` [ Right $ Evaluated (ESum (SumClos ([Choice "tt" Nothing], EmptyEnv))) EU ]

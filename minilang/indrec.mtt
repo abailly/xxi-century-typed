@@ -1,9 +1,9 @@
-def rec Nat : U = Sum (zero | succ Nat) ;
+let rec Nat : U = Sum (zero | succ Nat) ;
 
--- Inductive-recursive type definition of a universe "à la Tarski"
+-- Inductive-recursive type letinition of a universe "à la Tarski"
 -- whatever that means...
 -- http://www.cse.chalmers.se/~peterd/papers/Inductive_Recursive.pdf
-def rec (V,T) : ΣX:U.X -> U =
+let rec (V,T) : ΣX:U.X -> U =
   ( Sum(nat | pi (Σ x : V . T x → V))  -- this is a type
     , case (nat → Nat | pi (x, f ) → Π y : T x . T (f y))  -- this is a function operating on the type
     )

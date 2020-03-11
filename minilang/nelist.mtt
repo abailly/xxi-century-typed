@@ -1,7 +1,7 @@
-def rec NEList : Π B : U . Π A : B . B = λ B . λ A . Sum(S A | C (Σ a : A . NEList B A)) ;
+let rec NEList : Π B : U . Π A : B . B = λ B . λ A . Sum(S A | C (Σ a : A . NEList B A)) ;
 
-def elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a))
+let elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a))
   -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b
-  = λ A . λ  C . λ  h0 . λ h1 . fun (S a -> h0 a | C a -> h1 a) ;
+  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a) ;
 
-def select : NEList Bool -> U = fun (S _ -> Unit | C _ -> Unit)
+let select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit)

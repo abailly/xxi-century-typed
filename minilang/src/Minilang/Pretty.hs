@@ -37,7 +37,7 @@ instance Pretty AST where
   pretty (Ap e1 e2)        = parens $ pretty e1 <+> pretty e2
   pretty (P1 e)            = "π1." <> pretty e
   pretty (P2 e)            = "π2." <> pretty e
-  pretty (Def d e)         = "def" <+> pretty d <+> ";" <> hardline <> pretty e
+  pretty (Let d e)         = "let" <+> pretty d <+> ";" <> hardline <> pretty e
   pretty (Err t)           = pretty (show t)
 
 instance Pretty Decl where

@@ -118,8 +118,8 @@ spec = parallel $ describe "Minilang Parser" $ do
     it "parses multiline comments" $ do
       parseProgram False "case {- this is a multiline \n comment -} (foo -- a comment \n-> 12 | bar x -> h2)"
         `shouldBe` Case [ Clause "foo" (Abs Wildcard (I 12)) , Clause "bar" (Abs (B "x") (Var "h2"))]
-      parseProgram False "{- this is a multiline comment -}\ndef x : Unit -> [] = case (tt -> ())"
-        `shouldBe`  Def (Decl (B "x") (Pi Wildcard (Var "Unit") One) (Case [Clause "tt" (Abs Wildcard Unit)])) Unit
+      parseProgram False "{- this is a multiline comment -}\nlet x : Unit -> [] = case (tt -> ())"
+        `shouldBe`  Let (Decl (B "x") (Pi Wildcard (Var "Unit") One) (Case [Clause "tt" (Abs Wildcard Unit)])) Unit
 
   describe "Declarations" $ do
 
@@ -137,8 +137,8 @@ spec = parallel $ describe "Minilang Parser" $ do
         `shouldBe` Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing])
 
     it "parses some declaration" $ do
-      parseProgram False "def x : Unit -> [] = case (tt -> ());()"
-        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+      parseProgram False "let x : Unit -> [] = case (tt -> ());()"
+        `shouldBe` Let (Decl (B "x") (Pi Wildcard (Var "Unit") One )
                         (Case [ Clause "tt" (Abs Wildcard Unit)])
                        ) Unit
 
@@ -163,7 +163,7 @@ spec = parallel $ describe "Minilang Parser" $ do
       parseDecl "rec Nat : U = Sum (zero | succ Nat)"
         `shouldBe` RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")])
 
-    it "parses recursive-inductive universe def" $ do
+    it "parses recursive-inductive universe let" $ do
       parseDecl "rec (V,T) : ΣX:U.X -> U = (Sum(nat | pi (Σ x : V . T x → V)) , case (nat → Nat | pi (x, f ) → Π y : T x . T (f y)))"
        `shouldBe` RDecl (Pat (B "V") (B "T"))
                   (Sigma (B "X") U
@@ -185,8 +185,8 @@ spec = parallel $ describe "Minilang Parser" $ do
 
     it "parses natRec " $ do
 
-      parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
-      `shouldBe` (Def
+      parseProgram False "let rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
+      `shouldBe` (Let
                   (RDecl (B "natrec")
                    (Pi (B "C")
                     (Pi Wildcard (Var "Nat") U)
@@ -214,32 +214,32 @@ spec = parallel $ describe "Minilang Parser" $ do
                    Unit)
 
     it "parses a program" $ do
-      parseProgram False ("def rec Nat : U = Sum (zero | succ Nat) ;\n"<> "def id : Π A : U . Π _ : A . A = λ A . λ x . x; ()")
-        `shouldBe` (Def (RDecl (B "Nat") U (Sum [Choice "zero" Nothing,Choice "succ" (Just $ Var "Nat")]))
-                    (Def (Decl (B "id")
+      parseProgram False ("let rec Nat : U = Sum (zero | succ Nat) ;\n"<> "let id : Π A : U . Π _ : A . A = λ A . λ x . x; ()")
+        `shouldBe` (Let (RDecl (B "Nat") U (Sum [Choice "zero" Nothing,Choice "succ" (Just $ Var "Nat")]))
+                    (Let (Decl (B "id")
                            (Pi (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                            (Abs (B "A") (Abs (B "x") (Var "x"))))
                       Unit))
 
     it "parses another program" $ do
-      parseProgram False "def Unit : U = Sum (tt); def elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h); ()"
-        `shouldBe` (Def (Decl (B "Unit") U
+      parseProgram False "let Unit : U = Sum (tt); let elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h); ()"
+        `shouldBe` (Let (Decl (B "Unit") U
                          (Sum [Choice "tt" Nothing]))
-                     (Def (Decl (B "elimUnit")
+                     (Let (Decl (B "elimUnit")
                             (Pi (B "C") (Pi Wildcard (Var "Unit") U)
                               (Pi Wildcard (Ap (Var "C") (Ctor "tt" Nothing))
                                 (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))))
                             (Abs (B "C") (Abs (B "h") (Case [Clause "tt" (Abs Wildcard (Var "h"))])))) Unit))
 
     it "parses a multiline program" $ do
-      parseProgram False ( Text.unlines [ "def rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
-                                        , "def elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a)) -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b "
+      parseProgram False ( Text.unlines [ "let rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
+                                        , "let elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a)) -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b "
                                         , "  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a);"
-                                        , "def select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit);"
+                                        , "let select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit);"
                                         , "()"
                                         ])
 
-        `shouldBe` Def (RDecl (B "NEList") (Pi (B "A") U U) (Abs (B "A") (Sum [Choice "S" (Just (Var "A")),Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))]))) (Def (Decl (B "elimNEList") (Pi (B "A") U (Pi (B "C") (Pi Wildcard (Ap (Var "NEList") (Var "A")) U) (Pi Wildcard (Pi (B "a") (Var "A") (Ap (Var "C") (Ctor "S" (Just (Var "a"))))) (Pi Wildcard (Pi (B "a") (Sigma Wildcard (Var "A") (Ap (Var "NEList") (Var "A"))) (Ap (Var "C") (Ctor "C" (Just (Var "a"))))) (Pi (B "b") (Ap (Var "NEList") (Var "A")) (Ap (Var "C") (Var "b"))))))) (Abs (B "A") (Abs (B "C") (Abs (B "h0") (Abs (B "h1") (Case [Clause "S" (Abs (B "a") (Ap (Var "h0") (Var "a"))),Clause "C" (Abs (B "a") (Ap (Var "h1") (Var "a")))])))))) (Def (Decl (B "select") (Pi Wildcard (Ap (Var "NEList") (Var "Bool")) U) (Case [Clause "S" (Abs Wildcard (Var "Unit")),Clause "C" (Abs Wildcard (Var "Unit"))])) Unit))
+        `shouldBe` Let (RDecl (B "NEList") (Pi (B "A") U U) (Abs (B "A") (Sum [Choice "S" (Just (Var "A")),Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))]))) (Let (Decl (B "elimNEList") (Pi (B "A") U (Pi (B "C") (Pi Wildcard (Ap (Var "NEList") (Var "A")) U) (Pi Wildcard (Pi (B "a") (Var "A") (Ap (Var "C") (Ctor "S" (Just (Var "a"))))) (Pi Wildcard (Pi (B "a") (Sigma Wildcard (Var "A") (Ap (Var "NEList") (Var "A"))) (Ap (Var "C") (Ctor "C" (Just (Var "a"))))) (Pi (B "b") (Ap (Var "NEList") (Var "A")) (Ap (Var "C") (Var "b"))))))) (Abs (B "A") (Abs (B "C") (Abs (B "h0") (Abs (B "h1") (Case [Clause "S" (Abs (B "a") (Ap (Var "h0") (Var "a"))),Clause "C" (Abs (B "a") (Ap (Var "h1") (Var "a")))])))))) (Let (Decl (B "select") (Pi Wildcard (Ap (Var "NEList") (Var "Bool")) U) (Case [Clause "S" (Abs Wildcard (Var "Unit")),Clause "C" (Abs Wildcard (Var "Unit"))])) Unit))
 
   describe "Pretty-printing Expressions" $ do
 
@@ -252,12 +252,12 @@ spec = parallel $ describe "Minilang Parser" $ do
         `shouldBe` "λ (abc, (x, y)) . π1.($true, $false)"
 
     it "pretty prints declarations" $ do
-      show (pretty (parseProgram False "def id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()") )
-        `shouldBe` "def id : Π A : U . A → A = λ A . λ x . x ;\n()"
-      show (pretty (parseProgram False "def rec Nat : U = Sum (zero | succ Nat) ;\ndef id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
-        `shouldBe` "def rec Nat : U = Sum(zero| succ Nat) ;\ndef id : Π A : U . A → A = λ A . λ x . x ;\n()"
-      show (pretty (parseProgram False "def rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
-        `shouldBe` "def rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . case(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
+      show (pretty (parseProgram False "let id : Π A : U . Π _ : A . A = λ A . λ x . x ;\n()") )
+        `shouldBe` "let id : Π A : U . A → A = λ A . λ x . x ;\n()"
+      show (pretty (parseProgram False "let rec Nat : U = Sum (zero | succ Nat) ;\nlet id : Π A : U . Π _ : A . A = λ A . λ x . x; ()"))
+        `shouldBe` "let rec Nat : U = Sum(zero| succ Nat) ;\nlet id : Π A : U . A → A = λ A . λ x . x ;\n()"
+      show (pretty (parseProgram False "let rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) (natrec C a g n1)); ()"))
+        `shouldBe` "let rec natrec : Π C : Nat → U . (C $zero) → Π n : Nat . (C n) → (C ($succ n)) → Π n : Nat . (C n) = λ C . λ a . λ g . case(zero → λ _ . a| succ → λ n1 . ((g n1) ((((natrec C) a) g) n1))) ;\n()"
 
     it "is inverse to parsing" $ property $ prop_parsingIsInvertToPrettyPrinter
     it "has parsing as inverse" $ property $ prop_prettyPrintingIsInverseToParsing
@@ -276,11 +276,11 @@ spec = parallel $ describe "Minilang Parser" $ do
           Ap (Err $ newErrorMessage (Message "found 'fooo ' between (1,1) and (1,6)") (newPos "" 1 6))
           (Var "bar")
 
-    it "inserts an Err node in AST on error in def" $ do
+    it "inserts an Err node in AST on error in let" $ do
       let errorNode = Err $ newErrorMessage (Message "found 'case (tt -> ()' between (1,22) and (1,36)") (newPos "" 1 36)
 
-      parseProgram False "def x : Unit -> [] = case (tt -> ();()"
-        `shouldBe` Def (Decl (B "x")
+      parseProgram False "let x : Unit -> [] = case (tt -> ();()"
+        `shouldBe` Let (Decl (B "x")
                          (Pi Wildcard (Var "Unit") One )
                          errorNode
                        ) Unit
@@ -288,8 +288,8 @@ spec = parallel $ describe "Minilang Parser" $ do
     it "inserts an Err node in AST on error in case clause" $ do
       let errorNode = Err $ newErrorMessage (Message "found '-> ' between (1,31) and (1,34)") (newPos "" 1 34)
 
-      parseProgram False "def x : Unit -> [] = case (tt -> | ff -> ());()"
-        `shouldBe` Def (Decl (B "x") (Pi Wildcard (Var "Unit") One )
+      parseProgram False "let x : Unit -> [] = case (tt -> | ff -> ());()"
+        `shouldBe` Let (Decl (B "x") (Pi Wildcard (Var "Unit") One )
                         (Case [ Clause "tt" errorNode
                               , Clause "ff" (Abs Wildcard Unit)
                               ])) Unit

@@ -118,7 +118,7 @@ spec = parallel $ describe "Expressions Evaluator" $ do
                                  , extended))
 
   it "evaluates declaration continuation in extended env" $ do
-    eval (Def (Decl (B "id")
+    eval (Let (Decl (B "id")
                (Pi  (B "A") U (Pi Wildcard (Var "A") (Var "A")))
                (Abs (B "A") (Abs (B "x") (Var "x"))))
            (Ap (Ap (Var "id") U) (I 12))) emptyEnv
@@ -126,7 +126,7 @@ spec = parallel $ describe "Expressions Evaluator" $ do
            EI 12
 
   it "evaluates recursive declaration continuation in extended env" $ do
-    eval (Def (RDecl (B "add")
+    eval (Let (RDecl (B "add")
                 (Pi Wildcard (Var "Nat") (Pi Wildcard (Var "Nat") (Var "Nat")))
                 (Abs (B "x")
                   (Case [ Clause "zero" (Abs Wildcard (Var "x"))

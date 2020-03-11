@@ -272,7 +272,7 @@ check l a@(Abs p m) ty@(EPi t g) ρ γ = do
     x_l = ENeut $ NV $ NVar l
     ρ_1 = ExtendPat ρ p x_l
 
-check l a@(Def d m) t ρ γ = do
+check l a@(Let d m) t ρ γ = do
   checkingHasType a t l ρ γ
   γ_1 <- checkD l d ρ γ
   check l m t ρ_1 γ_1
@@ -399,7 +399,7 @@ selectCtor _ _ _ = error "cannot happen"
 loadProgram
   :: (TypeChecker tc)
   => AST -> Env -> Context -> tc (Env, Context)
-loadProgram (Def d r) ρ γ = do
+loadProgram (Let d r) ρ γ = do
   γ' <- checkD 0 d ρ γ
   let ρ' = extend d ρ
   loadProgram r ρ' γ'

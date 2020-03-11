@@ -16,13 +16,13 @@ spec = parallel $ describe "MiniLang I/O Evaluator" $ do
     it "evaluates a MiniLang program and dumps result IO" $ \ fileName -> do
     let
       outputFileName = fileName <> ".out"
-      program = [ "def Unit : U = Sum(tt);"
-                , "def elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h);"
+      program = [ "let Unit : U = Sum(tt);"
+                , "let elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h);"
                 , ""
-                , "def Bool : U = Sum (true| false) ;"
-                , "def elimBool : Π C : Bool → U . C $false → C $true → Π b : Bool . C b  ="
+                , "let Bool : U = Sum (true| false) ;"
+                , "let elimBool : Π C : Bool → U . C $false → C $true → Π b : Bool . C b  ="
                 , "  λ C . λ h0 . λ h1 . case (true → h1 | false → h0);"
-                , "def not : Bool → Bool = case (true → $false | false → $true);"
+                , "let not : Bool → Bool = case (true → $false | false → $true);"
                 , "()"
                 ]
 

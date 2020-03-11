@@ -109,7 +109,7 @@ eval (P2 e)        ρ = p2 (eval e ρ)
 eval (Case cs)     ρ = ECase $ CaseClos (cs,ρ)
 eval (Sum cs)      ρ = ESum $ SumClos (cs,ρ)
 eval (Ctor n e)    ρ = ECtor n (flip eval ρ <$> e)
-eval (Def d m)     ρ = eval m (extend d ρ)
+eval (Let d m)     ρ = eval m (extend d ρ)
 eval (Err err)     _ = error $ "trying to evaluate parse error :" ++ show err
 
 app

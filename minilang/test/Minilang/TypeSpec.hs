@@ -102,9 +102,9 @@ spec = parallel $ describe "Type Checker" $ do
         lookupType "V" γ' `shouldReturn` EU
 
       it "Check simple Bool function" $ do
-        check 0 (Def
+        check 0 (Let
                   (Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing]))
-                  (Def
+                  (Let
                    (Decl (B "not")
                      (Pi Wildcard (Var "Bool") (Var "Bool"))
                      (Case [ Clause "true" (Abs Wildcard (Ctor "false" Nothing))
@@ -118,20 +118,20 @@ spec = parallel $ describe "Type Checker" $ do
       it "Check Non empty list and head function" $ do
         let
           e = parseProgram False $
-              Text.unlines [ "def Unit : U = Sum(tt);"
-                           , "def rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ _ : A . NEList A));"
-                           , "def head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);"
-                           , "def l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
-                           , "def x : Unit -> [] = case(tt -> ());"
+              Text.unlines [ "let Unit : U = Sum(tt);"
+                           , "let rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ _ : A . NEList A));"
+                           , "let head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);"
+                           , "let l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
+                           , "let x : Unit -> [] = case(tt -> ());"
                            , "x (head Unit l)"
                            ]
         check 0 e EOne EmptyEnv EmptyContext
           `shouldReturn` ()
 
       it "Check Unit and unitElim" $ do
-        check 0 (Def
+        check 0 (Let
                   (Decl (B "Unit") U (Sum [Choice "tt" Nothing]))
-                  (Def
+                  (Let
                     (Decl (B "elimUnit")
                       (Pi (B "C") (Pi Wildcard (Var "Unit") U)
                         (Pi Wildcard (Ap (Var "C") (Ctor "tt" Nothing))
@@ -146,9 +146,9 @@ spec = parallel $ describe "Type Checker" $ do
           `shouldReturn` ()
 
       it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
-        check 0 (Def
+        check 0 (Let
                   (Decl (B "Bool") U (Sum [ Choice "true" Nothing, Choice "false" Nothing]))
-                  (Def (Decl (B "elimBool")
+                  (Let (Decl (B "elimBool")
                          (Pi (B "C")
                            (Pi Wildcard (Var "Bool") U)
                            (Pi Wildcard
@@ -177,9 +177,9 @@ spec = parallel $ describe "Type Checker" $ do
           `shouldReturn` ()
 
       it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
-        check 0 (Def
+        check 0 (Let
                   (RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
-                  (Def
+                  (Let
                    (RDecl (B "natrec")
                     (Pi (B "C")
                     (Pi Wildcard (Var "Nat") U)

@@ -36,7 +36,7 @@ data AST = U
     | Ap AST AST
     | P1 AST
     | P2 AST
-    | Def Decl AST
+    | Let Decl AST
     | Err ParseError
     deriving (Eq, Show, Generic)
 
@@ -86,7 +86,7 @@ instance HasHeight AST where
   height (Case cs)            = 1 + maximum (fmap height cs)
   height (P1 e)               = 1 + height e
   height (P2 e)               = 1 + height e
-  height (Def d e)            = 1 + max (height d) (height e)
+  height (Let d e)            = 1 + max (height d) (height e)
   height _                    = 1
 
 instance HasHeight Binding where
@@ -182,7 +182,7 @@ skipErrorTo anchors = do
 
 def
   :: MLParser AST
-def = debug "definition" $ define >> Def <$> single_decl <*> fmap (fromMaybe Unit) (optionMaybe (scolon *> expr))
+def = debug "definition" $ define >> Let <$> single_decl <*> fmap (fromMaybe Unit) (optionMaybe (scolon *> expr))
 
 single_decl
   :: MLParser Decl
@@ -368,7 +368,7 @@ isReserved "π2"   = True
 isReserved "Sum"  = True
 isReserved "case" = True
 isReserved "rec"  = True
-isReserved "def"  = True
+isReserved "let"  = True
 isReserved "Σ"    = True
 isReserved _      = False
 
@@ -389,7 +389,7 @@ pi1    = try (string "π1")  >> spaces >> pure () <?> "Pi.1"
 pi2    = try (string "π2")  >> spaces >> pure () <?> "Pi.2"
 sum    = lex (string "Sum")  >> pure () <?> "Sum"
 case_  = try (lex $ string "case")  >> pure () <?> "case"
-define = try (lex $ string "def")  >> pure ()  <?> "def"
+define = try (lex $ string "let")  >> pure ()  <?> "let"
 recur  = try (lex $ string "rec")  >> pure ()  <?> "rec"
 sigma  = lex (char 'Σ')  >> pure ()  <?> "Sigma"
 equal  = lex (char '=')  >> pure ()  <?> "equal"

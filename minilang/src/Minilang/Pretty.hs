@@ -34,6 +34,7 @@ instance Pretty AST where
   pretty (Sum cs)          = "Sum" <> parens (hsep $ punctuate "|" (fmap prettySum cs))
   pretty (Case cs)         = "case" <> parens (hsep $ punctuate "|" (fmap prettyFun cs))
   pretty (Var n)           = pretty n
+  pretty (Hole t)          = "?" <> pretty t
   pretty (Ap e1 e2)        = parens $ pretty e1 <+> pretty e2
   pretty (P1 e)            = "π1." <> pretty e
   pretty (P2 e)            = "π2." <> pretty e

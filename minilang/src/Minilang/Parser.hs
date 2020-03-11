@@ -33,6 +33,7 @@ data AST = U
     | Sum [Choice]
     | Case [Clause]
     | Var Text
+    | Hole Text
     | Ap AST AST
     | P1 AST
     | P2 AST

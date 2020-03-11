@@ -110,6 +110,7 @@ eval (Case cs)     ρ = ECase $ CaseClos (cs,ρ)
 eval (Sum cs)      ρ = ESum $ SumClos (cs,ρ)
 eval (Ctor n e)    ρ = ECtor n (flip eval ρ <$> e)
 eval (Let d m)     ρ = eval m (extend d ρ)
+eval (Hole hole)   _ = error $ "trying to evaluate hole " ++ show hole
 eval (Err err)     _ = error $ "trying to evaluate parse error :" ++ show err
 
 app

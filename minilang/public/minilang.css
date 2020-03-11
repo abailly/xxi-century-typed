@@ -19,6 +19,7 @@ textarea#program {
     padding: 1em;
     font-family: Inconsolata, Courier;
     font-size: 12pt;
+    resize: none;
 }
 
 div#repl {

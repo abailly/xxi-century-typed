@@ -3,16 +3,16 @@ def rec Nat : U = Sum(zero | succ Nat);
 def Pair : U -> U -> U = λ A . λ B . Sum (P (Σ _ : A . B));
 
 def rec add : Nat -> Nat -> Nat =
-  fun (  zero  -> λ n . n
+  case (  zero  -> λ n . n
        | succ n -> λ m . $succ (add n m));
 
 def rec mult : Nat -> Nat -> Nat =
-  fun (zero -> λ _ . $zero
+  case (zero -> λ _ . $zero
        | succ n -> λ m . add m (mult n m)) ;
 
 def rec Vec : U -> Nat -> U =
   λ A . λ n . Sum (nil | cons (Σ _ : A . Vec A n)) ;
 
 def rec append : (A : U) -> (m : Nat) -> (n : Nat) -> (xs : Vec A n) -> (ys : Vec A m) -> Vec A (add m n) =
-  λ A . λ m . λ n . fun ( nil -> λ ys . ys
+  λ A . λ m . λ n . case ( nil -> λ ys . ys
                          | cons (x, xs) -> λ ys . $cons(x, append A m n xs ys) )

@@ -12,6 +12,7 @@ import           Control.Monad.Catch
 import           Control.Monad.Catch.Pure (CatchT (..))
 import           Control.Monad.State
 import           Data.Text                hiding (replicate)
+import qualified Data.Text                as Text
 import           Minilang.Env
 import           Minilang.Eval            hiding (rho)
 import           Minilang.Parser
@@ -83,7 +84,6 @@ handleCommand (Set (DebugParser st)) = getEnv >>= \e -> setEnv (e { debugParser 
 handleCommand Help =
   output (Msg helpText)
 
-
 loadProgramInEnv
   :: (TypeChecker m, MonadCatch m, MonadREPL m)
   => Text -> m ()
@@ -94,8 +94,16 @@ loadProgramInEnv prog = do
     Right e -> do
       (do
           (ρ',γ') <- loadProgram e ρ γ
-          setEnv (repl { rho = ρ', gamma = γ' }))
+          setEnv (repl { rho = ρ', gamma = γ' })
+          output (Msg makeMessage)
+        )
         `catch` \ (TypingError err) -> output (Msg err)
+  where
+    makeMessage =
+      "Loaded \" " <>
+      if Text.length prog > 15
+      then Text.take 15 prog <> "..."
+      else prog
 
 -- * Haskeline REPL
 

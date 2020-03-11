@@ -7,8 +7,8 @@ import           Control.Concurrent.STM.TVar
 import           Control.Monad.Catch
 import           Control.Monad.State
 import           Control.Monad.Trans            (lift)
-import           Data.Aeson                     (eitherDecode, encode, object,
-                                                 (.=))
+import           Data.Aeson                     (ToJSON, eitherDecode, encode,
+                                                 object, (.=))
 import           Data.ByteString                (ByteString)
 import qualified Data.ByteString.Lazy           as LBS
 import           Data.Map                       as Map
@@ -61,7 +61,6 @@ instance Serialize Out where
       Right out -> pure out
       Left err  -> fail err
 
-
 instance Versionable Out
 
 doStore :: Out -> Net IO Out
@@ -76,10 +75,19 @@ doStore out = do
     handleStorageResult (Right err)              = pure $ Msg $ pack $ show err
     handleStorageResult (Left err)               = pure $ Msg (pack err)
 
+netLog :: (ToJSON a) => a -> Net IO ()
+netLog logEntry = gets logger >>= liftIO . flip logInfo logEntry
 
 instance MonadREPL (Net IO) where
-  input     = gets connection >>= lift . wsReceive
-  output a  = doStore a >> gets connection >>= lift . wsSend a
+  input     = do
+    inp <- gets connection >>= lift . wsReceive
+    netLog (object [ "action" .= ("input" :: Text), "content" .= inp ])
+    pure inp
+
+  output a  = do
+    doStore a >> gets connection >>= lift . wsSend a
+    netLog (object [ "action" .= ("output" :: Text), "content" .= a ])
+
   prompt    = pure ()
   getEnv    = gets repl >>= lift . atomically . readTVar
   setEnv e' = gets repl >>= lift . atomically . flip writeTVar e'
@@ -94,7 +102,7 @@ instance (MonadCatch m) => MonadCatch (Net m)  where
   Net m `catch` f = Net $ m `catch` \ e -> runNet (f e)
 
 instance TypeChecker (Net IO) where
-  emit (CheckD ev) = gets logger >>= \ env -> liftIO (logInfo env ev)
+  emit (CheckD ev) = gets logger >>= \ env -> liftIO $ logInfo env ev
   emit _           = pure ()
 
 wsReceive :: WS.Connection -> IO In

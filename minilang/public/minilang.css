@@ -20,6 +20,11 @@ textarea#program {
     font-family: Inconsolata, Courier;
     font-size: 12pt;
     resize: none;
+    white-space: pre;
+    spellcheck: false;
+    autocomplete: off;
+    autocapitalize: none;
+    wrap: off;
 }
 
 div#repl {

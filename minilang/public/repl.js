@@ -64,13 +64,13 @@ function readMessageAndAppend(reader) {
 
 function makeCommand(val) {
     if(val === ":env") {
-        return {"tag":"Com","contents":{"tag":"DumpEnv"}};
+        return {tag:"Com",contents:{tag:"DumpEnv"}};
     } else if(val === ":clear") {
-        return {"tag":"Com","contents":{"tag":"ClearEnv"}};
+        return {tag:"Com",contents:{tag:"ClearEnv"}};
     } else if(val === ":help") {
-        return {"tag":"Com","contents":{"tag":"Help"}};
+        return {tag:"Com",contents:{tag:"Help"}};
     } else {
-        return {"tag":"In","contents":val};
+        return {tag:"In",contents:val};
     }
 };
 
@@ -91,7 +91,18 @@ function sendCommand(e) {
     return true;
 };
 
+function loadText(e) {
+    const text = document.getElementById("program").value;
+    const command = {tag:"Com",
+                     contents:{ tag:"Load",
+                                contents:{ tag:"Data",
+                                           contents:text}}};
+    websocket.send(JSON.stringify(command));
+    return false;
+};
+
 document.getElementById("command").addEventListener("keyup", sendCommand);
 document.getElementById("connect").addEventListener("click", connect);
+document.getElementById("send").addEventListener("click", loadText);
 
 connect();

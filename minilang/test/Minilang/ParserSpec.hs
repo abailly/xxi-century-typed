@@ -119,6 +119,10 @@ spec = parallel $ describe "Minilang Parser" $ do
       parseProgram False "{- this is a multiline comment -}\nlet x : Unit -> [] = case (tt -> ())"
         `shouldBe`  Let (Decl (B "x") (Pi Wildcard (Var "Unit") One) (Case [Clause "tt" (Abs Wildcard Unit)])) Unit
 
+    it "parses holes" $ do
+      pending
+      parseProgram False "λ x . ?hole" `shouldBe` Abs (Pat (B "abc") (B "xyz")) (Hole "hole")
+
   describe "Declarations" $ do
 
     it "parses generic id function" $ do

@@ -100,10 +100,11 @@ loadProgramInEnv prog = do
         `catch` \ (TypingError err) -> output (Msg err)
   where
     makeMessage =
-      "Loaded \" " <>
-      if Text.length prog > 15
-      then Text.take 15 prog <> "..."
-      else prog
+      "Loaded \"" <>
+      (if Text.length prog > 15
+       then Text.take 15 prog <> "..."
+       else prog) <>
+      "\""
 
 -- * Haskeline REPL
 

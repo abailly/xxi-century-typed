@@ -119,8 +119,8 @@ safeDecodeUtf8 = decodeUtf8With lenientDecode
 clientHandler :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> WS.PendingConnection -> IO ()
 clientHandler loggerEnv envs cnx = do
   let path = WS.requestPath $ WS.pendingRequest cnx
-  replEnv <- findOrCreateREPL path
   logInfo loggerEnv $ object [ "action" .= ("StartedREPL" :: Text), "path" .= safeDecodeUtf8 path ]
+  replEnv <- findOrCreateREPL path
   conn <- WS.acceptRequest cnx
   storageFile <- mkStorageFile path
   withStorage storageFile $ \ fileStorage ->

@@ -63,17 +63,17 @@ instance Serialize Out where
 
 instance Versionable Out
 
-doStore :: Out -> Net IO Out
+doStore :: In -> Net IO (Either Text ())
 doStore out = do
   fs <- gets storage
   res <- liftIO $ store fs (pure $ Right out) handleStorageResult
   case res of
-    WriteSucceed a -> pure a
-    err            -> pure $ Msg (pack $ show err)
+    WriteSucceed a -> pure $ Right ()
+    err            -> pure $ Left (pack $ show err)
   where
-    handleStorageResult (Right (WriteSucceed a)) = pure a
-    handleStorageResult (Right err)              = pure $ Msg $ pack $ show err
-    handleStorageResult (Left err)               = pure $ Msg (pack err)
+    handleStorageResult (Right (WriteSucceed a)) = pure $ Right ()
+    handleStorageResult (Right err)              = pure $ Left $ pack $ show err
+    handleStorageResult (Left err)               = pure $ Left $ pack err
 
 netLog :: (ToJSON a) => a -> Net IO ()
 netLog logEntry = gets logger >>= liftIO . flip logInfo logEntry
@@ -81,11 +81,14 @@ netLog logEntry = gets logger >>= liftIO . flip logInfo logEntry
 instance MonadREPL (Net IO) where
   input     = do
     inp <- gets connection >>= lift . wsReceive
-    netLog (object [ "action" .= ("input" :: Text), "content" .= inp ])
+    res <- doStore inp
+    case res of
+      Right () -> netLog (object [ "action" .= ("input" :: Text), "content" .= inp ])
+      Left txt -> netLog (object [ "action" .= ("storageError" :: Text), "content" .= txt ])
     pure inp
 
   output a  = do
-    doStore a >> gets connection >>= lift . wsSend a
+    gets connection >>= lift . wsSend a
     netLog (object [ "action" .= ("output" :: Text), "content" .= a ])
 
   prompt    = pure ()

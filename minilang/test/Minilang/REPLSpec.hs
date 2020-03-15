@@ -1,14 +1,17 @@
 module Minilang.REPLSpec where
 
-import           Control.Exception (bracket)
-import           Data.Monoid       ((<>))
+import           Control.Exception   (bracket)
+import           Data.Monoid         ((<>))
 import           Data.Text.IO
+import           Minilang.Eval       (Value (EU), toList)
 import           Minilang.REPL
-import           Prelude           hiding (lines, readFile, writeFile)
-import           System.Directory  (getTemporaryDirectory, removeFile)
-import           System.FilePath   ((<.>), (</>))
-import           System.IO         (IOMode (..), hClose, withFile)
-import           System.Posix.Temp (mkstemp)
+import           Minilang.REPL.Purer
+import           Minilang.REPL.Types
+import           Prelude             hiding (lines, readFile, writeFile)
+import           System.Directory    (getTemporaryDirectory, removeFile)
+import           System.FilePath     ((<.>), (</>))
+import           System.IO           (IOMode (..), hClose, withFile)
+import           System.Posix.Temp   (mkstemp)
 import           Test.Hspec
 
 spec :: Spec
@@ -48,6 +51,17 @@ spec = parallel $ describe "MiniLang REPL" $ do
 
     out `shouldBe`
       "\955\928> defined Nat : U\n\955\928> defined id : \928 A : U . A \8594 A\n\955\928> $succ $succ $succ $zero  :: Sum(zero| succ Nat)\n\955\928> Bye!\n"
+
+  describe "Purer REPL" $ do
+
+    it "keeps handling Inputs even when they fail" $ do
+      let inputs = [ In "Unit : U"
+                  , In "Unit : U = Sum(tt)"
+                  , Com DumpEnv
+                  ]
+
+      toList (gamma $ purerREPL (withInputs initialREPL inputs)) `shouldBe` [("Unit",EU)]
+      outputs (withInputs initialREPL inputs) `shouldContain` [ Msg "cannot find \"Unit\" in empty context" ]
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =

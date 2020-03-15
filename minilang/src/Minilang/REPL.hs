@@ -19,6 +19,7 @@ import           Minilang.Parser
 import           Minilang.REPL.Haskeline
 import           Minilang.REPL.IO
 import           Minilang.REPL.Pure
+import           Minilang.REPL.Purer
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           System.Console.Haskeline (defaultBehavior, defaultSettings,
@@ -133,3 +134,11 @@ withInput
   :: [Text] -> [Text]
 withInput stream =
   outputText $ execState (runCatchT (runPure runREPL)) (PureEnv stream [] initialREPL)
+
+-- * Purer REPL
+-- This useful for rehydrating and environment from a sequence of inputs
+
+withInputs
+  :: REPLEnv -> [In] -> PurerEnv
+withInputs initEnv stream =
+  execState (runCatchT (runPurer runREPL)) (PurerEnv stream [] initEnv)

@@ -56,12 +56,15 @@ spec = parallel $ describe "MiniLang REPL" $ do
 
     it "keeps handling Inputs even when they fail" $ do
       let inputs = [ In "Unit : U"
-                  , In "Unit : U = Sum(tt)"
-                  , Com DumpEnv
-                  ]
+                   , In "Unit : U = Sum(tt)"
+                   , Com DumpEnv
+                   ]
 
-      toList (gamma $ purerREPL (withInputs initialREPL inputs)) `shouldBe` [("Unit",EU)]
-      outputs (withInputs initialREPL inputs) `shouldContain` [ Msg "cannot find \"Unit\" in empty context" ]
+      toList (gamma $ purerREPL (withInputs initialREPL inputs))
+        `shouldBe` [("Unit",EU)]
+
+      outputs (withInputs initialREPL inputs)
+        `shouldContain` [ Msg "cannot find \"Unit\" in empty context" ]
 
 withTempFile :: (String -> IO ()) -> IO ()
 withTempFile =

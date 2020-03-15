@@ -18,9 +18,11 @@ import           Data.Text.Encoding             (decodeUtf8With)
 import           Data.Text.Encoding.Error       (lenientDecode)
 import           HStore                         (StorageResult (..),
                                                  Versionable (..), store)
+import qualified HStore                         as H
 import           HStore.FileOps
 import           Minilang.Log
-import           Minilang.REPL                  (runREPL)
+import           Minilang.REPL                  (runREPL, withInputs)
+import           Minilang.REPL.Purer            (purerREPL)
 import           Minilang.REPL.Types
 import           Minilang.Type
 import           Network.Wai                    (Application)
@@ -48,7 +50,7 @@ data NetEnv = NetEnv
 newtype Net m a = Net { runNet :: StateT NetEnv m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadState NetEnv)
 
-instance Serialize Out where
+instance Serialize In where
   put out = do
     let bs = encode out
     putWord64be (fromIntegral $ LBS.length bs)
@@ -61,17 +63,17 @@ instance Serialize Out where
       Right out -> pure out
       Left err  -> fail err
 
-instance Versionable Out
+instance Versionable In
 
 doStore :: In -> Net IO (Either Text ())
 doStore out = do
-  fs <- gets storage
+  fs  <- gets storage
   res <- liftIO $ store fs (pure $ Right out) handleStorageResult
   case res of
-    WriteSucceed a -> pure $ Right ()
+    WriteSucceed _ -> pure $ Right ()
     err            -> pure $ Left (pack $ show err)
   where
-    handleStorageResult (Right (WriteSucceed a)) = pure $ Right ()
+    handleStorageResult (Right (WriteSucceed _)) = pure $ Right ()
     handleStorageResult (Right err)              = pure $ Left $ pack $ show err
     handleStorageResult (Left err)               = pure $ Left $ pack err
 
@@ -123,25 +125,50 @@ clientHandler :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> WS.Pend
 clientHandler loggerEnv envs cnx = do
   let path = WS.requestPath $ WS.pendingRequest cnx
   logInfo loggerEnv $ object [ "action" .= ("StartedREPL" :: Text), "path" .= safeDecodeUtf8 path ]
-  replEnv <- findOrCreateREPL path
-  conn <- WS.acceptRequest cnx
+  conn        <- WS.acceptRequest cnx
   storageFile <- mkStorageFile path
-  withStorage storageFile $ \ fileStorage ->
+  withStorage storageFile $ \ fileStorage -> do
+    replEnv     <- findOrCreateREPL fileStorage path
     WS.withPingThread conn 30 (pure ()) $
-    evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv fileStorage)
+      evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv fileStorage)
   where
-    findOrCreateREPL path = atomically $ do
-      envMaps <- readTVar envs
-      newEnv <- case Map.lookup path envMaps of
-        Nothing -> newTVar initialREPL
-        Just e  -> pure e
-      writeTVar envs (Map.insert path newEnv envMaps)
-      pure newEnv
+    findOrCreateREPL :: FileStorage -> ByteString -> IO (TVar REPLEnv)
+    findOrCreateREPL storageFile path = do
+      (env, shouldLoad) <- atomically $ do
+        envMaps <- readTVar envs
+        (newEnv, shouldLoad) <- case Map.lookup path envMaps of
+          Nothing -> newTVar initialREPL >>= \ v -> pure (v, True)
+          Just e  -> pure (e, False)
+        writeTVar envs (Map.insert path newEnv envMaps)
+        pure (newEnv, shouldLoad)
+      -- FIXME there is a race condition here
+      if shouldLoad
+        then replay storageFile env
+        else pure env
 
     mkStorageFile path = do
       let f = takeFileName (unpack (safeDecodeUtf8 path))
       dir <- getCurrentDirectory
       pure $ defaultOptions { storageFilePath = dir </> f }
+
+    replay :: FileStorage -> TVar REPLEnv -> IO (TVar REPLEnv)
+    replay storage envVar = do
+      res <- H.load storage
+      case res of
+        LoadSucceed coms -> do
+          atomically $ do
+            env <- readTVar envVar
+            let newEnv = withInputs env coms
+            writeTVar envVar (purerREPL newEnv)
+          logInfo loggerEnv $ object [ "action" .= ("Loaded" :: Text)
+                                     , "numCommands" .= length coms
+                                     ]
+          pure envVar
+
+        err -> do
+          logInfo loggerEnv $ object [ "action" .= ("ErrorLoading" :: Text), "error" .= pack (show err) ]
+          pure envVar
+
 
 runNetREPL :: LoggerEnv IO -> TVar (Map ByteString (TVar REPLEnv)) -> Application -> Application
 runNetREPL loggerEnv envs = websocketsOr WS.defaultConnectionOptions (clientHandler loggerEnv envs)

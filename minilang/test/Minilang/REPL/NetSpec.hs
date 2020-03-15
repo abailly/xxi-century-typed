@@ -7,8 +7,7 @@ import           Control.Exception           (bracket)
 import           Control.Monad               (forM)
 import           Data.Aeson                  (eitherDecode, encode)
 import           Minilang.Env
-import           Minilang.Eval               (SumClos (..), Value (..),
-                                              emptyContext)
+import           Minilang.Eval               (Value (EU), emptyContext)
 import           Minilang.Log
 import           Minilang.Parser
 import           Minilang.REPL.Net
@@ -29,7 +28,8 @@ startServer :: IO Server
 startServer = do
   (port, socket) <- openFreePort
   envs <- newTVarIO mempty
-  let app = runNetREPL fakeLogger envs (\ _ resp -> resp $ responseLBS status400 [] "Not a WebSocket request")
+  logger <- newLog "test"
+  let app = runNetREPL logger envs (\ _ resp -> resp $ responseLBS status400 [] "Not a WebSocket request")
       settings = setGracefulShutdownTimeout (Just 0) defaultSettings
   thread <- async $ Warp.runSettingsSocket settings socket app
   pure $ Server (Just thread) port
@@ -86,4 +86,8 @@ spec = around withServer $ describe "MiniLang Network REPL" $ do
     _ <- runTestClient serverPort  ".newenv3" inp
     res <- runTestClient serverPort  ".newenv3" [ In "Unit" ]
 
-    res `shouldBe` [ Right $ Evaluated (ESum (SumClos ([Choice "tt" Nothing], EmptyEnv))) EU ]
+    res `shouldSatisfy` isEvaluated
+
+isEvaluated :: [Either a Out] -> Bool
+isEvaluated [ Right (Evaluated _ EU) ] = True
+isEvaluated _                          = False

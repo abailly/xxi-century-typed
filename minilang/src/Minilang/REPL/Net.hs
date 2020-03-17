@@ -132,7 +132,7 @@ clientHandler loggerEnv envs cnx = do
     WS.withPingThread conn 30 (pure ()) $
       evalStateT (runNet runREPL) (NetEnv conn loggerEnv replEnv fileStorage)
   where
-    findOrCreateREPL :: FileStorage -> ByteString -> IO (TVar REPLEnv)
+    findOrCreateREPL :: (H.Store IO store) => store -> ByteString -> IO (TVar REPLEnv)
     findOrCreateREPL storageFile path = do
       (env, shouldLoad) <- atomically $ do
         envMaps <- readTVar envs
@@ -151,7 +151,7 @@ clientHandler loggerEnv envs cnx = do
       dir <- getCurrentDirectory
       pure $ defaultOptions { storageFilePath = dir </> f }
 
-    replay :: FileStorage -> TVar REPLEnv -> IO (TVar REPLEnv)
+    replay :: (H.Store IO store) => store -> TVar REPLEnv -> IO (TVar REPLEnv)
     replay storage envVar = do
       res <- H.load storage
       case res of

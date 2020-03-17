@@ -11,6 +11,7 @@ import           Test.QuickCheck as QC
 spec :: Spec
 spec = parallel $ describe "Pretty-printing Expressions" $ do
 
+  it "true is always true" $ True `shouldBe` True
 
   it "is inverse to parsing" $ property $ prop_parsingIsInvertToPrettyPrinter
 

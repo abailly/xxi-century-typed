@@ -1,42 +1,51 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ExplicitForAll #-}
 module Main where
 
-import Data.Array
+import Control.Monad(forM, forM_)
+import Control.Monad.ST
+import Data.Array.ST
 import Control.Arrow((>>>))
-import Data.List (findIndex)
-import Data.Maybe
 
-newtype Message = Msg { unMsg :: Array Int Int }
-  deriving (Eq, Show)
+mkSubst :: forall s . [Int] -> Int -> ST s (STUArray s Int Int -> ST s ())
+mkSubst table len = do
+  subst :: STUArray s Int Int <- newListArray (1,100 :: Int) table
+  let apply arr = forM_ [ 1 .. len :: Int ] (\ i -> readArray arr i >>= readArray subst >>= writeArray arr i)
+  pure apply
 
-type SubstitutionTable = Int -> Int
+powerOfSubst :: forall s . Int -> [Int] -> [Int] -> [Int] -> ST s Int
+powerOfSubst len table initial target = do
+  f <- mkSubst table len
+  start :: STUArray s Int Int <- newListArray (1,len :: Int) initial
+  end  :: STUArray s Int Int <- newListArray (1,len :: Int) target
+  go 0 f start end
+    where
+      go n f start end = do
+        isEq <- and <$> forM [ 1..len] (\ i -> do
+          x <- readArray start i
+          y <- readArray end i
+          pure $ x == y)
+        if isEq
+          then pure n
+          else f start >> go (n+1) f start end
 
-mkSubst :: [Int] -> SubstitutionTable
-mkSubst table n =
-  let arr = array (1,100) (zip [1..] table)
-  in arr ! n
 
-subst1 = mkSubst $ [ 2, 3, 1, 5, 4 ] <> [ 6 .. 100 ]
-
-cipher :: SubstitutionTable -> Message -> Message
-cipher table = Msg . fmap table . unMsg
-
-powerOfSubst :: SubstitutionTable -> Message -> Message -> Int
-powerOfSubst table initial target =
-  let ciphers = drop 1 $ iterate (cipher table) initial
-  in 1 + (fromJust $ findIndex (uncurry (==)) $ zip ciphers (repeat target))
-
-doSolve :: [String] -> [Int]
-doSolve (l:t:c:code:rest) =
+doSolve :: forall s . [String] -> ST s [Int]
+doSolve (l:t:c:code:rest) = do
   let
-      initial = Msg $ array (1,read l) $ zip [1..] $ fmap read $ words t
-      target = Msg $ array (1,read l) $ zip [1..] $ fmap read $ words c
-      subst = mkSubst $ fmap read $ words code
-  in powerOfSubst subst initial target : doSolve rest
-doSolve _ = []
+    len = read l
+    initial = fmap read $ words t
+    target = fmap read $ words c
+    subst = fmap read $ words code
+  num <- powerOfSubst len subst initial target
+  other <- doSolve rest
+  pure $ num : other
+doSolve _ = pure []
 
 solve :: String -> String
 solve =
-  lines >>> drop 1 >>> doSolve >>> fmap show >>> unlines
+  lines >>> drop 1 >>> (\ s -> runST (doSolve s)) >>> fmap show  >>> unlines
 
 main :: IO ()
 main =

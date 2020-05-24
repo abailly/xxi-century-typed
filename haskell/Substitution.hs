@@ -3,50 +3,47 @@
 {-# LANGUAGE ExplicitForAll #-}
 module Main where
 
-import Control.Monad(forM, forM_)
-import Control.Monad.ST
-import Data.Array.ST
+import Data.Array as A
+import Data.List(findIndex)
+import Data.Maybe
 import Control.Arrow((>>>))
 
-mkSubst :: forall s . [Int] -> Int -> ST s (STUArray s Int Int -> ST s ())
-mkSubst table len = do
-  subst :: STUArray s Int Int <- newListArray (1,100 :: Int) table
-  let apply arr = forM_ [ 1 .. len :: Int ] (\ i -> readArray arr i >>= readArray subst >>= writeArray arr i)
-  pure apply
+-- what's the number of iterations for given pair of numbers?
+distance :: Array Int Int -> Int -> Int -> Int
+distance table i k = go 1 i
+  where
+    go n j =
+      let x = table ! j
+      in if x == k
+         then n
+         else go (n+1)  x
 
-powerOfSubst :: forall s . Int -> [Int] -> [Int] -> [Int] -> ST s Int
-powerOfSubst len table initial target = do
-  f <- mkSubst table len
-  start :: STUArray s Int Int <- newListArray (1,len :: Int) initial
-  end  :: STUArray s Int Int <- newListArray (1,len :: Int) target
-  go 0 f start end
-    where
-      go n f start end = do
-        isEq <- and <$> forM [ 1..len] (\ i -> do
-          x <- readArray start i
-          y <- readArray end i
-          pure $ x == y)
-        if isEq
-          then pure n
-          else f start >> go (n+1) f start end
+subst1 :: [Int]
+subst1 = 100 : [ 1 .. 99 ]
 
+distances :: [Int] -> [Int] -> [Int] -> [Int]
+distances table initial target =
+  let tbl = listArray (1,100) table
+  in fmap (uncurry (distance tbl)) $ zip initial target
 
-doSolve :: forall s . [String] -> ST s [Int]
-doSolve (l:t:c:code:rest) = do
+powerOfSubst :: Int -> [Int] -> [Int] -> [Int] -> Int
+powerOfSubst _len table initial target =
+  let dist = distances table initial target
+  in foldl1 lcm dist
+
+doSolve :: [String] -> [Int]
+doSolve (l:t:c:code:rest) =
   let
     len = read l
     initial = fmap read $ words t
     target = fmap read $ words c
     subst = fmap read $ words code
-  num <- powerOfSubst len subst initial target
-  other <- doSolve rest
-  pure $ num : other
-doSolve _ = pure []
+  in powerOfSubst len subst initial target : doSolve rest
+doSolve _ = []
 
 solve :: String -> String
 solve =
-  lines >>> drop 1 >>> (\ s -> runST (doSolve s)) >>> fmap show  >>> unlines
+  lines >>> drop 1 >>> doSolve >>> fmap show  >>> unlines
 
 main :: IO ()
-main =
-  interact $ solve
+main = interact solve

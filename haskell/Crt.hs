@@ -6,13 +6,28 @@ import Debug.Trace
 -- | Chinese Remainder Theorem constructive proof.
 -- Given a list of coprime numbers and a list of factors, find the (unique up to congruence modulo N)
 -- number x that's equal to each factor a_i moduloe n_i.
--- See [this page](https://crypto.stanford.edu/pbc/notes/numbertheory/crt.html]
+--
+-- See
+-- * [this page](https://crypto.stanford.edu/pbc/notes/numbertheory/crt.html]
+-- * Another page with [2 algorithms](https://www.di-mgt.com.au/crt.html)
+--
+-- >>> crt ((11,6) :| [(16,13),(21,9),(25,19)])
+-- 89469
+--
+-- >>> crt ((3,2) :| [(5,3),(7,2)])
+-- 23
+--
+-- >>> crt ((3,0) :| [(4,3),(5,4)])
+-- 39
 crt :: NonEmpty (Integer, Integer) -> Integer
-crt ((_,x) :| []) = x
-crt ((n_1,a_1) :| ((n_2,a_2): moduli)) =
-  let (m_1, m_2, 1) = extended_gcd n_1 n_2 -- n_1 and n_2 are co-primes so gcd is 1
-      x = (a_1 * m_2 * n_2 + a_2 * m_1 * n_1) `mod` n_1 * n_2
-  in trace (show x) $ crt ((n_1 * n_2, if x < 0 then (n_1 * n_2 + x) else x) :| moduli)
+crt coeffs =
+  let m = product (fmap fst coeffs) -- fsts are assumed to be coprimes
+      term (n_i, a_i) =
+        let z_i = m `div` n_i
+            (y_i, _, 1) = extended_gcd z_i n_i
+            y_i' = if y_i < 0 then n_i + y_i else y_i
+        in a_i * y_i' * z_i
+  in sum (fmap term coeffs) `mod` m
 
 (×) :: (Num a) => a -> a -> a
 (×) = (*)

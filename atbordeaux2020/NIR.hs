@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module NIR where
 
@@ -16,11 +17,13 @@ module NIR where
 -}
 
 import Basement.Bounded
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Char
-import Test.Hspec
+import GHC.TypeLits
 import Data.Maybe
+import Test.Hspec
+import Test.QuickCheck
 import Text.Parsec
-import Data.Bifunctor (Bifunctor(bimap))
 
 -- * Numéro de Sécurité Sociale
 
@@ -132,6 +135,7 @@ valideNIRSpec = describe "NIR Valide" $ do
     valideNIR unNIRValide `shouldBe` True
 
 -- Un type moins naïf pour les NIR
+-- NIR est correct par construction (en première approximation en tout cas...)
 data NIR = NIR
   { sexe :: Sexe,
     annee :: Annee,
@@ -140,21 +144,27 @@ data NIR = NIR
     commune :: Commune,
     serie :: Serie
   }
+  deriving (Eq, Show)
 
 data Sexe = M | F
+  deriving (Eq, Show)
 
-type Annee = Zn 100
+newtype Annee = Annee (Zn 100)
+  deriving (Eq, Show)
 
 data Mois = Jan | Fev | Mar | Apr | Mai | Jun | Jui | Aou | Sep | Oct | Nov | Dec
+  deriving (Eq, Show, Enum, Bounded)
 
-data Departement =
-  Dept (Zn 96)
+data Departement
+  = Dept (Zn 96)
   | Etranger
+  deriving (Eq, Show)
 
 newtype Commune = Commune (Zn 1000)
+  deriving (Eq, Show)
 
 newtype Serie = Serie (Zn 1000)
-
+  deriving (Eq, Show)
 
 -- ''Parse, Don't Validate''
 -- plutôt que de devoir vérifier à chaque utilisation la validité d'un NIR,
@@ -164,5 +174,47 @@ makeNIR :: String -> Either String NIR
 makeNIR peutEtreUnNir =
   bimap show id $ runParser nirParser () "" peutEtreUnNir
 
+-- squelette de parser pour transformer une chaine en NIR
 nirParser :: Parsec String () NIR
 nirParser = error "not implemented"
+
+instance Arbitrary Sexe where
+  arbitrary = elements [M, F]
+
+someZn :: (KnownNat k) => Gen (Zn k)
+someZn = zn . fromIntegral @Int . getPositive <$> arbitrary
+
+instance Arbitrary Annee where
+  arbitrary = Annee <$> someZn
+
+instance Arbitrary Mois where
+  arbitrary = arbitraryBoundedEnum
+
+instance Arbitrary Departement where
+  arbitrary = frequency [(9, Dept <$> someZn), (1, pure Etranger)]
+
+instance Arbitrary Commune where
+  arbitrary = Commune <$> someZn
+
+instance Arbitrary Serie where
+  arbitrary = Serie <$> someZn
+
+instance Arbitrary NIR where
+  arbitrary =
+    NIR
+      <$> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+
+-- isomorphisme parser/pretty-printer
+parseEstInverseDePrint :: NIR -> Property
+parseEstInverseDePrint nir =
+  let prettyNir = prettyPrint nir
+   in counterexample prettyNir $ makeNIR prettyNir == Right nir
+
+-- squelette de pretty-printer pour un NIR
+prettyPrint :: NIR -> String
+prettyPrint = error "not implemented"

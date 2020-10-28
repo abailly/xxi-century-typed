@@ -15,6 +15,7 @@ module Presentation where
 -}
 
 import Test.Hspec
+import Test.QuickCheck
 import Data.Char (toLower)
 
 -- Une question d'un Quizz
@@ -44,3 +45,13 @@ verifieSpec = describe "Verifie la réponse" $ do
 verifieLaRéponse :: String -> Question -> Bool
 verifieLaRéponse proposition Q{reponseAttendue} =
   fmap toLower proposition == fmap toLower reponseAttendue
+
+-- un type représentant les chaînes de caractères insensibles à la casse
+newtype SansCasse = SansCasse { sansCasse :: String }
+  deriving (Show)
+
+-- exprimer la propriété que 2 chaines `SansCasse` sont égales si
+-- leurs représentations en majuscules sont égales
+egaliteSansCasse :: SansCasse -> Property
+egaliteSansCasse sc@(SansCasse base) =
+  collect (length base) $ SansCasse (_permuteCasse base) == sc

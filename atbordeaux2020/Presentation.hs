@@ -106,6 +106,7 @@ valideNIRSpec = describe "NIR Valide" $ do
     annéeIncorrecte = NIR1 "2ab115935012322"
     moisIncorrecte = NIR1 "223ab5935012322"
     moisIncorrecte2 = NIR1 "223145935012322"
+    moisIncorrecte3 = NIR1 "223005935012322"
 
   it "le premier caractère est 1 ou 2" $ do
     valideNIR unNIRValide `shouldBe` True
@@ -119,3 +120,4 @@ valideNIRSpec = describe "NIR Valide" $ do
     valideNIR unNIRValide `shouldBe` True
     valideNIR moisIncorrecte `shouldBe` False
     valideNIR moisIncorrecte2 `shouldBe` False
+    valideNIR moisIncorrecte3 `shouldBe` False

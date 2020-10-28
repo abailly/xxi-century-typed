@@ -7,9 +7,9 @@ import Control.Monad(forM, forM_)
 import Control.Monad.ST
 import Data.Array.ST
 import Data.Array as A
-import Data.List(findIndex)
-import Data.Maybe
+import Data.List(sort, nub)
 import Control.Arrow((>>>))
+import Crt
 
 -- what's the number of iterations for given pair of numbers?
 distance :: Array Int Int -> Int -> Int -> Int
@@ -18,6 +18,16 @@ distance table i k = go 1 i
     go n j =
       let x = table ! j
       in if x == k
+         then n
+         else go (n+1)  x
+
+-- What's the length of cycle for given number ?
+cycleLength :: Array Int Int -> Int -> Int
+cycleLength table i = go 1 i
+  where
+    go n j =
+      let x = table ! j
+      in if x == i
          then n
          else go (n+1)  x
 
@@ -46,15 +56,12 @@ powerOfSubstST len table initial target = do
 subst1 :: [Int]
 subst1 = 100 : [ 1 .. 99 ]
 
-distances :: [Int] -> [Int] -> [Int] -> [Int]
-distances table initial target =
-  let tbl = listArray (1,100) table
-  in fmap (uncurry (distance tbl)) $ zip initial target
-
 powerOfSubst :: Int -> [Int] -> [Int] -> [Int] -> Int
 powerOfSubst _len table initial target =
-  let dist = distances table initial target
-  in foldl1 lcm dist
+  let tbl = listArray (1,100) table
+      dist = fmap (fromIntegral . uncurry (distance tbl)) $ zip initial target
+      cycles = fmap (fromIntegral . cycleLength tbl) initial
+  in fromInteger $ crt (nub $ sort $ zip cycles dist)
 
 doSolve :: [String] -> [Int]
 doSolve (l:t:c:code:rest) =
@@ -80,7 +87,7 @@ doSolveST _ = pure []
 
 solve :: String -> String
 solve =
-  lines >>> drop 1 >>> (\ lns -> zip (doSolve lns) (runST (doSolveST lns)))  >>> fmap show  >>> unlines
+  lines >>> drop 1 >>> doSolve >>> fmap show  >>> unlines
 
 main :: IO ()
 main = interact solve

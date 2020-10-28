@@ -16,7 +16,7 @@ module Presentation where
 
 import Test.Hspec
 import Test.QuickCheck
-import Data.Char (toLower)
+import Data.Char (toUpper, isUpper, isLower, toLower)
 
 -- Une question d'un Quizz
 --
@@ -50,8 +50,17 @@ verifieLaRéponse proposition Q{reponseAttendue} =
 newtype SansCasse = SansCasse { sansCasse :: String }
   deriving (Show)
 
+instance Eq SansCasse where
+  SansCasse sc1 == SansCasse sc2 = sc1 == sc2
+
 -- exprimer la propriété que 2 chaines `SansCasse` sont égales si
 -- leurs représentations en majuscules sont égales
 egaliteSansCasse :: SansCasse -> Property
 egaliteSansCasse sc@(SansCasse base) =
-  collect (length base) $ SansCasse (_permuteCasse base) == sc
+  collect (length base) $ SansCasse (permuteCasse base) == sc
+
+permuteCasse :: String -> String
+permuteCasse [] = []
+permuteCasse (c:cs)
+  | isUpper c =  toLower c : permuteCasse cs
+  | isLower c =  toUpper c : permuteCasse cs

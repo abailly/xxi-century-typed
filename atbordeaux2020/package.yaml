@@ -4,7 +4,7 @@ maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 github: abailly/xxi-century-typed
 category: Development
 
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 default-extensions:
   - DuplicateRecordFields
   - RecordWildCards
@@ -23,7 +23,7 @@ dependencies:
 library:
   source-dirs: .
   exposed-modules:
-    Presentation.hs
+    Presentation
   dependencies:
-  - hspec == 2.*
+  - hspec
   - QuickCheck

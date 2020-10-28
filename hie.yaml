@@ -4,6 +4,10 @@ cradle:
       config:
         cradle:
           stack:
+            stackYaml: './atbordeaux2020/stack.yaml'
+            components:
+            - path: "./atbordeaux2020"
+              component: "atbordeaux2020:lib"
     - path: "./haskell"
       config:
         cradle:

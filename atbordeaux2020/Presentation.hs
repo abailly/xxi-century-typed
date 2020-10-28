@@ -25,4 +25,7 @@ verifieSpec = describe "Verifie la réponse" $ do
   it "retourne True si la réponse donnée est égale à la réponse attendue" $ do
     let q = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
 
-    verifieLaRéponse "blanc" Q `shouldBe` True
+    verifieLaRéponse "blanc" q `shouldBe` True
+
+verifieLaRéponse :: String -> Question -> Bool
+verifieLaRéponse = error "not implemented"

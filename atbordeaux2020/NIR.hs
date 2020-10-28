@@ -20,8 +20,8 @@ module NIR where
 import Basement.Bounded
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Char
-import GHC.TypeLits
 import Data.Maybe
+import GHC.TypeLits
 import Test.Hspec
 import Test.QuickCheck
 import Text.Parsec
@@ -182,7 +182,7 @@ makeNIR peutEtreUnNir =
 -- squelette de parser pour transformer une chaine en NIR
 nirParser :: Parsec String () NIR
 nirParser = do
-  sexe <- char '1' *> pure M  <|> char '2' *> pure F
+  sexe <- char '1' *> pure M <|> char '2' *> pure F
   annee <- do
     s <- count 2 digit
     maybe (fail $ "can't parse " <> s <> " as a year") (pure . Annee . zn . fromIntegral) $ readNumber s
@@ -192,14 +192,15 @@ nirParser = do
   dept <- do
     s <- count 2 digit
     case readNumber s of
-      Just d | d < 96 -> pure $ Dept (fromInteger d)
-             | d == 99 -> pure Etranger
-             | otherwise -> fail ("can't parse " <> s <> " as a department")
+      Just d
+        | d < 96 -> pure $ Dept (fromInteger d)
+        | d == 99 -> pure Etranger
+        | otherwise -> fail ("can't parse " <> s <> " as a department")
       Nothing -> fail ("can't parse " <> s <> " as a department")
   commune <- do
     s <- count 3 digit
     maybe (fail $ "can't parse " <> s <> " as a commune") (pure . Commune . zn . fromInteger) $ readNumber s
-  serie <-  do
+  serie <- do
     s <- count 3 digit
     maybe (fail $ "can't parse " <> s <> " as a serial number") (pure . Serie . zn . fromInteger) $ readNumber s
   cle <- do
@@ -246,21 +247,24 @@ parseEstInverseDePrint :: NIR -> Property
 parseEstInverseDePrint nir =
   let prettyNir = pretty nir
       parsedNir = makeNIR prettyNir
-   in counterexample ("pretty = " <> prettyNir <> "\n, parsed = " <> show parsedNir) $ parsedNir == Right nir
+   in counterexample ("pretty = " <> prettyNir <> "\n, parsed = " <> show parsedNir) $
+        parsedNir == Right nir
 
 class Pretty a where
   pretty :: a -> String
 
 -- squelette de pretty-printer pour un NIR
 instance Pretty NIR where
-  pretty nir@(NIR sexe an mois dept comun serie) =
-    pretty sexe <>
-    pretty an <>
-    pretty mois <>
-    pretty dept <>
-    pretty comun <>
-    pretty serie <>
-    maybe (error "should never happen") pretty (calculCleNIR nir)
+  pretty nir =  prettyBase nir <> maybe (error "should never happen") pretty (calculCleNIR nir)
+
+prettyBase :: NIR -> String
+prettyBase (NIR sexe an mois dept comun serie) =
+  pretty sexe
+    <> pretty an
+    <> pretty mois
+    <> pretty dept
+    <> pretty comun
+    <> pretty serie
 
 instance Pretty Sexe where
   pretty F = "2"
@@ -287,4 +291,4 @@ instance Pretty Cle where
 
 calculCleNIR :: NIR -> Maybe Cle
 calculCleNIR nir =
-  Cle . fromInteger . calculCle <$> readNumber (pretty nir)
+  Cle . fromInteger . calculCle <$> readNumber (prettyBase nir)

@@ -54,7 +54,7 @@ data Grade = Grade { _question   :: Text
                    , _response   :: Maybe Double
                    }
               deriving (Show)
-
+z
 instance Questionable Grade where
   question (Grade q _ _ _) = q
   expected (Grade _ _ e _) = e

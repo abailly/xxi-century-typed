@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Presentation where
 {-
@@ -15,13 +16,14 @@ module Presentation where
 -}
 
 import Test.Hspec
+import Data.String
 import Test.QuickCheck
 import Data.Char (toUpper, isUpper, isLower, toLower)
 
 -- Une question d'un Quizz
 --
 -- >>> let obvious = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
-data Question = Q {question :: String, reponseAttendue :: String}
+data Question = Q {question :: String, reponseAttendue :: SansCasse}
 
 -- Test Driven Development pour verifier la réponse
 verifieSpec :: Spec
@@ -34,21 +36,17 @@ verifieSpec = describe "Verifie la réponse" $ do
   it "retourne False si la réponse donnée n'est pas égale à la réponse attendue" $ do
     verifieLaRéponse "noir" question1 `shouldBe` False
 
-  it "retourne True si la réponse donnée est celle attendue à la casse près" $ do
-    verifieLaRéponse "Blanc" question1 `shouldBe` True
-    verifieLaRéponse "bLanc" question1 `shouldBe` True
 
-    let question2 = Q "Qui a 'inventé' TDD ?" "Kent Beck"
-
-    verifieLaRéponse "Kent Beck" question2 `shouldBe` True
-
-verifieLaRéponse :: String -> Question -> Bool
+verifieLaRéponse :: SansCasse -> Question -> Bool
 verifieLaRéponse proposition Q{reponseAttendue} =
-  fmap toLower proposition == fmap toLower reponseAttendue
+  proposition == reponseAttendue
 
 -- un type représentant les chaînes de caractères insensibles à la casse
 newtype SansCasse = SansCasse { sansCasse :: String }
   deriving (Show)
+
+instance IsString SansCasse where
+  fromString = SansCasse
 
 instance Eq SansCasse where
   SansCasse sc1 == SansCasse sc2 =

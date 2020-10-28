@@ -18,7 +18,7 @@ module Presentation where
 import Test.Hspec
 import Data.String
 import Test.QuickCheck
-import Data.Char (toUpper, isUpper, isLower, toLower)
+import Data.Char (isDigit, toUpper, isUpper, isLower, toLower)
 
 -- * Questions & Casse
 
@@ -81,14 +81,20 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:_)) =
-  sexe == '1' || sexe == '2'
+valideNIR (NIR1 (sexe:annee1:annee2:_)) =
+  (sexe == '1' || sexe == '2') && (isDigit annee1 && isDigit annee2)
 
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let
     unNIRValide = NIR1 "223115935012322"
     sexeIncorrect = NIR1 "323115935012322"
+    annéeIncorrecte = NIR1 "2ab115935012322"
+
   it "le premier caractère est 1 ou 2" $ do
     valideNIR unNIRValide `shouldBe` True
     valideNIR sexeIncorrect `shouldBe` False
+
+  it "les caractères 2 et 3 représentent l'année de naissance sur 2 chiffres" $ do
+    valideNIR unNIRValide `shouldBe` True
+    valideNIR annéeIncorrecte `shouldBe` False

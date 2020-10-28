@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 module NIR where
 
 {-
@@ -12,6 +14,13 @@ module NIR where
                    29 octobre 2020
 
 -}
+
+import Basement.Bounded
+import Data.Char
+import Test.Hspec
+import Data.Maybe
+import Text.Parsec
+import Data.Bifunctor (Bifunctor(bimap))
 
 -- * Numéro de Sécurité Sociale
 
@@ -131,3 +140,29 @@ data NIR = NIR
     commune :: Commune,
     serie :: Serie
   }
+
+data Sexe = M | F
+
+type Annee = Zn 100
+
+data Mois = Jan | Fev | Mar | Apr | Mai | Jun | Jui | Aou | Sep | Oct | Nov | Dec
+
+data Departement =
+  Dept (Zn 96)
+  | Etranger
+
+newtype Commune = Commune (Zn 1000)
+
+newtype Serie = Serie (Zn 1000)
+
+
+-- ''Parse, Don't Validate''
+-- plutôt que de devoir vérifier à chaque utilisation la validité d'un NIR,
+-- ce qui serait le cas avec la représentation NIR1, on garantit par construction
+-- que le NIR est valide
+makeNIR :: String -> Either String NIR
+makeNIR peutEtreUnNir =
+  bimap show id $ runParser nirParser () "" peutEtreUnNir
+
+nirParser :: Parsec String () NIR
+nirParser = error "not implemented"

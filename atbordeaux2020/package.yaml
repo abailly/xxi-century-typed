@@ -16,8 +16,10 @@ default-extensions:
 dependencies:
   - array
   - base >= 4.9 && < 5
+  - basement
   - bytestring
   - mtl
+  - parsec
   - text
 
 library:

@@ -107,7 +107,7 @@ valideMois mois =
 valideDepartement :: String -> Bool
 valideDepartement dept =
   case (reads dept :: [(Int,String)])  of
-    [(m,[])] -> m <= 95  && m > 0
+    [(m,[])] -> m <= 95  && m > 0 || m == 99
     _ -> False
 
 

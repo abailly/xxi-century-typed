@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module NIR where
@@ -24,6 +25,7 @@ import Data.Maybe
 import Test.Hspec
 import Test.QuickCheck
 import Text.Parsec
+import Text.Printf
 
 -- * Numéro de Sécurité Sociale
 
@@ -166,6 +168,9 @@ newtype Commune = Commune (Zn 1000)
 newtype Serie = Serie (Zn 1000)
   deriving (Eq, Show)
 
+newtype Cle = Cle (Zn 100)
+  deriving (Eq, Show)
+
 -- ''Parse, Don't Validate''
 -- plutôt que de devoir vérifier à chaque utilisation la validité d'un NIR,
 -- ce qui serait le cas avec la représentation NIR1, on garantit par construction
@@ -176,7 +181,34 @@ makeNIR peutEtreUnNir =
 
 -- squelette de parser pour transformer une chaine en NIR
 nirParser :: Parsec String () NIR
-nirParser = error "not implemented"
+nirParser = do
+  sexe <- char '1' *> pure M  <|> char '2' *> pure F
+  annee <- do
+    s <- count 2 digit
+    maybe (fail $ "can't parse " <> s <> " as a year") (pure . Annee . zn . fromIntegral) $ readNumber s
+  mois <- do
+    s <- count 2 digit
+    maybe (fail $ "can't parse " <> s <> " as a month") (pure . toEnum . fromInteger) $ readNumber s
+  dept <- do
+    s <- count 2 digit
+    case readNumber s of
+      Just d | d < 96 -> pure $ Dept (fromInteger d)
+             | d == 99 -> pure Etranger
+             | otherwise -> fail ("can't parse " <> s <> " as a department")
+      Nothing -> fail ("can't parse " <> s <> " as a department")
+  commune <- do
+    s <- count 3 digit
+    maybe (fail $ "can't parse " <> s <> " as a commune") (pure . Commune . zn . fromInteger) $ readNumber s
+  serie <-  do
+    s <- count 3 digit
+    maybe (fail $ "can't parse " <> s <> " as a serial number") (pure . Serie . zn . fromInteger) $ readNumber s
+  cle <- do
+    s <- count 2 digit
+    maybe (fail $ "can't parse " <> s <> " as a cle") (pure . Cle . zn . fromInteger) $ readNumber s
+  let nir = NIR {..}
+  if calculCleNIR nir == Just cle
+    then pure $ nir
+    else fail ("clé " <> show cle <> " invalide")
 
 instance Arbitrary Sexe where
   arbitrary = elements [M, F]
@@ -212,9 +244,47 @@ instance Arbitrary NIR where
 -- isomorphisme parser/pretty-printer
 parseEstInverseDePrint :: NIR -> Property
 parseEstInverseDePrint nir =
-  let prettyNir = prettyPrint nir
-   in counterexample prettyNir $ makeNIR prettyNir == Right nir
+  let prettyNir = pretty nir
+      parsedNir = makeNIR prettyNir
+   in counterexample ("pretty = " <> prettyNir <> "\n, parsed = " <> show parsedNir) $ parsedNir == Right nir
+
+class Pretty a where
+  pretty :: a -> String
 
 -- squelette de pretty-printer pour un NIR
-prettyPrint :: NIR -> String
-prettyPrint = error "not implemented"
+instance Pretty NIR where
+  pretty nir@(NIR sexe an mois dept comun serie) =
+    pretty sexe <>
+    pretty an <>
+    pretty mois <>
+    pretty dept <>
+    pretty comun <>
+    pretty serie <>
+    maybe (error "should never happen") pretty (calculCleNIR nir)
+
+instance Pretty Sexe where
+  pretty F = "2"
+  pretty M = "1"
+
+instance Pretty Annee where
+  pretty (Annee n) = printf "%02d" (unZn n)
+
+instance Pretty Mois where
+  pretty m = printf "%02d" (fromEnum m)
+
+instance Pretty Departement where
+  pretty (Dept d) = printf "%02d" (unZn d)
+  pretty Etranger = "99"
+
+instance Pretty Commune where
+  pretty (Commune c) = printf "%03d" (unZn c)
+
+instance Pretty Serie where
+  pretty (Serie s) = printf "%03d" (unZn s)
+
+instance Pretty Cle where
+  pretty (Cle c) = printf "%02d" (unZn c)
+
+calculCleNIR :: NIR -> Maybe Cle
+calculCleNIR nir =
+  Cle . fromInteger . calculCle <$> readNumber (pretty nir)

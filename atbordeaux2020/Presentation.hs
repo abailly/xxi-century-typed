@@ -81,8 +81,10 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:annee1:annee2:_)) =
-  valideSexe sexe && valideAnnee [annee1,annee2]
+valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:_)) =
+  valideSexe sexe &&
+  valideAnnee [annee1,annee2] &&
+  valideMois [mois1,mois2]
 
 valideSexe :: Char -> Bool
 valideSexe sexe = (sexe == '1' || sexe == '2')
@@ -90,13 +92,19 @@ valideSexe sexe = (sexe == '1' || sexe == '2')
 valideAnnee :: String -> Bool
 valideAnnee annee = all isDigit annee
 
+valideMois :: String -> Bool
+valideMois mois =
+  case (reads mois :: [(Int,String)])  of
+    [(m,[])] -> True
+    _ -> False
+
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let
     unNIRValide = NIR1 "223115935012322"
     sexeIncorrect = NIR1 "323115935012322"
     annéeIncorrecte = NIR1 "2ab115935012322"
-    moisIncorrecte = NIR1 "223145935012322"
+    moisIncorrecte = NIR1 "223ab5935012322"
 
   it "le premier caractère est 1 ou 2" $ do
     valideNIR unNIRValide `shouldBe` True

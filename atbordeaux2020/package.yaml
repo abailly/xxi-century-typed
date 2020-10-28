@@ -1,0 +1,29 @@
+name: atbordeaux2020
+synopsis: HAskell code for AT Bordeaux 2020
+maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
+github: abailly/xxi-century-typed
+category: Development
+extra-source-files:
+  - CHANGELOG.md
+
+ghc-options: -Wall
+default-extensions:
+  - DuplicateRecordFields
+  - RecordWildCards
+  - GADTs
+  - FlexibleContexts
+  - FlexibleInstances
+  - OverloadedStrings
+
+dependencies:
+  - array
+  - base >= 4.9 && < 5
+  - bytestring
+  - mtl
+  - text
+
+library:
+  source-dirs: .
+  dependencies:
+  - hspec == 2.*
+  - QuickCheck

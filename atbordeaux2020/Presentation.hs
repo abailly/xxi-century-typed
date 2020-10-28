@@ -37,6 +37,9 @@ verifieSpec = describe "Verifie la réponse" $ do
     verifieLaRéponse "Blanc" question1 `shouldBe` True
     verifieLaRéponse "bLanc" question1 `shouldBe` True
 
+    let question2 = Q "Qui a 'inventé' TDD ?" "Kent Beck"
+
+    verifieLaRéponse "Kent Beck" question2 `shouldBe` True
 
 verifieLaRéponse :: String -> Question -> Bool
 verifieLaRéponse proposition Q{reponseAttendue} =

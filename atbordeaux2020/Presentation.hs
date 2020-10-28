@@ -43,3 +43,4 @@ verifieSpec = describe "Verifie la réponse" $ do
 verifieLaRéponse :: String -> Question -> Bool
 verifieLaRéponse (p:proposition) Q{reponseAttendue} =
   toLower p : proposition == reponseAttendue
+verifieLaRéponse [] _ = False

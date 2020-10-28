@@ -81,12 +81,13 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:com1:com2:com3:_)) =
+valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:com1:com2:com3:serie1:serie2:serie3:_)) =
   valideSexe sexe &&
   valideAnnee [annee1,annee2] &&
   valideMois [mois1,mois2] &&
   valideDepartement [dept1,dept2] &&
-  valideCommunePays [com1,com2,com3]
+  valideCommunePays [com1,com2,com3] &&
+  valideNumeroSerie [serie1,serie2,serie3]
 
 
 valideNIR _ = False
@@ -119,6 +120,12 @@ valideCommunePays commune =
     [(m,[])] -> True
     _ -> False
 
+valideNumeroSerie :: String -> Bool
+valideNumeroSerie serie =
+  case (reads serie :: [(Int,String)])  of
+    [(m,[])] -> True
+    _ -> False
+
 
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
@@ -134,6 +141,7 @@ valideNIRSpec = describe "NIR Valide" $ do
     deptIncorrect2 = NIR1 "223119635012322"
     personneNeeEnIndonesie = NIR1 "200029923123486"
     communeInvalide = NIR1 "2231159zzz12322"
+    serieInvalide = NIR1 "2231159123zzz22"
 
   it "a le bon nombre de caractères" $ do
     valideNIR tropCourt `shouldBe` False
@@ -158,3 +166,6 @@ valideNIRSpec = describe "NIR Valide" $ do
 
   it "les caractères 8,9 et 10 representent un code commune ou pays sur 3 chiffres" $ do
     valideNIR communeInvalide `shouldBe` False
+
+  it "les caractères 11,12 et 13 representent un numéro de série sur 3 chiffres" $ do
+    valideNIR serieInvalide `shouldBe` False

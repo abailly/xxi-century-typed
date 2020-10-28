@@ -123,6 +123,7 @@ valideNIRSpec = describe "NIR Valide" $ do
     moisIncorrecte3 = NIR1 "223005935012322"
     deptIncorrect = NIR1 "22311xx35012322"
     deptIncorrect2 = NIR1 "223119635012322"
+    personneNeeEnIndonesie = NIR1 "200029923123486"
 
   it "a le bon nombre de caractères" $ do
     valideNIR tropCourt `shouldBe` False
@@ -141,3 +142,6 @@ valideNIRSpec = describe "NIR Valide" $ do
   it "les caractères 6 et 7 représentent le code département sur 2 chiffres" $ do
     valideNIR deptIncorrect `shouldBe` False
     valideNIR deptIncorrect2 `shouldBe` False
+
+  it "les caractères 6 et 7 valent 99 pour une naissance à l'étranger" $ do
+    valideNIR personneNeeEnIndonesie `shouldBe` True

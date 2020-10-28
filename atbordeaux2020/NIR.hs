@@ -1,9 +1,11 @@
+-- * Preface
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module NIR where
 
+-- * Intro
 {-
 
            TDD & TDD sont dans un bateau
@@ -17,78 +19,42 @@ module NIR where
 
 -}
 
-import Basement.Bounded
+-- ** Imports indispensables
+
+import Basement.Bounded ( zn, Zn(..) )
 import Data.Bifunctor (Bifunctor (bimap))
-import Data.Char
-import Data.Maybe
-import GHC.TypeLits
-import Test.Hspec
+import Data.Char ( isDigit )
+import Data.Maybe ( fromJust, isJust )
+import GHC.TypeLits ( KnownNat )
+import Test.Hspec ( describe, it, shouldBe, Spec )
 import Test.QuickCheck
-import Text.Parsec
-import Text.Printf
+    ( arbitraryBoundedEnum,
+      elements,
+      frequency,
+      counterexample,
+      Arbitrary(arbitrary),
+      Gen,
+      Positive(getPositive),
+      Property )
+import Text.Parsec ( char, digit, count, (<|>), runParser, Parsec )
+import Text.Printf ( printf )
 
--- * Numéro de Sécurité Sociale
+-- * Test-Driven Development
 
--- Un type naïf pour les numéros de sécurité sociale
+-- Les aventures du Numéro de Sécurité Sociale ou NIR:
 -- voir https://www.ameli.fr/loire-atlantique/assure/droits-demarches/principes/numero-securite-sociale
+-- pour les détails
+
+-- ** Une première représentation "naïve"
+--
+-- Un NIR est simplement une chaîne de caractères qui a une structure particulière
 newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
-valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 [sexe, annee1, annee2, mois1, mois2, dept1, dept2, com1, com2, com3, serie1, serie2, serie3, cle1, cle2]) =
-  valideSexe sexe
-    && valideAnnee [annee1, annee2]
-    && valideMois [mois1, mois2]
-    && valideDepartement [dept1, dept2]
-    && valideCommunePays [com1, com2, com3]
-    && valideNumeroSerie [serie1, serie2, serie3]
-    && valideCle [sexe, annee1, annee2, mois1, mois2, dept1, dept2, com1, com2, com3, serie1, serie2, serie3] [cle1, cle2]
-valideNIR _ = False
+-- ** Tests pour la validation d'un NIR1
 
-valideSexe :: Char -> Bool
-valideSexe sexe = (sexe == '1' || sexe == '2')
-
-valideAnnee :: String -> Bool
-valideAnnee annee = all isDigit annee
-
-readNumber :: String -> Maybe Integer
-readNumber s =
-  case (reads s) of
-    [(m, [])] -> Just m
-    _ -> Nothing
-
-valideMois :: String -> Bool
-valideMois mois =
-  maybe False (\m -> m <= 12 && m > 0) (readNumber mois)
-
--- on ne traitera pas des exceptions (intéressantes !) pour les DOM-TOM
--- et les personnes nées en Algérie, Maroc et Tunisie avant 1962:
--- voir https://www.previssima.fr/actualite/numero-de-securite-sociale-quelle-signification.html
-valideDepartement :: String -> Bool
-valideDepartement dept =
-  maybe False (\m -> (m <= 95 && m > 0) || m == 99) (readNumber dept)
-
--- On ne vérifiera pas que le code commune ou pays est reel
-valideCommunePays :: String -> Bool
-valideCommunePays commune =
-  isJust (readNumber commune)
-
-valideNumeroSerie :: String -> Bool
-valideNumeroSerie serie =
-  isJust (readNumber serie)
-
-calculCle :: Integer -> Integer
-calculCle n =
-  let r = n `mod` 97
-   in 97 - r
-
-valideCle :: String -> String -> Bool
-valideCle nir cle =
-  case (readNumber cle, readNumber nir) of
-    (Just k, Just n) ->
-      calculCle n == k
-    _ -> False
-
+-- En Test-Driven Development, on construit un ensemble de tests pour "explorer l'espace"
+-- des différents cas de validité ou d'invalidité d'un NIR
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let unNIRValide = NIR1 "223115935012322"
@@ -136,8 +102,74 @@ valideNIRSpec = describe "NIR Valide" $ do
     valideNIR cléDeContrôleInvalide `shouldBe` False
     valideNIR unNIRValide `shouldBe` True
 
--- Un type moins naïf pour les NIR
--- NIR est correct par construction (en première approximation en tout cas...)
+-- ** Règle de calcul de la clé
+
+calculCle :: Integer -> Integer
+calculCle n =
+  let r = n `mod` 97
+   in 97 - r
+
+-- ** Fonction de validation
+
+valideNIR :: NIR1 -> Bool
+valideNIR (NIR1 [sexe, annee1, annee2, mois1, mois2, dept1, dept2, com1, com2, com3, serie1, serie2, serie3, cle1, cle2]) =
+  valideSexe sexe
+    && valideAnnee [annee1, annee2]
+    && valideMois [mois1, mois2]
+    && valideDepartement [dept1, dept2]
+    && valideCommunePays [com1, com2, com3]
+    && valideNumeroSerie [serie1, serie2, serie3]
+    && valideCle [sexe, annee1, annee2, mois1, mois2, dept1, dept2, com1, com2, com3, serie1, serie2, serie3] [cle1, cle2]
+valideNIR _ = False
+
+
+-- *** Détail des fonctions de validation de chaque segment
+valideSexe :: Char -> Bool
+valideSexe sexe = (sexe == '1' || sexe == '2')
+
+valideAnnee :: String -> Bool
+valideAnnee annee = all isDigit annee
+
+valideMois :: String -> Bool
+valideMois mois =
+  maybe False (\m -> m <= 12 && m > 0) (readNumber mois)
+
+-- on ne traitera pas des exceptions (intéressantes !) pour les DOM-TOM
+-- et les personnes nées en Algérie, Maroc et Tunisie avant 1962:
+-- voir https://www.previssima.fr/actualite/numero-de-securite-sociale-quelle-signification.html
+valideDepartement :: String -> Bool
+valideDepartement dept =
+  maybe False (\m -> (m <= 95 && m > 0) || m == 99) (readNumber dept)
+
+-- On ne vérifiera pas que le code commune ou pays est reel
+valideCommunePays :: String -> Bool
+valideCommunePays commune =
+  isJust (readNumber commune)
+
+valideNumeroSerie :: String -> Bool
+valideNumeroSerie serie =
+  isJust (readNumber serie)
+
+valideCle :: String -> String -> Bool
+valideCle nir cle =
+  case (readNumber cle, readNumber nir) of
+    (Just k, Just n) ->
+      calculCle n == k
+    _ -> False
+
+
+-- *** Fonction utilitaire
+readNumber :: String -> Maybe Integer
+readNumber s =
+  case (reads s) of
+    [(m, [])] -> Just m
+    _ -> Nothing
+
+
+-- * Type-Driven Development
+--
+-- Un type moins naïf pour les NIR : le NIR est correct par construction, les
+-- contraintes de correction sont "embarquées" dans le type et sa structure
 data NIR = NIR
   { sexe :: Sexe,
     annee :: Annee,
@@ -148,6 +180,9 @@ data NIR = NIR
   }
   deriving (Eq, Show)
 
+-- ** Sous-structure de NIR1
+
+-- | Le sexe est un type énuméré simple qui peut prendre 2 valeurs
 data Sexe = M | F
   deriving (Eq, Show)
 
@@ -171,6 +206,8 @@ newtype Serie = Serie (Zn 1000)
 newtype Cle = Cle (Zn 100)
   deriving (Eq, Show)
 
+-- ** Construire un NIR Valide à partir d'une chaîne
+
 -- ''Parse, Don't Validate''
 -- plutôt que de devoir vérifier à chaque utilisation la validité d'un NIR,
 -- ce qui serait le cas avec la représentation NIR1, on garantit par construction
@@ -179,7 +216,24 @@ makeNIR :: String -> Either String NIR
 makeNIR peutEtreUnNir =
   bimap show id $ runParser nirParser () "" peutEtreUnNir
 
--- squelette de parser pour transformer une chaine en NIR
+-- ** Propriétés fondamentale: Isomorphisme
+
+-- isomorphisme parser/pretty-printer
+-- On "triangule" pour garantir la correction:
+--
+--  * du NIR proprement dit (après tout, on peut faire des erreurs en définissant les types)
+--  * de l'interprétation d'une chaîne de caractères quelconque en NIR valide
+--  * de la représentation d'un NIR en chaîne de caractères
+--
+parseEstInverseDePrint :: NIR -> Property
+parseEstInverseDePrint nir =
+  let prettyNir = pretty nir
+      parsedNir = makeNIR prettyNir
+   in counterexample ("pretty = " <> prettyNir <> "\n, parsed = " <> show parsedNir) $
+        parsedNir == Right nir
+
+--- *** Implémentation du parser
+
 nirParser :: Parsec String () NIR
 nirParser = do
   sexe <- char '1' *> pure M <|> char '2' *> pure F
@@ -197,7 +251,7 @@ nirParser = do
   serie <- Serie . zn . fromInteger <$> integerDigits 3
   cle <- Cle . zn . fromInteger <$> integerDigits 2
   let nir = NIR {..}
-  if calculCleNIR nir == Just cle
+  if calculCleNIR nir == cle
     then pure $ nir
     else fail ("clé " <> show cle <> " invalide")
 
@@ -206,11 +260,22 @@ integerDigits numDigits = do
     s <- count numDigits digit
     maybe (fail $ "can't parse " <> s <> " as a number") pure $ readNumber s
 
+-- ** Générateur de NIR
+
+instance Arbitrary NIR where
+  arbitrary =
+    NIR
+      <$> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+
+-- *** Détails des générateurs de la structure
+
 instance Arbitrary Sexe where
   arbitrary = elements [M, F]
-
-someZn :: (KnownNat k) => Gen (Zn k)
-someZn = zn . fromIntegral @Int . getPositive <$> arbitrary
 
 instance Arbitrary Annee where
   arbitrary = Annee <$> someZn
@@ -227,30 +292,20 @@ instance Arbitrary Commune where
 instance Arbitrary Serie where
   arbitrary = Serie <$> someZn
 
-instance Arbitrary NIR where
-  arbitrary =
-    NIR
-      <$> arbitrary
-      <*> arbitrary
-      <*> arbitrary
-      <*> arbitrary
-      <*> arbitrary
-      <*> arbitrary
+-- *** Utilitaire
 
--- isomorphisme parser/pretty-printer
-parseEstInverseDePrint :: NIR -> Property
-parseEstInverseDePrint nir =
-  let prettyNir = pretty nir
-      parsedNir = makeNIR prettyNir
-   in counterexample ("pretty = " <> prettyNir <> "\n, parsed = " <> show parsedNir) $
-        parsedNir == Right nir
+someZn :: (KnownNat k) => Gen (Zn k)
+someZn = zn . fromIntegral @Int . getPositive <$> arbitrary
+
+-- ** 'Pretty-Printing' d'un NIR
 
 class Pretty a where
   pretty :: a -> String
 
--- squelette de pretty-printer pour un NIR
+-- *** Implémentation de base
+
 instance Pretty NIR where
-  pretty nir =  prettyBase nir <> maybe (error "should never happen") pretty (calculCleNIR nir)
+  pretty nir =  prettyBase nir <> pretty (calculCleNIR nir)
 
 prettyBase :: NIR -> String
 prettyBase (NIR sexe an mois dept comun serie) =
@@ -260,6 +315,8 @@ prettyBase (NIR sexe an mois dept comun serie) =
     <> pretty dept
     <> pretty comun
     <> pretty serie
+
+-- *** Implémentation des sous-structures
 
 instance Pretty Sexe where
   pretty F = "2"
@@ -284,6 +341,12 @@ instance Pretty Serie where
 instance Pretty Cle where
   pretty (Cle c) = printf "%02d" (unZn c)
 
-calculCleNIR :: NIR -> Maybe Cle
+-- *** Calcul de cle
+
+-- par construction le type est correct donc le cas `Nothing` est
+-- impossible
+calculCleNIR :: NIR -> Cle
 calculCleNIR nir =
-  Cle . fromInteger . calculCle <$> readNumber (prettyBase nir)
+  fromJust $ Cle . fromInteger . calculCle <$> readNumber (prettyBase nir)
+
+-- * Conclusion

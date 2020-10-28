@@ -81,11 +81,13 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:_)) =
+valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:com1:com2:com3:_)) =
   valideSexe sexe &&
   valideAnnee [annee1,annee2] &&
-  valideMois [mois1,mois2]&&
-  valideDepartement [dept1,dept2]
+  valideMois [mois1,mois2] &&
+  valideDepartement [dept1,dept2] &&
+  valideCommunePays [com1,com2,com3]
+
 
 valideNIR _ = False
 
@@ -108,6 +110,13 @@ valideDepartement :: String -> Bool
 valideDepartement dept =
   case (reads dept :: [(Int,String)])  of
     [(m,[])] -> m <= 95  && m > 0 || m == 99
+    _ -> False
+
+-- On ne vérifiera pas que le code commune ou pays est reel
+valideCommunePays :: String -> Bool
+valideCommunePays commune =
+  case (reads commune :: [(Int,String)])  of
+    [(m,[])] -> True
     _ -> False
 
 

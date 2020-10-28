@@ -18,4 +18,12 @@ import Test.Hspec
 -- Une question d'un Quizz
 --
 -- >>> let obvious = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
-data Question = Q { question :: Text, reponse :: Text }
+data Question = Q { question :: Text, reponseAttendue :: Text }
+
+-- Test Driven Development pour verifier la réponse
+verifieSpec :: Spec
+verifieSpec = describe "Verifie la réponse" $ do
+  it "retourne True si la réponse donnée est égale à la réponse attendue" $ do
+    let q = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
+
+    verifieLaRéponse "blanc" Q `shouldBe` True

@@ -36,6 +36,9 @@ verifieSpec = describe "Verifie la réponse" $ do
   it "retourne True si la réponse donnée est celle attendue à la casse près" $ do
     verifieLaRéponse "Blanc" question1 `shouldBe` True
 
+  it "retourne False si la réponse donnée est vide" $ do
+    verifieLaRéponse "" question1 `shouldBe` False
+
 
 verifieLaRéponse :: String -> Question -> Bool
 verifieLaRéponse (p:proposition) Q{reponseAttendue} =

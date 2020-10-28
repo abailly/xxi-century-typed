@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Presentation where
 {-
 
@@ -34,4 +36,4 @@ verifieSpec = describe "Verifie la réponse" $ do
 
 
 verifieLaRéponse :: String -> Question -> Bool
-verifieLaRéponse _ _ = True
+verifieLaRéponse proposition Q{reponseAttendue} = proposition == reponseAttendue

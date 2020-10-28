@@ -43,4 +43,4 @@ verifieSpec = describe "Verifie la réponse" $ do
 
 verifieLaRéponse :: String -> Question -> Bool
 verifieLaRéponse proposition Q{reponseAttendue} =
-  fmap toLower proposition == reponseAttendue
+  fmap toLower proposition == fmap toLower reponseAttendue

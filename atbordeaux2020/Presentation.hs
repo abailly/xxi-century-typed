@@ -24,15 +24,13 @@ data Question = Q {question :: String, reponseAttendue :: String}
 -- Test Driven Development pour verifier la réponse
 verifieSpec :: Spec
 verifieSpec = describe "Verifie la réponse" $ do
-  it "retourne True si la réponse donnée est égale à la réponse attendue" $ do
-    let q = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
+  let question1 = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
 
-    verifieLaRéponse "blanc" q `shouldBe` True
+  it "retourne True si la réponse donnée est égale à la réponse attendue" $ do
+    verifieLaRéponse "blanc" question1 `shouldBe` True
 
   it "retourne False si la réponse donnée n'est pas égale à la réponse attendue" $ do
-    let q = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
-
-    verifieLaRéponse "noir" q `shouldBe` False
+    verifieLaRéponse "noir" question1 `shouldBe` False
 
 
 verifieLaRéponse :: String -> Question -> Bool

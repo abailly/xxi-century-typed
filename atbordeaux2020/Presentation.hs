@@ -95,7 +95,7 @@ valideAnnee annee = all isDigit annee
 valideMois :: String -> Bool
 valideMois mois =
   case (reads mois :: [(Int,String)])  of
-    [(m,[])] -> True
+    [(m,[])] -> m <= 12
     _ -> False
 
 valideNIRSpec :: Spec

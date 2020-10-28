@@ -82,7 +82,13 @@ newtype NIR1 = NIR1 String
 
 valideNIR :: NIR1 -> Bool
 valideNIR (NIR1 (sexe:annee1:annee2:_)) =
-  (sexe == '1' || sexe == '2') && (isDigit annee1 && isDigit annee2)
+  valideSexe sexe && valideAnnee [annee1,annee2]
+
+valideSexe :: Char -> Bool
+valideSexe sexe = (sexe == '1' || sexe == '2')
+
+valideAnnee :: String -> Bool
+valideAnnee annee = all isDigit annee
 
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do

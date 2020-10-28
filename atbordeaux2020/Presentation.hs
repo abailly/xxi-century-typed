@@ -142,6 +142,7 @@ valideNIRSpec = describe "NIR Valide" $ do
     personneNeeEnIndonesie = NIR1 "200029923123486"
     communeInvalide = NIR1 "2231159zzz12322"
     serieInvalide = NIR1 "2231159123zzz22"
+    cléDeContrôleInvalide = NIR1 "223115935012321"
 
   it "a le bon nombre de caractères" $ do
     valideNIR tropCourt `shouldBe` False
@@ -169,3 +170,6 @@ valideNIRSpec = describe "NIR Valide" $ do
 
   it "les caractères 11,12 et 13 representent un numéro de série sur 3 chiffres" $ do
     valideNIR serieInvalide `shouldBe` False
+
+  it "les caractères 14 et 15 representent une clé de contrôle sur 2 chiffres" $ do
+    valideNIR cléDeContrôleInvalide `shouldBe` False

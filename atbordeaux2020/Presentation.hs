@@ -20,6 +20,8 @@ import Data.String
 import Test.QuickCheck
 import Data.Char (toUpper, isUpper, isLower, toLower)
 
+-- * Questions & Casse
+
 -- Une question d'un Quizz
 --
 -- >>> let obvious = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
@@ -69,3 +71,14 @@ permuteCasse (c:cs)
   | isUpper c =  toLower c : permuteCasse cs
   | isLower c =  toUpper c : permuteCasse cs
   | otherwise = c : permuteCasse cs
+
+
+-- * Numéro de Sécurité Sociale
+
+-- Un type naïf pour les numéros de sécurité sociale
+-- voir https://www.ameli.fr/loire-atlantique/assure/droits-demarches/principes/numero-securite-sociale
+newtype NIR1 = NIR1 String
+  deriving (Eq, Show)
+
+valideNIR :: NIR1 -> Bool
+valideNIR (NIR1 _nir) = undefined

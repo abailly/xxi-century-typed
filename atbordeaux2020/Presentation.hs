@@ -81,4 +81,11 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 _nir) = undefined
+valideNIR (NIR1 _nir) = True
+
+valideNIRSpec :: Spec
+valideNIRSpec = describe "NIR Valide" $ do
+  let
+    unNIRValide = NIR1 "223115935012322"
+  it "le premier caractère est 1 ou 2" $ do
+    valideNIR unNIRValide `shouldBe` True

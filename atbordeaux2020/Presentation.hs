@@ -51,7 +51,8 @@ newtype SansCasse = SansCasse { sansCasse :: String }
   deriving (Show)
 
 instance Eq SansCasse where
-  SansCasse sc1 == SansCasse sc2 = sc1 == sc2
+  SansCasse sc1 == SansCasse sc2 =
+    fmap toLower sc1 == fmap toLower sc2
 
 -- une instance de SansCasse arbitraire est construite à partir
 -- d'une instance de chaine ASCII arbitraire (pour des raisons de simplicité)

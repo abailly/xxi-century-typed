@@ -37,11 +37,7 @@ verifieSpec = describe "Verifie la réponse" $ do
     verifieLaRéponse "Blanc" question1 `shouldBe` True
     verifieLaRéponse "bLanc" question1 `shouldBe` True
 
-  it "retourne False si la réponse donnée est vide" $ do
-    verifieLaRéponse "" question1 `shouldBe` False
-
 
 verifieLaRéponse :: String -> Question -> Bool
-verifieLaRéponse (p:proposition) Q{reponseAttendue} =
-  toLower p : proposition == reponseAttendue
-verifieLaRéponse [] _ = False
+verifieLaRéponse proposition Q{reponseAttendue} =
+  fmap toLower proposition == reponseAttendue

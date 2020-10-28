@@ -85,6 +85,7 @@ valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:_)) =
   valideSexe sexe &&
   valideAnnee [annee1,annee2] &&
   valideMois [mois1,mois2]
+valideNIR _ = False
 
 valideSexe :: Char -> Bool
 valideSexe sexe = (sexe == '1' || sexe == '2')
@@ -102,11 +103,15 @@ valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let
     unNIRValide = NIR1 "223115935012322"
+    tropCourt = NIR1 "2230"
     sexeIncorrect = NIR1 "323115935012322"
     annéeIncorrecte = NIR1 "2ab115935012322"
     moisIncorrecte = NIR1 "223ab5935012322"
     moisIncorrecte2 = NIR1 "223145935012322"
     moisIncorrecte3 = NIR1 "223005935012322"
+
+  it "a le bon nombre de caractères" $ do
+    valideNIR tropCourt `shouldBe` False
 
   it "le premier caractère est 1 ou 2" $ do
     valideNIR unNIRValide `shouldBe` True

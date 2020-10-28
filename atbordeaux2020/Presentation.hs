@@ -1,6 +1,5 @@
+module Presentation where
 {-
-
-
 
            TDD & TDD sont dans un bateau
 
@@ -18,7 +17,7 @@ import Test.Hspec
 -- Une question d'un Quizz
 --
 -- >>> let obvious = Q "Quel est la couleur du cheval blanc d'Henri IV?" "blanc"
-data Question = Q { question :: Text, reponseAttendue :: Text }
+data Question = Q {question :: String, reponseAttendue :: String}
 
 -- Test Driven Development pour verifier la réponse
 verifieSpec :: Spec

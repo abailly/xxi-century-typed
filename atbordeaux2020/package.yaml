@@ -3,8 +3,6 @@ synopsis: HAskell code for AT Bordeaux 2020
 maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 github: abailly/xxi-century-typed
 category: Development
-extra-source-files:
-  - CHANGELOG.md
 
 ghc-options: -Wall
 default-extensions:
@@ -24,6 +22,8 @@ dependencies:
 
 library:
   source-dirs: .
+  exposed-modules:
+    Presentation.hs
   dependencies:
   - hspec == 2.*
   - QuickCheck

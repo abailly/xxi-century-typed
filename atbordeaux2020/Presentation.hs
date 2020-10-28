@@ -81,10 +81,12 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:_)) =
+valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:_)) =
   valideSexe sexe &&
   valideAnnee [annee1,annee2] &&
-  valideMois [mois1,mois2]
+  valideMois [mois1,mois2]&&
+  valideDepartement [dept1,dept2]
+
 valideNIR _ = False
 
 valideSexe :: Char -> Bool
@@ -99,6 +101,16 @@ valideMois mois =
     [(m,[])] -> m <= 12 && m > 0
     _ -> False
 
+-- on ne traitera pas des exceptions (intéressantes !) pour les DOM-TOM
+-- et les personnes nées en Algérie, Maroc et Tunisie avant 1962:
+-- voir https://www.previssima.fr/actualite/numero-de-securite-sociale-quelle-signification.html
+valideDepartement :: String -> Bool
+valideDepartement dept =
+  case (reads dept :: [(Int,String)])  of
+    [(m,[])] -> m <= 95  && m > 0
+    _ -> False
+
+
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let
@@ -109,20 +121,23 @@ valideNIRSpec = describe "NIR Valide" $ do
     moisIncorrecte = NIR1 "223ab5935012322"
     moisIncorrecte2 = NIR1 "223145935012322"
     moisIncorrecte3 = NIR1 "223005935012322"
+    deptIncorrect = NIR1 "22311xx35012322"
+    deptIncorrect2 = NIR1 "223119635012322"
 
   it "a le bon nombre de caractères" $ do
     valideNIR tropCourt `shouldBe` False
 
   it "le premier caractère est 1 ou 2" $ do
-    valideNIR unNIRValide `shouldBe` True
     valideNIR sexeIncorrect `shouldBe` False
 
   it "les caractères 2 et 3 représentent l'année de naissance sur 2 chiffres" $ do
-    valideNIR unNIRValide `shouldBe` True
     valideNIR annéeIncorrecte `shouldBe` False
 
   it "les caractères 4 et 5 représentent le mois de naissance sur 2 chiffres" $ do
-    valideNIR unNIRValide `shouldBe` True
     valideNIR moisIncorrecte `shouldBe` False
     valideNIR moisIncorrecte2 `shouldBe` False
     valideNIR moisIncorrecte3 `shouldBe` False
+
+  it "les caractères 6 et 7 représentent le code département sur 2 chiffres" $ do
+    valideNIR deptIncorrect `shouldBe` False
+    valideNIR deptIncorrect2 `shouldBe` False

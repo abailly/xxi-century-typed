@@ -81,7 +81,8 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 _nir) = True
+valideNIR (NIR1 (sexe:_)) =
+  sexe == '1' || sexe == '2'
 
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do

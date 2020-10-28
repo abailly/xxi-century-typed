@@ -15,6 +15,7 @@ module Presentation where
 -}
 
 import Test.Hspec
+import Data.Char (toLower)
 
 -- Une question d'un Quizz
 --
@@ -37,4 +38,5 @@ verifieSpec = describe "Verifie la réponse" $ do
 
 
 verifieLaRéponse :: String -> Question -> Bool
-verifieLaRéponse proposition Q{reponseAttendue} = proposition == reponseAttendue
+verifieLaRéponse (p:proposition) Q{reponseAttendue} =
+  toLower p : proposition == reponseAttendue

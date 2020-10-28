@@ -87,5 +87,7 @@ valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
   let
     unNIRValide = NIR1 "223115935012322"
+    sexeIncorrect = NIR1 "323115935012322"
   it "le premier caractère est 1 ou 2" $ do
     valideNIR unNIRValide `shouldBe` True
+    valideNIR sexeIncorrect `shouldBe` False

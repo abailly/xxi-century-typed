@@ -17,6 +17,7 @@ module Presentation where
 
 import Test.Hspec
 import Data.String
+import Data.Maybe
 import Test.QuickCheck
 import Data.Char (isDigit, toUpper, isUpper, isLower, toLower)
 
@@ -81,15 +82,14 @@ newtype NIR1 = NIR1 String
   deriving (Eq, Show)
 
 valideNIR :: NIR1 -> Bool
-valideNIR (NIR1 (sexe:annee1:annee2:mois1:mois2:dept1:dept2:com1:com2:com3:serie1:serie2:serie3:_)) =
+valideNIR (NIR1 [sexe,annee1,annee2,mois1,mois2,dept1,dept2,com1,com2,com3,serie1,serie2,serie3,cle1,cle2]) =
   valideSexe sexe &&
   valideAnnee [annee1,annee2] &&
   valideMois [mois1,mois2] &&
   valideDepartement [dept1,dept2] &&
   valideCommunePays [com1,com2,com3] &&
-  valideNumeroSerie [serie1,serie2,serie3]
-
-
+  valideNumeroSerie [serie1,serie2,serie3] &&
+  valideCle [sexe,annee1,annee2,mois1,mois2,dept1,dept2,com1,com2,com3,serie1,serie2,serie3] [cle1,cle2]
 valideNIR _ = False
 
 valideSexe :: Char -> Bool
@@ -98,34 +98,43 @@ valideSexe sexe = (sexe == '1' || sexe == '2')
 valideAnnee :: String -> Bool
 valideAnnee annee = all isDigit annee
 
+readNumber :: String -> Maybe Integer
+readNumber s =
+  case (reads s)  of
+    [(m,[])] -> Just m
+    _ -> Nothing
+
 valideMois :: String -> Bool
 valideMois mois =
-  case (reads mois :: [(Int,String)])  of
-    [(m,[])] -> m <= 12 && m > 0
-    _ -> False
+  maybe False (\m -> m <= 12 && m > 0) (readNumber mois)
 
 -- on ne traitera pas des exceptions (intéressantes !) pour les DOM-TOM
 -- et les personnes nées en Algérie, Maroc et Tunisie avant 1962:
 -- voir https://www.previssima.fr/actualite/numero-de-securite-sociale-quelle-signification.html
 valideDepartement :: String -> Bool
 valideDepartement dept =
-  case (reads dept :: [(Int,String)])  of
-    [(m,[])] -> m <= 95  && m > 0 || m == 99
-    _ -> False
+  maybe False (\ m -> (m <= 95  && m > 0) || m == 99) (readNumber dept)
 
 -- On ne vérifiera pas que le code commune ou pays est reel
 valideCommunePays :: String -> Bool
 valideCommunePays commune =
-  case (reads commune :: [(Int,String)])  of
-    [(m,[])] -> True
-    _ -> False
+  isJust (readNumber commune)
 
 valideNumeroSerie :: String -> Bool
 valideNumeroSerie serie =
-  case (reads serie :: [(Int,String)])  of
-    [(m,[])] -> True
-    _ -> False
+  isJust (readNumber serie)
 
+calculCle :: Integer -> Integer
+calculCle n =
+  let r = n `mod` 97
+  in 97 - r
+
+valideCle :: String -> String -> Bool
+valideCle nir cle =
+  case (readNumber cle, readNumber nir) of
+    (Just k, Just n) ->
+      calculCle n == k
+    _ -> False
 
 valideNIRSpec :: Spec
 valideNIRSpec = describe "NIR Valide" $ do
@@ -173,3 +182,4 @@ valideNIRSpec = describe "NIR Valide" $ do
 
   it "les caractères 14 et 15 representent une clé de contrôle sur 2 chiffres" $ do
     valideNIR cléDeContrôleInvalide `shouldBe` False
+    valideNIR unNIRValide `shouldBe` True

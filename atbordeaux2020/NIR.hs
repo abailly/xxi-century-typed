@@ -183,12 +183,8 @@ makeNIR peutEtreUnNir =
 nirParser :: Parsec String () NIR
 nirParser = do
   sexe <- char '1' *> pure M <|> char '2' *> pure F
-  annee <- do
-    s <- count 2 digit
-    maybe (fail $ "can't parse " <> s <> " as a year") (pure . Annee . zn . fromIntegral) $ readNumber s
-  mois <- do
-    s <- count 2 digit
-    maybe (fail $ "can't parse " <> s <> " as a month") (pure . toEnum . fromInteger) $ readNumber s
+  annee <- Annee . zn . fromInteger <$> integerDigits 2
+  mois <- toEnum . fromInteger <$> integerDigits 2
   dept <- do
     s <- count 2 digit
     case readNumber s of
@@ -197,19 +193,18 @@ nirParser = do
         | d == 99 -> pure Etranger
         | otherwise -> fail ("can't parse " <> s <> " as a department")
       Nothing -> fail ("can't parse " <> s <> " as a department")
-  commune <- do
-    s <- count 3 digit
-    maybe (fail $ "can't parse " <> s <> " as a commune") (pure . Commune . zn . fromInteger) $ readNumber s
-  serie <- do
-    s <- count 3 digit
-    maybe (fail $ "can't parse " <> s <> " as a serial number") (pure . Serie . zn . fromInteger) $ readNumber s
-  cle <- do
-    s <- count 2 digit
-    maybe (fail $ "can't parse " <> s <> " as a cle") (pure . Cle . zn . fromInteger) $ readNumber s
+  commune <- Commune . zn . fromInteger <$> integerDigits 3
+  serie <- Serie . zn . fromInteger <$> integerDigits 3
+  cle <- Cle . zn . fromInteger <$> integerDigits 2
   let nir = NIR {..}
   if calculCleNIR nir == Just cle
     then pure $ nir
     else fail ("clé " <> show cle <> " invalide")
+
+integerDigits :: Int -> Parsec String () Integer
+integerDigits numDigits = do
+    s <- count numDigits digit
+    maybe (fail $ "can't parse " <> s <> " as a number") pure $ readNumber s
 
 instance Arbitrary Sexe where
   arbitrary = elements [M, F]

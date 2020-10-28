@@ -53,6 +53,11 @@ newtype SansCasse = SansCasse { sansCasse :: String }
 instance Eq SansCasse where
   SansCasse sc1 == SansCasse sc2 = sc1 == sc2
 
+-- une instance de SansCasse arbitraire est construite à partir
+-- d'une instance de chaine ASCII arbitraire (pour des raisons de simplicité)
+instance Arbitrary SansCasse where
+  arbitrary = SansCasse . getASCIIString <$> arbitrary
+
 -- exprimer la propriété que 2 chaines `SansCasse` sont égales si
 -- leurs représentations en majuscules sont égales
 egaliteSansCasse :: SansCasse -> Property
@@ -64,3 +69,4 @@ permuteCasse [] = []
 permuteCasse (c:cs)
   | isUpper c =  toLower c : permuteCasse cs
   | isLower c =  toUpper c : permuteCasse cs
+  | otherwise = c : permuteCasse cs

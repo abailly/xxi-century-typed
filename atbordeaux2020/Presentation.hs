@@ -17,9 +17,8 @@ module Presentation where
 
 import Test.Hspec
 import Data.String
-import Data.Maybe
 import Test.QuickCheck
-import Data.Char (isDigit, toUpper, isUpper, isLower, toLower)
+import Data.Char (toUpper, isUpper, isLower, toLower)
 
 -- * Questions & Casse
 

@@ -1,24 +1,25 @@
-{-# LANGUAGE DuplicateRecordFields      #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NamedFieldPuns             #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC "-fno-warn-orphans" #-}
 
 module Minilang.IO where
 
-import qualified Data.ByteString                       as BS
-import           Data.Text.Encoding                    (decodeUtf8With,
-                                                        encodeUtf8)
-import           Data.Text.Encoding.Error              (lenientDecode)
-import           Data.Text.Prettyprint.Doc
-import           Data.Text.Prettyprint.Doc.Render.Text
-import           Minilang.Env
-import           Minilang.Eval                         hiding (rho)
-import           Minilang.Parser
-import           Minilang.Type
-import           System.IO                             (Handle)
-
+import qualified Data.ByteString as BS
+import Data.Text.Encoding
+  ( decodeUtf8With,
+    encodeUtf8,
+  )
+import Data.Text.Encoding.Error (lenientDecode)
+import Minilang.Env
+import Minilang.Eval hiding (rho)
+import Minilang.Parser
+import Minilang.Type
+import Prettyprinter
+import Prettyprinter.Render.Text
+import System.IO (Handle)
 
 -- | Read an `AST` from @hin@ handle, evaluate it and dump the result
 -- on @hout@.
@@ -29,7 +30,12 @@ runEval hin hout = do
       ρ = EmptyEnv
       γ = EmptyContext
   (ρ', _) <- loadProgram ast ρ γ
-  let
-    val = eval ast ρ'
+  let val = eval ast ρ'
 
-  BS.hPut hout (encodeUtf8 (renderStrict $ layoutPretty defaultLayoutOptions $ pretty val) <> "\n")
+  BS.hPut
+    hout
+    ( encodeUtf8
+        ( renderStrict $ layoutPretty defaultLayoutOptions $ pretty val
+        )
+        <> "\n"
+    )

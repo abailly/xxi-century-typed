@@ -1,7 +1,7 @@
 module Minilang.REPLSpec where
 
 import           Control.Exception   (bracket)
-import           Data.Monoid         ((<>))
+
 import           Data.Text.IO
 import           Minilang.Eval       (Value (EU), toList)
 import           Minilang.REPL

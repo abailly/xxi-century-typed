@@ -12,7 +12,7 @@ import           Data.ByteString          (hGet, hPut)
 import           Data.ByteString.Lazy     (fromStrict)
 import           Data.Either
 import           Data.Functor             (void)
-import           Data.Monoid              ((<>))
+
 import           Data.Serialize
 import           Data.Typeable
 import           HStore

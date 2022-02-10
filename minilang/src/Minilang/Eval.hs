@@ -65,10 +65,7 @@ data Value
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype SumClos = SumClos ([Choice], Env)
-  deriving newtype (Eq, ToJSON, FromJSON)
-
-instance Show SumClos where
-  show (SumClos (cs, _)) = show cs
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
 
 newtype CaseClos = CaseClos ([Clause], Env)
   deriving newtype (Eq, ToJSON, FromJSON)

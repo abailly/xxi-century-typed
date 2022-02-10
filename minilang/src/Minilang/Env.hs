@@ -16,15 +16,7 @@ data Env' value
   = EmptyEnv
   | ExtendPat (Env' value) Binding value
   | ExtendDecl (Env' value) Decl
-  deriving (Eq, Generic, ToJSON, FromJSON)
-
-instance (Show value) => Show (Env' value) where
-  show e = "{ " <> show' e <> " }"
-    where
-      show' EmptyEnv = "∅"
-      show' (ExtendPat ρ b v) = show b <> " ↦ " <> show v <> ", " <> show' ρ
-      show' (ExtendDecl ρ (Decl b t m)) = show b <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
-      show' (ExtendDecl ρ (RDecl b t m)) = show b <> " : " <> show t <> " ↦ " <> show m <> ", " <> show' ρ
+  deriving (Eq, Generic, Show, ToJSON, FromJSON)
 
 emptyEnv :: Env' value
 emptyEnv = EmptyEnv

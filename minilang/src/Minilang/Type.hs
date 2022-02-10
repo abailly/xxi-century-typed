@@ -3,16 +3,38 @@
 module Minilang.Type where
 
 import Control.Monad (forM_, unless, when)
-import Control.Monad.Catch
+import Control.Monad.Catch (Exception, MonadThrow (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text, pack)
-import GHC.Generics
-import Minilang.Env
+import GHC.Generics (Generic)
+import Minilang.Env (Env' (..), Name, extend)
 import Minilang.Eval
-import Minilang.Normalize
+  ( Context,
+    Context' (Context, EmptyContext),
+    Env,
+    FunClos (ClComp, ClComp0),
+    NVar (NVar),
+    Neutral (NV),
+    SumClos (SumClos),
+    Value (..),
+    eval,
+    inst,
+    p1,
+    p2,
+  )
+import Minilang.Normalize (Normal, Normalize (normalize), same)
 import Minilang.Parser
-import Minilang.Pretty
+  ( AST (..),
+    Binding (B, Pat, Wildcard),
+    Choice (Choice),
+    Clause (Clause),
+    Decl (..),
+    choose,
+  )
+import Minilang.Pretty (pretty)
 import Minilang.Primitives
+  ( PrimType (PrimDouble, PrimInt, PrimString),
+  )
 
 -- * Typing
 
@@ -83,7 +105,17 @@ bindType Wildcard _ _ γ = pure γ
 bindType (Pat x y) (ESig t g) v γ = do
   γ1 <- bindType x t (p1 v) γ
   bindType y (inst g (p1 v)) (p2 v) γ1
-bindType p t v γ = throwM $ typingError $ "don't know how to bind " <> show (pretty p) <> " to type " <> show (pretty t) <> " and value " <> show (pretty v) <> " in context " <> show (pretty γ)
+bindType p t v γ =
+  throwM $
+    typingError $
+      "don't know how to bind "
+        <> show (pretty p)
+        <> " to type "
+        <> show (pretty t)
+        <> " and value "
+        <> show (pretty v)
+        <> " in context "
+        <> show (pretty γ)
 
 -- * Typing Judgments
 
@@ -444,7 +476,9 @@ checkI l e ρ γ =
 lookupCtor :: (TypeChecker tc) => Name -> Env -> tc Value
 lookupCtor c_i (ExtendDecl ρ (Decl _ _ e@(Sum _))) = selectCtor c_i e ρ
 lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e@(Sum _))) = selectCtor c_i e ρ
-lookupCtor c_i _ = throwM $ typingError $ "cannot find constructor " <> show (pretty c_i)
+lookupCtor c_i (ExtendDecl ρ _) = lookupCtor c_i ρ
+lookupCtor c_i (ExtendPat ρ _ _) = lookupCtor c_i ρ
+lookupCtor c_i EmptyEnv = throwM $ typingError $ "cannot find constructor " <> show c_i
 
 selectCtor :: TypeChecker tc => Text -> AST -> Env -> tc Value
 selectCtor c_i e@(Sum cs) ρ = case choose cs c_i of

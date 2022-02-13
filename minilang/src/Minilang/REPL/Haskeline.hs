@@ -45,7 +45,7 @@ instance MonadREPL Haskeline where
       Just (pack -> t) -> pure $ interpret t
   output = hoist . outputStrLn . unpack . render
   prompt = pure ()
-  load = fmap (bimap FileError id) . hoist . lift . try . Text.readFile . unpack
+  load = fmap (first FileError) . hoist . lift . try . Text.readFile . unpack
 
   getEnv = get
   setEnv = put
@@ -111,7 +111,7 @@ instance MonadThrow Haskeline where
   throwM e = throw e
 
 instance TypeChecker Haskeline where
-  emit e = get >>= hoist . (printE e) >>= put
+  emit e = get >>= hoist . printE e >>= put
 
 printE ::
   Event -> REPLEnv -> InputT IO REPLEnv

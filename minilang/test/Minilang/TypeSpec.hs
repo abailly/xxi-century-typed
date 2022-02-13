@@ -71,6 +71,28 @@ spec = parallel $
           t <- checkI 0 (Ctor "true" Nothing) ρ γ
           t `shouldBe` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
+        it "can infer type of one-arg constructor" $ do
+          let dec =
+                RDecl
+                  (B "NEList")
+                  (Pi (B "A") U U)
+                  ( Abs
+                      (B "A")
+                      (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                  )
+          γ <- checkD 0 dec EmptyEnv EmptyContext
+          let ρ = extend dec EmptyEnv
+          t <- checkI 0 (Ctor "S" Nothing) ρ γ
+          t
+            `shouldBe` ESum
+              ( SumClos
+                  ( [ Choice "S" (Just (Var "A")),
+                      Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))
+                    ],
+                    ExtendPat EmptyEnv (B "A") (ENeut (NV (NVar 0)))
+                  )
+              )
+
         it "can infer type of zero-arg ctor in nested complex env" $ do
           let ρ =
                 ExtendDecl

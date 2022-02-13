@@ -85,7 +85,7 @@ data Out
 instance Pretty Out where
   pretty (Defined b a) = "defined" <+> pretty b <+> colon <+> pretty a
   pretty (Msg txt) = pretty txt
-  pretty (Evaluated v t) = pretty v <+> "::" <+> pretty t
+  pretty (Evaluated v t) = pretty v <+> ":" <+> pretty t
   pretty (CurrentEnv e c) =
     vcat
       [ "Environment:" <+> pretty e,

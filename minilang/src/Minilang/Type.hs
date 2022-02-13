@@ -178,8 +178,8 @@ checkD l d@(RDecl p a m) ρ γ = do
   pure γ'
   where
     x_l = ENeut $ NV $ NVar l
-    t = eval a ρ
     ρ_1 = ExtendPat ρ p x_l
+    t = eval a ρ
     v = eval m (ExtendDecl ρ d)
 
 -- ** Check Type Well-Formedness
@@ -461,30 +461,32 @@ checkI _ (D _) _ _ = pure $ EPrim PrimDouble
 checkI _ (S _) _ _ = pure $ EPrim PrimString
 checkI l c@(Ctor c_i Nothing) ρ γ = do
   inferringType c l ρ γ
-  typ <- lookupCtor c_i ρ
+  typ <- lookupCtor c_i ρ γ
   inferredType c l ρ γ typ
-checkI l c@(Ctor c_i (Just _)) ρ γ = do
-  inferringType c l ρ γ
-  typ <- lookupCtor c_i ρ
-  inferredType c l ρ γ typ
+checkI _l _c@(Ctor _c_i (Just _v)) _ρ _γ = error "need to check 'application' of arguments to a ctor"
 checkI l e ρ γ =
   throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 
 -- | Lookup a constructor's definition in the current environment.
 -- We look through all the environment's bindings' definitions to find a
--- `Sum` instance where the given contstructor is defined.
-lookupCtor :: (TypeChecker tc) => Name -> Env -> tc Value
-lookupCtor c_i (ExtendDecl ρ (Decl _ _ e@(Sum _))) = selectCtor c_i e ρ
-lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e@(Sum _))) = selectCtor c_i e ρ
-lookupCtor c_i (ExtendDecl ρ _) = lookupCtor c_i ρ
-lookupCtor c_i (ExtendPat ρ _ _) = lookupCtor c_i ρ
-lookupCtor c_i EmptyEnv = throwM $ typingError $ "cannot find constructor " <> show c_i
+-- `Sum` instance where the given constructor is defined.
+lookupCtor :: (TypeChecker tc) => Name -> Env -> Context -> tc Value
+lookupCtor c_i (ExtendDecl ρ (Decl _ _ e)) γ = selectCtor c_i e ρ γ
+lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e)) γ = selectCtor c_i e ρ γ
+lookupCtor c_i (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
+lookupCtor c_i EmptyEnv _ = throwM $ typingError $ "cannot find constructor " <> show c_i
 
-selectCtor :: TypeChecker tc => Text -> AST -> Env -> tc Value
-selectCtor c_i e@(Sum cs) ρ = case choose cs c_i of
-  Just (Choice _ Nothing) -> pure (eval e ρ)
-  _ -> lookupCtor c_i ρ
-selectCtor _ _ _ = error "cannot happen"
+selectCtor :: TypeChecker tc => Text -> AST -> Env -> Context -> tc Value
+selectCtor c_i e@(Sum cs) ρ γ = case choose cs c_i of
+  Just (Choice _ _) -> pure (eval e ρ)
+  _ -> lookupCtor c_i ρ γ
+selectCtor c_i (Abs b e) ρ γ = selectCtor c_i e ρ_1 γ
+  where
+    x_l = ENeut $ NV $ NVar 0
+    ρ_1 = ExtendPat ρ b x_l
+selectCtor c_i ast EmptyEnv _ = error $ "cannot select " <> Text.unpack c_i <> " in " <> show ast
+selectCtor c_i _ (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
+selectCtor c_i _ (ExtendDecl ρ _) γ = lookupCtor c_i ρ γ
 
 -- * Programs
 

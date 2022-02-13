@@ -80,7 +80,7 @@ data FunClos
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype NVar = NVar Int
-  deriving newtype (Eq, Show, ToJSON, FromJSON)
+  deriving newtype (Eq, Num, Show, ToJSON, FromJSON)
 
 data Neutral
   = NV NVar

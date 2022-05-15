@@ -5,7 +5,7 @@
 (setq mil-font-lock-keywords
       (let* (
              ;; define several category of keywords
-             (x-keywords '("Sum" "fun" "rec" "def" "->" "λ" "Π" "Σ" "->" "|" ))
+             (x-keywords '("Sum" "fun" "let" "rec" "def" "->" "λ" "Π" "Σ" "->" "|" ))
 
              ;; generate regex string for each category of keywords
              (x-keywords-regexp (regexp-opt x-keywords 'words)))

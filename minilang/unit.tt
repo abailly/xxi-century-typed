@@ -1,0 +1,36 @@
+-- From https://www.cs.bham.ac.uk/~mhe/HoTT-UF-in-Agda-Lecture-Notes/HoTT-UF-Agda.html#onepointtype
+
+-- By convention, U = U0
+-- It's not clear to me why Agda distinguishes U0 and U0· (note the dot). The former is supposed to
+-- be a name and the latter the universe itself :thinking:
+let Un : U = Sum(un) ;
+
+-- Induction principle
+-- Given a function from inductive type to U, eg. a Un-indexed type family, a type (from universe U) for
+-- $un constructor, return a "pattern-matching" function over the constructors of the type
+let un-induction : (A : (Un -> U)) -> (a : A $un) -> (x : Un) -> A x =
+  λ _ . λ a . case (un -> a) ;
+
+-- Recursion principle
+let un-recursion : (B : U) -> B -> Un -> B =
+  λ B . λ b . λ x . un-induction ( λ _ . B) b x ;
+
+-- unique function to Un
+-- cannot write the implicit version in mli!
+let un-unique : (X : U) -> X -> Un =
+  λ _ . λ x . $un ;
+
+
+-- zero type cannot currently be written either, or can it?
+-- Sum() can be written without an arugment, which measn there's no way to construct the 0 type!
+let Ze : U = Sum() ;
+
+-- it's also easy to write a function that can never be applied but typechecks
+let ze-induction : (A : Ze -> U) -> (x : Ze) -> A x =
+  λ A . case () ;
+
+let ze-recursion :  (B : U) -> Ze -> B =
+  λ B . λ z . ze-induction (λ _ . B) z ;
+
+let Not : U -> U =
+  λ X . (X -> Ze)

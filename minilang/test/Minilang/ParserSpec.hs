@@ -31,6 +31,7 @@ spec = parallel $
 
             it "parse Universe" $ do
                 parseProgram False "U" `shouldBe` U 0
+                parseProgram False "U2" `shouldBe` U 2
                 parseProgram False "Uabc" `shouldBe` Var "Uabc"
 
             it "parse Unit" $
@@ -62,7 +63,7 @@ spec = parallel $
                 parseProgram False "Πabc:U.abc" `shouldBe` Pi (B "abc") (U 0) (Var "abc")
 
             it "parse Function type" $ do
-                parseProgram False "Unit -> []" `shouldBe` Pi Wildcard (Var "Unit") One
+                parseProgram False "() -> []" `shouldBe` Pi Wildcard Unit One
                 parseProgram False "(A : U) -> A" `shouldBe` Pi (B "A") (U 0) (Var "A")
                 parseProgram False "(A : U) → (b : A) → ()" `shouldBe` Pi (B "A") (U 0) (Pi (B "b") (Var "A") Unit)
                 parseProgram False "(_ : A) -> B" `shouldBe` parseProgram False "A -> B"

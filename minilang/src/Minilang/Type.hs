@@ -7,7 +7,6 @@ import Control.Monad.Catch (Exception, MonadThrow (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
-import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import Minilang.Env (Env' (..), Name, extend)
 import Minilang.Eval (
@@ -455,7 +454,7 @@ checkI l u@(U n) ρ γ = do
 checkI l a@(Ap m n) ρ γ = do
     inferringType a l ρ γ
     typ <- checkI l m ρ γ
-    trace ("type of applicand : " <> show (pretty typ)) $ case typ of
+    case typ of
         EPi t g -> do
             check l n t ρ γ
             let v = inst g (eval n ρ)

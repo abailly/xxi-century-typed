@@ -21,6 +21,7 @@ import Text.Parsec
 import Text.Parsec.Error (Message (..), newErrorMessage)
 import Text.Parsec.Language (haskellDef)
 import qualified Text.Parsec.Token as Tokens
+import Text.Read (readMaybe)
 import Prelude hiding (lex, pi, sum)
 
 data AST
@@ -364,9 +365,12 @@ number = try $ do
 string_literal = S <$> Tokens.stringLiteral lexer
 variable = try $ do
     s <- identifier
-    case s of
+    case unpack s of
         "U" -> pure $ U 0
-        other -> pure $ Var other
+        ('U' : rest) -> case readMaybe rest of
+            Just n -> pure $ U n
+            Nothing -> pure $ Var s
+        _ -> pure $ Var s
 unit = reservedOp "()" *> pure Unit <?> "unit"
 one = reservedOp "[]" *> pure One <?> "One"
 ctor = char '$' >> Ctor <$> identifier <*> pure Nothing

@@ -12,6 +12,7 @@ import Control.Monad.Catch.Pure (CatchT (..))
 import Control.Monad.State
 import Data.Text hiding (replicate)
 import qualified Data.Text as Text
+import Debug.Trace (trace)
 import Minilang.Env
 import Minilang.Eval hiding (rho)
 import Minilang.Parser
@@ -66,7 +67,7 @@ handleUserInput txt = do
         Left err -> output (Msg $ pack $ show err)
         Right e ->
           ( do
-              t <- checkI 0 e ρ γ
+              t <- trace ("type checking " <> show e) $ checkI 0 e ρ γ
               let v = eval e ρ
               output (Evaluated v t)
           )

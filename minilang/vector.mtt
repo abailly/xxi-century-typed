@@ -1,5 +1,9 @@
 let rec Nat : U = Sum(zero | succ Nat);
 
+let z : Nat = $zero;
+let un : Nat = $succ $zero;
+let deux : Nat = $succ un;
+
 let Pair : U -> U -> U = λ A . λ B . Sum (P (Σ _ : A . B));
 
 let rec add : Nat -> Nat -> Nat =

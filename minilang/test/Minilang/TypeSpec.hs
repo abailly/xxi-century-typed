@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 module Minilang.TypeSpec where
 
 import qualified Data.Text as Text
@@ -10,418 +12,220 @@ import Test.Hspec
 
 spec :: Spec
 spec = parallel $
-  describe "Type Checker" $ do
-    describe "Typing Context" $ do
-      it "fails to lookup variable x in EmptyContext" $ do
-        lookupType "x" EmptyContext
-          `shouldThrow` anyException
+    describe "Type Checker" $ do
+        describe "Typing Context" $ do
+            it "fails to lookup variable x in EmptyContext" $ do
+                lookupType "x" EmptyContext
+                    `shouldThrow` anyException
 
-      it "find variable x given x is defined in context" $ do
-        lookupType "x" (Context EmptyContext "x" EU)
-          `shouldReturn` EU
+            it "find variable x given x is defined in context" $ do
+                lookupType "x" (Context EmptyContext "x" (EU 0))
+                    `shouldReturn` (EU 0)
 
-      it "find variable x given y is also defined in context" $ do
-        lookupType "x" (Context (Context EmptyContext "x" EU) "y" (EI 12))
-          `shouldReturn` EU
+            it "find variable x given y is also defined in context" $ do
+                lookupType "x" (Context (Context EmptyContext "x" (EU 0)) "y" (EI 12))
+                    `shouldReturn` (EU 0)
 
-      it "binds decl x : t = v in context" $ do
-        γ' <- bindType (B "x") EU EUnit EmptyContext
-        lookupType "x" γ' `shouldReturn` EU
+            it "binds decl x : t = v in context" $ do
+                γ' <- bindType (B "x") (EU 0) EUnit EmptyContext
+                lookupType "x" γ' `shouldReturn` EU 0
 
-      it "ignores decl with wildcard _ : t = v" $ do
-        bindType Wildcard EU EUnit EmptyContext
-          `shouldReturn` EmptyContext
+            it "ignores decl with wildcard _ : t = v" $ do
+                bindType Wildcard (EU 0) EUnit EmptyContext
+                    `shouldReturn` EmptyContext
 
-      it "binds pattern binding (p,p') : Σ t g = v decomposing pair" $ do
-        γ' <-
-          bindType
-            (Pat (B "x") (B "y"))
-            (ESig EU (Cl (B "x") (Pi Wildcard (Var "x") U) emptyEnv))
-            (EPair EUnit (EI 12))
-            EmptyContext
+            it "binds pattern binding (p,p') : Σ t g = v decomposing pair" $ do
+                γ' <-
+                    bindType
+                        (Pat (B "x") (B "y"))
+                        (ESig (EU 0) (Cl (B "x") (Pi Wildcard (Var "x") (U 0)) emptyEnv))
+                        (EPair EUnit (EI 12))
+                        EmptyContext
 
-        lookupType "x" γ' `shouldReturn` EU
-        lookupType "y" γ' `shouldReturn` EPi EUnit (Cl Wildcard U (ExtendPat EmptyEnv (B "x") EUnit))
+                lookupType "x" γ' `shouldReturn` (EU 0)
+                lookupType "y" γ' `shouldReturn` EPi EUnit (Cl Wildcard (U 0) (ExtendPat EmptyEnv (B "x") EUnit))
 
-    describe "Typing Judgments" $ do
-      describe "Builtins" $ do
-        it "types primitive int as #Int" $
-          checkI 0 (I 12) EmptyEnv EmptyContext
-            `shouldReturn` EPrim PrimInt
+        describe "Typing Judgments" $ do
+            describe "Builtins" $ do
+                it "types primitive int as #Int" $
+                    checkI 0 (I 12) EmptyEnv EmptyContext
+                        `shouldReturn` EPrim PrimInt
 
-        it "types primitive double as #Double" $
-          checkI 0 (D 12) EmptyEnv EmptyContext
-            `shouldReturn` EPrim PrimDouble
+                it "types primitive double as #Double" $
+                    checkI 0 (D 12) EmptyEnv EmptyContext
+                        `shouldReturn` EPrim PrimDouble
 
-        it "resolves Int as primitive type #Int" $
-          lookupType "Int" EmptyContext `shouldReturn` EU
+                it "resolves Int as primitive type #Int" $
+                    lookupType "Int" EmptyContext `shouldReturn` (EU 0)
 
-        it "resolves Double as primitive type #Double" $
-          lookupType "Double" EmptyContext `shouldReturn` EU
+                it "resolves Double as primitive type #Double" $
+                    lookupType "Double" EmptyContext `shouldReturn` (EU 0)
 
-        it "types primitive string as #String" $
-          checkI 0 (S "foo") EmptyEnv EmptyContext
-            `shouldReturn` EPrim PrimString
+                it "types primitive string as #String" $
+                    checkI 0 (S "foo") EmptyEnv EmptyContext
+                        `shouldReturn` EPrim PrimString
 
-      describe "Type inference" $ do
-        it "can infer type of zero-arg constructor" $ do
-          let dec = Decl (B "Bool") U (Sum [Choice "true" Nothing, Choice "false" Nothing])
-          γ <- checkD 0 dec EmptyEnv EmptyContext
-          let ρ = extend dec EmptyEnv
-          t <- checkI 0 (Ctor "true" Nothing) ρ γ
-          t `shouldBe` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
+            describe "Type inference" $ do
+                it "can infer type of zero-arg constructor" $ do
+                    let dec = Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing])
+                    γ <- checkD 0 dec EmptyEnv EmptyContext
+                    let ρ = extend dec EmptyEnv
+                    t <- checkI 0 (Ctor "true" Nothing) ρ γ
+                    t `shouldBe` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
-        it "can infer type of one-arg constructor" $ do
-          let dec =
-                RDecl
-                  (B "NEList")
-                  (Pi (B "A") U U)
-                  ( Abs
-                      (B "A")
-                      (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
-                  )
-          γ <- checkD 0 dec EmptyEnv EmptyContext
-          let ρ = extend dec EmptyEnv
-          t <- checkI 0 (Ctor "S" Nothing) ρ γ
-          t
-            `shouldBe` ESum
-              ( SumClos
-                  ( [ Choice "S" (Just (Var "A")),
-                      Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))
-                    ],
-                    ExtendPat EmptyEnv (B "A") (ENeut (NV (NVar 0)))
-                  )
-              )
-
-        it "can infer type of zero-arg ctor in nested complex env" $ do
-          let ρ =
-                ExtendDecl
-                  ( ExtendDecl
-                      ( ExtendDecl
-                          ( ExtendDecl
-                              ( ExtendDecl EmptyEnv (Decl (B "Unit") U (Sum [Choice "tt" Nothing]))
-                              )
-                              ( Decl
-                                  (B "elimUnit")
-                                  ( Pi
-                                      (B "C")
-                                      (Pi Wildcard (Var "Unit") U)
-                                      ( Pi
-                                          Wildcard
-                                          (Ap (Var "C") (Ctor "tt" Nothing))
-                                          (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))
-                                      )
-                                  )
-                                  (Abs (B "C") (Abs (B "h") (Case [Clause "tt" (Abs Wildcard (Var "h"))])))
-                              )
-                          )
-                          (Decl (B "Bool") U (Sum [Choice "true" Nothing, Choice "false" Nothing]))
-                      )
-                      ( Decl
-                          (B "elimBool")
-                          ( Pi
-                              (B "C")
-                              (Pi Wildcard (Var "Bool") U)
-                              ( Pi
-                                  Wildcard
-                                  (Ap (Var "C") (Ctor "false" Nothing))
-                                  ( Pi
-                                      Wildcard
-                                      ( Ap
-                                          (Var "C")
-                                          (Ctor "true" Nothing)
-                                      )
-                                      (Pi (B "b") (Var "Bool") (Ap (Var "C") (Var "b")))
-                                  )
-                              )
-                          )
-                          ( Abs
-                              (B "C")
-                              ( Abs
-                                  (B "h0")
-                                  ( Abs
-                                      (B "h1")
-                                      ( Case
-                                          [ Clause "true" (Abs Wildcard (Var "h1")),
-                                            Clause "false" (Abs Wildcard (Var "h0"))
-                                          ]
-                                      )
-                                  )
-                              )
-                          )
-                      )
-                  )
-                  ( Decl
-                      (B "not")
-                      (Pi Wildcard (Var "Bool") (Var "Bool"))
-                      ( Case
-                          [ Clause "true" (Abs Wildcard (Ctor "false" Nothing)),
-                            Clause "false" (Abs Wildcard (Ctor "true" Nothing))
-                          ]
-                      )
-                  )
-
-          ESum (SumClos (closure, _)) <- checkI 0 (Ctor "true" Nothing) ρ EmptyContext
-          closure `shouldBe` [Choice "true" Nothing, Choice "false" Nothing]
-
-      describe "Check a declaration is correct" $ do
-        it "checks a recursive declaration is correct given env and empty context" $ do
-          γ <-
-            checkD
-              0
-              (RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
-              EmptyEnv
-              EmptyContext
-          γ' <-
-            checkD
-              0
-              ( RDecl
-                  (Pat (B "V") (B "T"))
-                  ( Sigma
-                      (B "X")
-                      U
-                      (Pi Wildcard (Var "X") U)
-                  )
-                  ( Pair
-                      ( Sum
-                          [ Choice "nat" Nothing,
-                            Choice
-                              "pi"
-                              ( Just $
-                                  Sigma
-                                    (B "x")
-                                    (Var "V")
-                                    ( Pi
-                                        Wildcard
-                                        (Ap (Var "T") (Var "x"))
-                                        (Var "V")
-                                    )
-                              )
-                          ]
-                      )
-                      ( Case
-                          [ Clause "nat" (Abs Wildcard (Var "Nat")),
-                            Clause
-                              "pi"
-                              ( Abs
-                                  (Pat (B "x") (B "f"))
-                                  ( Pi
-                                      (B "y")
-                                      (Ap (Var "T") (Var "x"))
-                                      ( Ap
-                                          (Var "T")
-                                          ( Ap
-                                              (Var "f")
-                                              (Var "y")
-                                          )
-                                      )
-                                  )
-                              )
-                          ]
-                      )
-                  )
-              )
-              EmptyEnv
-              γ
-
-          lookupType "V" γ' `shouldReturn` EU
-
-        it "Check simple Bool function" $ do
-          check
-            0
-            ( Let
-                (Decl (B "Bool") U (Sum [Choice "true" Nothing, Choice "false" Nothing]))
-                ( Let
-                    ( Decl
-                        (B "not")
-                        (Pi Wildcard (Var "Bool") (Var "Bool"))
-                        ( Case
-                            [ Clause "true" (Abs Wildcard (Ctor "false" Nothing)),
-                              Clause "false" (Abs Wildcard (Ctor "true" Nothing))
-                            ]
-                        )
-                    )
-                    (Ap (Var "not") (Ctor "false" Nothing))
-                )
-            )
-            (ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv)))
-            EmptyEnv
-            EmptyContext
-            `shouldReturn` ()
-
-        it "Check Non empty list and head function" $ do
-          let e =
-                parseProgram False $
-                  Text.unlines
-                    [ "let Unit : U = Sum(tt);",
-                      "let rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ a : A . NEList A));",
-                      "let head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);",
-                      "let l : NEList Unit = $C ($tt, $C($tt, $S $tt));",
-                      "let x : Unit -> [] = case(tt -> ());",
-                      "x (head Unit l)"
-                    ]
-          check 0 e EOne EmptyEnv EmptyContext
-            `shouldReturn` ()
-
-        it "Check Unit and unitElim" $ do
-          check
-            0
-            ( Let
-                (Decl (B "Unit") U (Sum [Choice "tt" Nothing]))
-                ( Let
-                    ( Decl
-                        (B "elimUnit")
-                        ( Pi
-                            (B "C")
-                            (Pi Wildcard (Var "Unit") U)
-                            ( Pi
-                                Wildcard
-                                (Ap (Var "C") (Ctor "tt" Nothing))
-                                (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))
-                            )
-                        )
-                        ( Abs
-                            (B "C")
-                            ( Abs
-                                (B "h")
-                                (Case [Clause "tt" (Abs Wildcard (Var "h"))])
-                            )
-                        )
-                    )
-                    Unit
-                )
-            )
-            EOne
-            EmptyEnv
-            EmptyContext
-            `shouldReturn` ()
-
-        it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
-          check
-            0
-            ( Let
-                (Decl (B "Bool") U (Sum [Choice "true" Nothing, Choice "false" Nothing]))
-                ( Let
-                    ( Decl
-                        (B "elimBool")
-                        ( Pi
-                            (B "C")
-                            (Pi Wildcard (Var "Bool") U)
-                            ( Pi
-                                Wildcard
-                                (Ap (Var "C") (Ctor "false" Nothing))
-                                ( Pi
-                                    Wildcard
-                                    (Ap (Var "C") (Ctor "true" Nothing))
-                                    ( Pi
-                                        (B "b")
-                                        (Var "Bool")
-                                        (Ap (Var "C") (Var "b"))
-                                    )
-                                )
-                            )
-                        )
-                        ( Abs
-                            (B "C")
-                            ( Abs
-                                (B "h0")
+                it "can infer type of one-arg constructor" $ do
+                    let dec =
+                            RDecl
+                                (B "NEList")
+                                (Pi (B "A") (U 0) (U 0))
                                 ( Abs
-                                    (B "h1")
-                                    ( Case
-                                        [ Clause "true" (Abs Wildcard (Var "h1")),
-                                          Clause "false" (Abs Wildcard (Var "h0"))
-                                        ]
-                                    )
+                                    (B "A")
+                                    (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                                )
+                    γ <- checkD 0 dec EmptyEnv EmptyContext
+                    let ρ = extend dec EmptyEnv
+                    t <- checkI 0 (Ctor "S" Nothing) ρ γ
+                    t
+                        `shouldBe` ESum
+                            ( SumClos
+                                (
+                                    [ Choice "S" (Just (Var "A"))
+                                    , Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))
+                                    ]
+                                , ExtendPat EmptyEnv (B "A") (ENeut (NV (NVar 0)))
                                 )
                             )
-                        )
-                    )
-                    ( Ap
-                        ( Ap
-                            ( Ap
-                                ( Ap
-                                    (Var "elimBool")
-                                    ( Case
-                                        [ Clause "true" (Abs Wildcard One),
-                                          Clause "false" (Abs Wildcard One)
-                                        ]
-                                    )
-                                )
-                                Unit
-                            )
-                            Unit
-                        )
-                        (Ctor "false" Nothing)
-                    )
-                )
-            )
-            EOne
-            EmptyEnv
-            EmptyContext
-            `shouldReturn` ()
 
-        it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
-          check
-            0
-            ( Let
-                (RDecl (B "Nat") U (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
-                ( Let
-                    ( RDecl
-                        (B "natrec")
-                        ( Pi
-                            (B "C")
-                            (Pi Wildcard (Var "Nat") U)
-                            ( Pi
-                                Wildcard
-                                (Ap (Var "C") (Ctor "zero" Nothing))
-                                ( Pi
-                                    Wildcard
-                                    ( Pi
-                                        (B "n")
-                                        (Var "Nat")
+                it "can infer type of zero-arg ctor in nested complex env" $ do
+                    let ρ =
+                            ExtendDecl
+                                ( ExtendDecl
+                                    ( ExtendDecl
+                                        ( ExtendDecl
+                                            ( ExtendDecl EmptyEnv (Decl (B "Unit") (U 0) (Sum [Choice "tt" Nothing]))
+                                            )
+                                            ( Decl
+                                                (B "elimUnit")
+                                                ( Pi
+                                                    (B "C")
+                                                    (Pi Wildcard (Var "Unit") (U 0))
+                                                    ( Pi
+                                                        Wildcard
+                                                        (Ap (Var "C") (Ctor "tt" Nothing))
+                                                        (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))
+                                                    )
+                                                )
+                                                (Abs (B "C") (Abs (B "h") (Case [Clause "tt" (Abs Wildcard (Var "h"))])))
+                                            )
+                                        )
+                                        (Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing]))
+                                    )
+                                    ( Decl
+                                        (B "elimBool")
                                         ( Pi
-                                            Wildcard
-                                            (Ap (Var "C") (Var "n"))
-                                            ( Ap
-                                                (Var "C")
-                                                (Ctor "succ" (Just $ Var "n"))
+                                            (B "C")
+                                            (Pi Wildcard (Var "Bool") (U 0))
+                                            ( Pi
+                                                Wildcard
+                                                (Ap (Var "C") (Ctor "false" Nothing))
+                                                ( Pi
+                                                    Wildcard
+                                                    ( Ap
+                                                        (Var "C")
+                                                        (Ctor "true" Nothing)
+                                                    )
+                                                    (Pi (B "b") (Var "Bool") (Ap (Var "C") (Var "b")))
+                                                )
+                                            )
+                                        )
+                                        ( Abs
+                                            (B "C")
+                                            ( Abs
+                                                (B "h0")
+                                                ( Abs
+                                                    (B "h1")
+                                                    ( Case
+                                                        [ Clause "true" (Abs Wildcard (Var "h1"))
+                                                        , Clause "false" (Abs Wildcard (Var "h0"))
+                                                        ]
+                                                    )
+                                                )
                                             )
                                         )
                                     )
-                                    ( Pi
-                                        (B "n")
-                                        (Var "Nat")
-                                        (Ap (Var "C") (Var "n"))
+                                )
+                                ( Decl
+                                    (B "not")
+                                    (Pi Wildcard (Var "Bool") (Var "Bool"))
+                                    ( Case
+                                        [ Clause "true" (Abs Wildcard (Ctor "false" Nothing))
+                                        , Clause "false" (Abs Wildcard (Ctor "true" Nothing))
+                                        ]
                                     )
                                 )
-                            )
-                        )
-                        ( Abs
-                            (B "C")
-                            ( Abs
-                                (B "a")
-                                ( Abs
-                                    (B "g")
+
+                    ESum (SumClos (closure, _)) <- checkI 0 (Ctor "true" Nothing) ρ EmptyContext
+                    closure `shouldBe` [Choice "true" Nothing, Choice "false" Nothing]
+
+                it "can infer type of universe" $ do
+                    t <- checkI 0 (U 0) EmptyEnv EmptyContext
+                    t `shouldBe` EU 1
+
+                it "can check universe type judgment" $ do
+                    check @IO 0 (U 2) (EU 3) EmptyEnv EmptyContext
+                    check @IO 0 (U 3) (EU 3) EmptyEnv EmptyContext
+                        `shouldThrow` \TypingError{} -> True
+
+            describe "Check a declaration is correct" $ do
+                it "checks a recursive declaration is correct given env and empty context" $ do
+                    γ <-
+                        checkD
+                            0
+                            (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
+                            EmptyEnv
+                            EmptyContext
+                    γ' <-
+                        checkD
+                            0
+                            ( RDecl
+                                (Pat (B "V") (B "T"))
+                                ( Sigma
+                                    (B "X")
+                                    (U 0)
+                                    (Pi Wildcard (Var "X") (U 0))
+                                )
+                                ( Pair
+                                    ( Sum
+                                        [ Choice "nat" Nothing
+                                        , Choice
+                                            "pi"
+                                            ( Just $
+                                                Sigma
+                                                    (B "x")
+                                                    (Var "V")
+                                                    ( Pi
+                                                        Wildcard
+                                                        (Ap (Var "T") (Var "x"))
+                                                        (Var "V")
+                                                    )
+                                            )
+                                        ]
+                                    )
                                     ( Case
-                                        [ Clause "zero" (Abs Wildcard (Var "a")),
-                                          Clause
-                                            "succ"
+                                        [ Clause "nat" (Abs Wildcard (Var "Nat"))
+                                        , Clause
+                                            "pi"
                                             ( Abs
-                                                (B "n1")
-                                                ( Ap
-                                                    (Ap (Var "g") (Var "n1"))
+                                                (Pat (B "x") (B "f"))
+                                                ( Pi
+                                                    (B "y")
+                                                    (Ap (Var "T") (Var "x"))
                                                     ( Ap
+                                                        (Var "T")
                                                         ( Ap
-                                                            ( Ap
-                                                                ( Ap
-                                                                    (Var "natrec")
-                                                                    (Var "C")
-                                                                )
-                                                                (Var "a")
-                                                            )
-                                                            (Var "g")
+                                                            (Var "f")
+                                                            (Var "y")
                                                         )
-                                                        (Var "n1")
                                                     )
                                                 )
                                             )
@@ -429,12 +233,220 @@ spec = parallel $
                                     )
                                 )
                             )
+                            EmptyEnv
+                            γ
+
+                    lookupType "V" γ' `shouldReturn` EU 0
+
+                it "Check simple Bool function" $ do
+                    check
+                        0
+                        ( Let
+                            (Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing]))
+                            ( Let
+                                ( Decl
+                                    (B "not")
+                                    (Pi Wildcard (Var "Bool") (Var "Bool"))
+                                    ( Case
+                                        [ Clause "true" (Abs Wildcard (Ctor "false" Nothing))
+                                        , Clause "false" (Abs Wildcard (Ctor "true" Nothing))
+                                        ]
+                                    )
+                                )
+                                (Ap (Var "not") (Ctor "false" Nothing))
+                            )
                         )
-                    )
-                    Unit
-                )
-            )
-            EOne
-            EmptyEnv
-            EmptyContext
-            `shouldReturn` ()
+                        (ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv)))
+                        EmptyEnv
+                        EmptyContext
+                        `shouldReturn` ()
+
+                it "Check Non empty list and head function" $ do
+                    let e =
+                            parseProgram False $
+                                Text.unlines
+                                    [ "let Unit : U = Sum(tt);"
+                                    , "let rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
+                                    , "let head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);"
+                                    , "let l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
+                                    , "let x : Unit -> [] = case(tt -> ());"
+                                    , "x (head Unit l)"
+                                    ]
+                    check 0 e EOne EmptyEnv EmptyContext
+                        `shouldReturn` ()
+
+                it "Check Unit and unitElim" $ do
+                    check
+                        0
+                        ( Let
+                            (Decl (B "Unit") (U 0) (Sum [Choice "tt" Nothing]))
+                            ( Let
+                                ( Decl
+                                    (B "elimUnit")
+                                    ( Pi
+                                        (B "C")
+                                        (Pi Wildcard (Var "Unit") (U 0))
+                                        ( Pi
+                                            Wildcard
+                                            (Ap (Var "C") (Ctor "tt" Nothing))
+                                            (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))
+                                        )
+                                    )
+                                    ( Abs
+                                        (B "C")
+                                        ( Abs
+                                            (B "h")
+                                            (Case [Clause "tt" (Abs Wildcard (Var "h"))])
+                                        )
+                                    )
+                                )
+                                Unit
+                            )
+                        )
+                        EOne
+                        EmptyEnv
+                        EmptyContext
+                        `shouldReturn` ()
+
+                it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
+                    check
+                        0
+                        ( Let
+                            (Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing]))
+                            ( Let
+                                ( Decl
+                                    (B "elimBool")
+                                    ( Pi
+                                        (B "C")
+                                        (Pi Wildcard (Var "Bool") (U 0))
+                                        ( Pi
+                                            Wildcard
+                                            (Ap (Var "C") (Ctor "false" Nothing))
+                                            ( Pi
+                                                Wildcard
+                                                (Ap (Var "C") (Ctor "true" Nothing))
+                                                ( Pi
+                                                    (B "b")
+                                                    (Var "Bool")
+                                                    (Ap (Var "C") (Var "b"))
+                                                )
+                                            )
+                                        )
+                                    )
+                                    ( Abs
+                                        (B "C")
+                                        ( Abs
+                                            (B "h0")
+                                            ( Abs
+                                                (B "h1")
+                                                ( Case
+                                                    [ Clause "true" (Abs Wildcard (Var "h1"))
+                                                    , Clause "false" (Abs Wildcard (Var "h0"))
+                                                    ]
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                                ( Ap
+                                    ( Ap
+                                        ( Ap
+                                            ( Ap
+                                                (Var "elimBool")
+                                                ( Case
+                                                    [ Clause "true" (Abs Wildcard One)
+                                                    , Clause "false" (Abs Wildcard One)
+                                                    ]
+                                                )
+                                            )
+                                            Unit
+                                        )
+                                        Unit
+                                    )
+                                    (Ctor "false" Nothing)
+                                )
+                            )
+                        )
+                        EOne
+                        EmptyEnv
+                        EmptyContext
+                        `shouldReturn` ()
+
+                it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
+                    check
+                        0
+                        ( Let
+                            (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
+                            ( Let
+                                ( RDecl
+                                    (B "natrec")
+                                    ( Pi
+                                        (B "C")
+                                        (Pi Wildcard (Var "Nat") (U 0))
+                                        ( Pi
+                                            Wildcard
+                                            (Ap (Var "C") (Ctor "zero" Nothing))
+                                            ( Pi
+                                                Wildcard
+                                                ( Pi
+                                                    (B "n")
+                                                    (Var "Nat")
+                                                    ( Pi
+                                                        Wildcard
+                                                        (Ap (Var "C") (Var "n"))
+                                                        ( Ap
+                                                            (Var "C")
+                                                            (Ctor "succ" (Just $ Var "n"))
+                                                        )
+                                                    )
+                                                )
+                                                ( Pi
+                                                    (B "n")
+                                                    (Var "Nat")
+                                                    (Ap (Var "C") (Var "n"))
+                                                )
+                                            )
+                                        )
+                                    )
+                                    ( Abs
+                                        (B "C")
+                                        ( Abs
+                                            (B "a")
+                                            ( Abs
+                                                (B "g")
+                                                ( Case
+                                                    [ Clause "zero" (Abs Wildcard (Var "a"))
+                                                    , Clause
+                                                        "succ"
+                                                        ( Abs
+                                                            (B "n1")
+                                                            ( Ap
+                                                                (Ap (Var "g") (Var "n1"))
+                                                                ( Ap
+                                                                    ( Ap
+                                                                        ( Ap
+                                                                            ( Ap
+                                                                                (Var "natrec")
+                                                                                (Var "C")
+                                                                            )
+                                                                            (Var "a")
+                                                                        )
+                                                                        (Var "g")
+                                                                    )
+                                                                    (Var "n1")
+                                                                )
+                                                            )
+                                                        )
+                                                    ]
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                                Unit
+                            )
+                        )
+                        EOne
+                        EmptyEnv
+                        EmptyContext
+                        `shouldReturn` ()

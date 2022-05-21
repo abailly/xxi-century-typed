@@ -96,6 +96,33 @@ spec = parallel $
                                 )
                             )
 
+                it "can infer type of polymorphic one-arg constructor applied" $ do
+                    let ρ =
+                            ExtendDecl
+                                ( ExtendDecl
+                                    EmptyEnv
+                                    (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
+                                )
+                                ( RDecl
+                                    (B "NEList")
+                                    (Pi (B "A") (U 0) (U 0))
+                                    ( Abs
+                                        (B "A")
+                                        (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                                    )
+                                )
+                    t <- checkI 0 (Ctor "S" (Just (Ctor "succ" (Just (Ctor "zero" Nothing))))) ρ EmptyContext
+                    t
+                        `shouldBe` ESum
+                            ( SumClos
+                                (
+                                    [ Choice "S" (Just (Var "Nat"))
+                                    , Choice "C" (Just (Sigma (B "a") (Var "Nat") (Ap (Var "NEList") (Var "Nat"))))
+                                    ]
+                                , EmptyEnv
+                                )
+                            )
+
                 it "can infer type of zero-arg ctor in nested complex env" $ do
                     let ρ =
                             ExtendDecl

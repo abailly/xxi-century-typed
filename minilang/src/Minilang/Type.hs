@@ -467,7 +467,12 @@ checkI l c@(Ctor c_i Nothing) ρ γ = do
     inferringType c l ρ γ
     typ <- lookupCtor c_i ρ γ
     inferredType c l ρ γ typ
-checkI _l _c@(Ctor _c_i (Just _v)) _ρ _γ = error "need to check 'application' of arguments to a ctor"
+checkI l c@(Ctor c_i (Just _)) ρ γ = do
+    inferringType c l ρ γ
+    typ <- lookupCtor c_i ρ γ
+    trace ("found type of " <> unpack c_i <> ": " <> show (pretty typ)) $ check l c typ ρ γ
+    void $ error $ "need to check 'application' to ctor " <> unpack c_i <> " : " <> show (pretty typ)
+    inferredType c l ρ γ typ
 checkI l e ρ γ =
     throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 
@@ -477,7 +482,7 @@ checkI l e ρ γ =
 -}
 lookupCtor :: (TypeChecker tc) => Name -> Env -> Context -> tc Value
 lookupCtor c_i (ExtendDecl ρ (Decl _ _ e)) γ = selectCtor c_i e ρ γ
-lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e)) γ = selectCtor c_i e ρ γ
+lookupCtor c_i ρ'@(ExtendDecl _ (RDecl _ _ e)) γ = selectCtor c_i e ρ' γ
 lookupCtor c_i (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
 lookupCtor c_i EmptyEnv _ = throwM $ typingError $ "cannot find constructor " <> show c_i
 
@@ -490,8 +495,8 @@ selectCtor c_i (Abs b e) ρ γ = selectCtor c_i e ρ_1 γ
     x_l = ENeut $ NV $ NVar 0
     ρ_1 = ExtendPat ρ b x_l
 selectCtor c_i ast EmptyEnv _ = error $ "cannot select " <> Text.unpack c_i <> " in " <> show ast
-selectCtor c_i _ (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
-selectCtor c_i _ (ExtendDecl ρ _) γ = lookupCtor c_i ρ γ
+selectCtor c_i _ (ExtendDecl ρ RDecl{}) γ = lookupCtor c_i ρ γ
+selectCtor c_i _ ρ γ = lookupCtor c_i ρ γ
 -- * Programs
 
 {- | Top-level evaluator

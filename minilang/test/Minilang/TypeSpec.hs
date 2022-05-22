@@ -14,23 +14,23 @@ spec :: Spec
 spec = parallel $
     describe "Type Checker" $ do
         describe "Typing Context" $ do
-            it "fails to lookup variable x in EmptyContext" $ do
+            it "fails to lookup variable x in EmptyContext" $
                 lookupType "x" EmptyContext
                     `shouldThrow` anyException
 
-            it "find variable x given x is defined in context" $ do
+            it "find variable x given x is defined in context" $
                 lookupType "x" (Context EmptyContext "x" (EU 0))
-                    `shouldReturn` (EU 0)
+                    `shouldReturn` EU 0
 
-            it "find variable x given y is also defined in context" $ do
+            it "find variable x given y is also defined in context" $
                 lookupType "x" (Context (Context EmptyContext "x" (EU 0)) "y" (EI 12))
-                    `shouldReturn` (EU 0)
+                    `shouldReturn` EU 0
 
             it "binds decl x : t = v in context" $ do
                 γ' <- bindType (B "x") (EU 0) EUnit EmptyContext
                 lookupType "x" γ' `shouldReturn` EU 0
 
-            it "ignores decl with wildcard _ : t = v" $ do
+            it "ignores decl with wildcard _ : t = v" $
                 bindType Wildcard (EU 0) EUnit EmptyContext
                     `shouldReturn` EmptyContext
 
@@ -42,7 +42,7 @@ spec = parallel $
                         (EPair EUnit (EI 12))
                         EmptyContext
 
-                lookupType "x" γ' `shouldReturn` (EU 0)
+                lookupType "x" γ' `shouldReturn` EU 0
                 lookupType "y" γ' `shouldReturn` EPi EUnit (Cl Wildcard (U 0) (ExtendPat EmptyEnv (B "x") EUnit))
 
         describe "Typing Judgments" $ do
@@ -56,10 +56,10 @@ spec = parallel $
                         `shouldReturn` EPrim PrimDouble
 
                 it "resolves Int as primitive type #Int" $
-                    lookupType "Int" EmptyContext `shouldReturn` (EU 0)
+                    lookupType "Int" EmptyContext `shouldReturn` EU 0
 
                 it "resolves Double as primitive type #Double" $
-                    lookupType "Double" EmptyContext `shouldReturn` (EU 0)
+                    lookupType "Double" EmptyContext `shouldReturn` EU 0
 
                 it "types primitive string as #String" $
                     checkI 0 (S "foo") EmptyEnv EmptyContext
@@ -73,55 +73,82 @@ spec = parallel $
                     t <- checkI 0 (Ctor "true" Nothing) ρ γ
                     t `shouldBe` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
-                it "can infer type of one-arg constructor" $ do
-                    let dec =
-                            RDecl
-                                (B "NEList")
-                                (Pi (B "A") (U 0) (U 0))
-                                ( Abs
-                                    (B "A")
-                                    (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
-                                )
+                it "can infer type of non polymorphic one-arg constructor applied" $ do
+                    let dec = RDecl (B "Nat") (U 0) (Sum [Choice "Z" Nothing, Choice "S" (Just $ Var "Nat")])
                     γ <- checkD 0 dec EmptyEnv EmptyContext
-                    let ρ = extend dec EmptyEnv
-                    t <- checkI 0 (Ctor "S" Nothing) ρ γ
+                    let ρ = extend @Value dec EmptyEnv
+                    t <- checkI 0 (Ctor "S" (Just $ Ctor "Z" Nothing)) ρ γ
                     t
                         `shouldBe` ESum
                             ( SumClos
                                 (
-                                    [ Choice "S" (Just (Var "A"))
-                                    , Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))
+                                    [ Choice "Z" Nothing
+                                    , Choice "S" (Just (Var "Nat"))
                                     ]
-                                , ExtendPat EmptyEnv (B "A") (ENeut (NV (NVar 0)))
+                                , ExtendPat
+                                    ( ExtendDecl
+                                        EmptyEnv
+                                        ( RDecl
+                                            (B "Nat")
+                                            (U 0)
+                                            (Sum [Choice "Z" Nothing, Choice "S" (Just (Var "Nat"))])
+                                        )
+                                    )
+                                    (B "u")
+                                    (ECtor "Z" Nothing)
                                 )
                             )
 
-                it "can infer type of polymorphic one-arg constructor applied" $ do
-                    let ρ =
-                            ExtendDecl
-                                ( ExtendDecl
-                                    EmptyEnv
-                                    (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
-                                )
-                                ( RDecl
-                                    (B "NEList")
-                                    (Pi (B "A") (U 0) (U 0))
-                                    ( Abs
-                                        (B "A")
-                                        (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
-                                    )
-                                )
-                    t <- checkI 0 (Ctor "S" (Just (Ctor "succ" (Just (Ctor "zero" Nothing))))) ρ EmptyContext
-                    t
-                        `shouldBe` ESum
-                            ( SumClos
-                                (
-                                    [ Choice "S" (Just (Var "Nat"))
-                                    , Choice "C" (Just (Sigma (B "a") (Var "Nat") (Ap (Var "NEList") (Var "Nat"))))
-                                    ]
-                                , EmptyEnv
-                                )
-                            )
+                -- it "can infer type of one-arg constructor" $ do
+                --     let dec =
+                --             RDecl
+                --                 (B "NEList")
+                --                 (Pi (B "A") (U 0) (U 0))
+                --                 ( Abs
+                --                     (B "A")
+                --                     (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                --                 )
+                --     γ <- checkD 0 dec EmptyEnv EmptyContext
+                --     let ρ = extend dec EmptyEnv
+                --     t <- checkI 0 (Ctor "S" Nothing) ρ γ
+                --     t
+                --         `shouldBe` ESum
+                --             ( SumClos
+                --                 (
+                --                     [ Choice "S" (Just (Var "A"))
+                --                     , Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))
+                --                     ]
+                --                 , ExtendPat EmptyEnv (B "A") (ENeut (NV (NVar 0)))
+                --                 )
+                --             )
+
+                -- it "can infer type of polymorphic one-arg constructor applied" $ do
+                --     let ρ =
+                --             ExtendDecl
+                --                 ( ExtendDecl
+                --                     EmptyEnv
+                --                     (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
+                --                 )
+                --                 ( RDecl
+                --                     (B "NEList")
+                --                     (Pi (B "A") (U 0) (U 0))
+                --                     ( Abs
+                --                         (B "A")
+                --                         (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                --                     )
+                --                 )
+                --     γ <- checkD 0 dec EmptyEnv EmptyContext
+                --     t <- checkI 0 (Ctor "S" (Just (Ctor "succ" (Just (Ctor "zero" Nothing))))) ρ EmptyContext
+                --     t
+                --         `shouldBe` ESum
+                --             ( SumClos
+                --                 (
+                --                     [ Choice "S" (Just (Var "Nat"))
+                --                     , Choice "C" (Just (Sigma (B "a") (Var "Nat") (Ap (Var "NEList") (Var "Nat"))))
+                --                     ]
+                --                 , EmptyEnv
+                --                 )
+                --             )
 
                 it "can infer type of zero-arg ctor in nested complex env" $ do
                     let ρ =
@@ -265,7 +292,7 @@ spec = parallel $
 
                     lookupType "V" γ' `shouldReturn` EU 0
 
-                it "Check simple Bool function" $ do
+                it "Check simple Bool function" $
                     check
                         0
                         ( Let
@@ -302,7 +329,7 @@ spec = parallel $
                     check 0 e EOne EmptyEnv EmptyContext
                         `shouldReturn` ()
 
-                it "Check Unit and unitElim" $ do
+                it "Check Unit and unitElim" $
                     check
                         0
                         ( Let
@@ -335,7 +362,7 @@ spec = parallel $
                         EmptyContext
                         `shouldReturn` ()
 
-                it "Check Bool and elimBool declarations followed by an expression has type EOne" $ do
+                it "Check Bool and elimBool declarations followed by an expression has type EOne" $
                     check
                         0
                         ( Let
@@ -399,7 +426,7 @@ spec = parallel $
                         EmptyContext
                         `shouldReturn` ()
 
-                it "Check Nat and elimNat declarations followed by an expression has type EOne" $ do
+                it "Check Nat and elimNat declarations followed by an expression has type EOne" $
                     check
                         0
                         ( Let

@@ -467,12 +467,15 @@ checkI l c@(Ctor c_i Nothing) ρ γ = do
     inferringType c l ρ γ
     typ <- lookupCtor c_i ρ γ
     inferredType c l ρ γ typ
-checkI l c@(Ctor c_i (Just _)) ρ γ = do
+checkI l c@(Ctor c_i (Just a)) ρ γ = do
     inferringType c l ρ γ
     typ <- lookupCtor c_i ρ γ
-    trace ("found type of " <> unpack c_i <> ": " <> show (pretty typ)) $ check l c typ ρ γ
-    void $ error $ "need to check 'application' to ctor " <> unpack c_i <> " : " <> show (pretty typ)
-    inferredType c l ρ γ typ
+    case typ of
+        EPi t g -> do
+            check l a t ρ γ
+            let v = inst g (eval a ρ)
+            inferredType a l ρ γ v
+        other -> throwM $ typingError $ "expected type of ctor lookup " <> unpack c_i <> " to be a product type (Π x : A.f x), but found " <> show (pretty other)
 checkI l e ρ γ =
     throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 
@@ -487,10 +490,24 @@ lookupCtor c_i (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
 lookupCtor c_i EmptyEnv _ = throwM $ typingError $ "cannot find constructor " <> show c_i
 
 selectCtor :: TypeChecker tc => Text -> AST -> Env -> Context -> tc Value
-selectCtor c_i e@(Sum cs) ρ γ = case choose cs c_i of
-    Just (Choice _ _) -> pure (eval e ρ)
-    _ -> lookupCtor c_i ρ γ
-selectCtor c_i (Abs b e) ρ γ = selectCtor c_i e ρ_1 γ
+selectCtor c_i e@(Sum cs) ρ γ =
+    case choose cs c_i of
+        Just (Choice _ Nothing) ->
+            pure $ eval e ρ
+        Just (Choice _ (Just a)) ->
+            -- TODO: need a unique name here
+            pure $ eval (Pi (B "u") a e) ρ
+        _ -> lookupCtor c_i ρ γ
+selectCtor c_i e'@(Abs b e) ρ γ =
+    trace
+        ( "select ctor "
+            <> show c_i
+            <> ", e: "
+            <> show (pretty e')
+            <> ", env:  "
+            <> show (pretty ρ_1)
+        )
+        $ selectCtor c_i e ρ_1 γ
   where
     x_l = ENeut $ NV $ NVar 0
     ρ_1 = ExtendPat ρ b x_l

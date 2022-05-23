@@ -170,6 +170,7 @@ checkD l d@(Decl p a m) ρ γ = do
     boundType p t v l γ1
     pure γ1
 checkD l d@(RDecl p a m) ρ γ = do
+    checkingDecl d l ρ γ
     checkT l a ρ γ
     γ_1 <- bindType p t x_l γ
     check (l + 1) m t ρ_1 γ_1
@@ -263,7 +264,7 @@ instance HasLevel CheckEvent where
     getLevel (CheckedHasType _ _ l _ _) = l
 
 instance Displayable CheckEvent where
-    display (CheckingHasType e v _ ρ γ) = "checking type of " <> show (pretty e) <> " is " <> show (pretty v) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
+    display (CheckingHasType e v _ _ _) = "checking type of " <> show (pretty e) <> " is " <> show (pretty v)
     display (CheckedHasType e v _ _ _) = "checked type of " <> show (pretty e) <> " is " <> show (pretty v)
 
 checkingHasType ::
@@ -479,7 +480,7 @@ checkI l c@(Ctor c_i (Just a)) ρ γ = do
             inferredType a l ρ γ v
         other -> throwM $ typingError $ "expected type of ctor lookup " <> unpack c_i <> " to be a product type (Π x : A.f x), but found " <> show (pretty other)
 checkI l e ρ γ =
-    throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show (pretty e) <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
+    throwM $ typingError $ "[" <> show l <> "] cannot infer type of " <> show e <> " in env " <> show (pretty ρ) <> " and context " <> show (pretty γ)
 
 {- | Lookup a constructor's definition in the current environment.
  We look through all the environment's bindings' definitions to find a

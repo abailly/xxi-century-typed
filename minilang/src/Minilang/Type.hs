@@ -5,7 +5,7 @@ module Minilang.Type where
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Catch (Exception, MonadThrow (..))
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
 import Minilang.Env (Env' (..), Name, extend)
@@ -466,7 +466,9 @@ checkI _ (S _) _ _ = pure $ EPrim PrimString
 checkI l c@(Ctor c_i Nothing) ρ γ = do
     inferringType c l ρ γ
     typ <- lookupCtor c_i ρ γ
-    inferredType c l ρ γ typ
+    case typ of
+        EPi{} -> throwM $ typingError $ "ctor needs " <> unpack c_i <> " needs one argument"
+        _ -> inferredType c l ρ γ typ
 checkI l c@(Ctor c_i (Just a)) ρ γ = do
     inferringType c l ρ γ
     typ <- lookupCtor c_i ρ γ
@@ -498,16 +500,8 @@ selectCtor c_i e@(Sum cs) ρ γ =
             -- TODO: need a unique name here
             pure $ eval (Pi (B "u") a e) ρ
         _ -> lookupCtor c_i ρ γ
-selectCtor c_i e'@(Abs b e) ρ γ =
-    trace
-        ( "select ctor "
-            <> show c_i
-            <> ", e: "
-            <> show (pretty e')
-            <> ", env:  "
-            <> show (pretty ρ_1)
-        )
-        $ selectCtor c_i e ρ_1 γ
+selectCtor c_i (Abs b e) ρ γ =
+    selectCtor c_i e ρ_1 γ
   where
     x_l = ENeut $ NV $ NVar 0
     ρ_1 = ExtendPat ρ b x_l

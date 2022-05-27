@@ -50,7 +50,7 @@ spec = parallel $
                 out <- readFile outputFileName
 
                 out
-                    `shouldBe` "\955\928> defined Nat : U\n\955\928> defined id : \928 A : U . A \8594 A\n\955\928> $succ $succ $succ $zero  : Sum(zero| succ Nat)\n\955\928> Bye!\n"
+                    `shouldBe` "\955\928> defined Nat : U\n\955\928> defined id : \928 A : U . A \8594 A\n\955\928> succ succ succ zero  : Sum(zero| succ Nat)\n\955\928> Bye!\n"
 
         describe "Purer REPL" $ do
             it "keeps handling Inputs even when they fail" $ do

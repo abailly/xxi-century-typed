@@ -8,7 +8,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
-import Minilang.Env (Env' (..), Name, extend)
+import Minilang.Env (Env' (..), Name)
 import Minilang.Eval (
     Context,
     Context' (Context, EmptyContext),
@@ -159,7 +159,7 @@ checkD ::
     Decl ->
     Env ->
     Context ->
-    tc Context
+    tc (Env, Context)
 checkD l d@(Decl p a m) ρ γ = do
     checkingDecl d l ρ γ
     let t = eval a ρ
@@ -168,7 +168,7 @@ checkD l d@(Decl p a m) ρ γ = do
     check l m t ρ γ
     γ1 <- bindType p t v γ
     boundType p t v l γ1
-    pure γ1
+    pure (ExtendDecl ρ d, γ1)
 checkD l d@(RDecl p a m) ρ γ = do
     checkingDecl d l ρ γ
     checkT l a ρ γ
@@ -176,7 +176,7 @@ checkD l d@(RDecl p a m) ρ γ = do
     check (l + 1) m t ρ_1 γ_1
     γ' <- bindType p t v γ
     boundType p t v l γ'
-    pure γ'
+    pure (ExtendDecl ρ d, γ')
   where
     x_l = ENeut $ NV $ NVar l
     ρ_1 = ExtendPat ρ p x_l
@@ -347,11 +347,9 @@ check l a@(Abs p m) ty@(EPi t g) ρ γ = do
     ρ_1 = ExtendPat ρ p x_l
 check l a@(Let d m) t ρ γ = do
     checkingHasType a t l ρ γ
-    γ_1 <- checkD l d ρ γ
+    (ρ_1, γ_1) <- checkD l d ρ γ
     check l m t ρ_1 γ_1
     checkedHasType a t l ρ γ
-  where
-    ρ_1 = ExtendDecl ρ d
 check l m t ρ γ = do
     checkingHasType m t l ρ γ
     t' <- checkI l m ρ γ
@@ -522,8 +520,7 @@ loadProgram ::
     Context ->
     tc (Env, Context)
 loadProgram (Let d r) ρ γ = do
-    γ' <- checkD 0 d ρ γ
-    let ρ' = extend d ρ
+    (ρ', γ') <- checkD 0 d ρ γ
     loadProgram r ρ' γ'
 loadProgram e ρ γ = do
     check 0 e EOne ρ γ

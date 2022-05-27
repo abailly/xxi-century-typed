@@ -42,9 +42,8 @@ handleUserInput txt = do
                     Decl b t _ -> (b, t)
                     RDecl b t _ -> (b, t)
             do
-                γ' <- checkD 0 dec ρ γ
-                let ρ' = extend dec ρ
-                setEnv (repl{rho = ρ', gamma = γ'})
+                (rho, gamma) <- checkD 0 dec ρ γ
+                setEnv (repl{rho, gamma})
                 output (Defined sym typ)
                 `catch` \(TypingError err) -> output (Msg err)
         Left _ ->

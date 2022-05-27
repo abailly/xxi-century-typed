@@ -34,3 +34,23 @@ let ze-recursion :  (B : U) -> Ze -> B =
 
 let Not : U -> U =
   λ X . (X -> Ze)
+    ;
+
+
+-- Natural numbers
+
+let rec Nat : U = Sum(z | s Nat)  ;
+
+-- there is no innner 'let ... in ... ' construct :(
+
+let rec h :
+      (A : Nat -> U)
+      -> (zero : Nat)
+      -> ((n : Nat)
+          -> A n
+          -> A ($s n))
+      -> (n : Nat)
+      -> A n =  λ A . λ a0 . λ f . case (z -> a0 | s m -> f m (h A a0 f m)) ;
+
+let nat-induction : (A : Nat -> U) -> A $z -> ((n : Nat) -> A n -> A ($s n)) -> (n : Nat) -> A n
+  = λ A . λ a0 . λ f . h a0 f

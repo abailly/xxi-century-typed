@@ -1,8 +1,8 @@
+let rec Nat : U = Sum (zero | succ Nat);
+
 let rec NEList : Π A : U . U =
   λ A . Sum(S A| C (Σ a : A . NEList A)) ;
 
 let elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a))
   -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b
-  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a) ;
-
-let select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit)
+  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a)

@@ -68,15 +68,13 @@ spec = parallel $
             describe "Type inference" $ do
                 it "can infer type of zero-arg constructor" $ do
                     let dec = Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing])
-                    γ <- checkD 0 dec EmptyEnv EmptyContext
-                    let ρ = extend dec EmptyEnv
+                    (ρ, γ) <- checkD 0 dec EmptyEnv EmptyContext
                     t <- checkI 0 (Ctor "true" Nothing) ρ γ
                     t `shouldBe` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
                 it "can infer type of non polymorphic one-arg constructor applied" $ do
                     let dec = RDecl (B "Nat") (U 0) (Sum [Choice "Z" Nothing, Choice "S" (Just $ Var "Nat")])
-                    γ <- checkD 0 dec EmptyEnv EmptyContext
-                    let ρ = extend @Value dec EmptyEnv
+                    (ρ, γ) <- checkD 0 dec EmptyEnv EmptyContext
                     t <- checkI 0 (Ctor "S" (Just $ Ctor "Z" Nothing)) ρ γ
                     t
                         `shouldBe` ESum
@@ -108,8 +106,7 @@ spec = parallel $
                                     (B "A")
                                     (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
                                 )
-                    γ <- checkD 0 dec EmptyEnv EmptyContext
-                    let ρ = extend dec EmptyEnv
+                    (ρ, γ) <- checkD 0 dec EmptyEnv EmptyContext
                     checkI 0 (Ctor "S" Nothing) ρ γ
                         `shouldThrow` \TypingError{} -> True
 
@@ -222,13 +219,13 @@ spec = parallel $
 
             describe "Check a declaration is correct" $ do
                 it "checks a recursive declaration is correct given env and empty context" $ do
-                    γ <-
+                    (ρ, γ) <-
                         checkD
                             0
                             (RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")]))
                             EmptyEnv
                             EmptyContext
-                    γ' <-
+                    (_, γ') <-
                         checkD
                             0
                             ( RDecl
@@ -277,7 +274,7 @@ spec = parallel $
                                     )
                                 )
                             )
-                            EmptyEnv
+                            ρ
                             γ
 
                     lookupType "V" γ' `shouldReturn` EU 0

@@ -113,32 +113,32 @@ spec = parallel $
                     checkI 0 (Ctor "S" Nothing) ρ γ
                         `shouldThrow` \TypingError{} -> True
 
-                it "can infer type of polymorphic one-arg constructor applied" $ do
-                    let nat = RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")])
-                        nelist =
-                            RDecl
-                                (B "NEList")
-                                (Pi (B "A") (U 0) (U 0))
-                                ( Abs
-                                    (B "A")
-                                    (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
-                                )
+                -- it "can infer type of polymorphic one-arg constructor applied" $ do
+                --     let nat = RDecl (B "Nat") (U 0) (Sum [Choice "zero" Nothing, Choice "succ" (Just $ Var "Nat")])
+                --         nelist =
+                --             RDecl
+                --                 (B "NEList")
+                --                 (Pi (B "A") (U 0) (U 0))
+                --                 ( Abs
+                --                     (B "A")
+                --                     (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))])
+                --                 )
 
-                    γ <- checkD 0 nat EmptyEnv EmptyContext
-                    let ρ = extend nat EmptyEnv
-                    γ' <- checkD 0 nelist ρ γ
-                    let ρ' = extend nelist ρ
-                    t <- checkI 0 (Ctor "S" (Just (Ctor "succ" (Just (Ctor "zero" Nothing))))) ρ' γ'
-                    t
-                        `shouldBe` ESum
-                            ( SumClos
-                                (
-                                    [ Choice "S" (Just (Var "Nat"))
-                                    , Choice "C" (Just (Sigma (B "a") (Var "Nat") (Ap (Var "NEList") (Var "Nat"))))
-                                    ]
-                                , EmptyEnv
-                                )
-                            )
+                --     γ <- checkD 0 nat EmptyEnv EmptyContext
+                --     let ρ = extend nat EmptyEnv
+                --     γ' <- checkD 0 nelist ρ γ
+                --     let ρ' = extend nelist ρ
+                --     t <- checkI 0 (Ctor "S" (Just (Ctor "succ" (Just (Ctor "zero" Nothing))))) ρ' γ'
+                --     t
+                --         `shouldBe` ESum
+                --             ( SumClos
+                --                 (
+                --                     [ Choice "S" (Just (Var "Nat"))
+                --                     , Choice "C" (Just (Sigma (B "a") (Var "Nat") (Ap (Var "NEList") (Var "Nat"))))
+                --                     ]
+                --                 , EmptyEnv
+                --                 )
+                --             )
 
                 it "can infer type of zero-arg ctor in nested complex env" $ do
                     let ρ =
@@ -292,8 +292,8 @@ spec = parallel $
                                     (B "not")
                                     (Pi Wildcard (Var "Bool") (Var "Bool"))
                                     ( Case
-                                        [ Clause "true" (Abs Wildcard (Ctor "false" Nothing))
-                                        , Clause "false" (Abs Wildcard (Ctor "true" Nothing))
+                                        [ Clause "true" (Abs Wildcard (Var "false"))
+                                        , Clause "false" (Abs Wildcard (Var "true"))
                                         ]
                                     )
                                 )
@@ -312,7 +312,7 @@ spec = parallel $
                                     [ "let Unit : U = Sum(tt);"
                                     , "let rec NEList : Π A:U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
                                     , "let head : Π A:U . NEList A -> A = λ A . case(S a -> a | C (a,_) -> a);"
-                                    , "let l : NEList Unit = $C ($tt, $C($tt, $S $tt));"
+                                    , "let l : NEList Unit = C (tt, C(tt, S tt));"
                                     , "let x : Unit -> [] = case(tt -> ());"
                                     , "x (head Unit l)"
                                     ]

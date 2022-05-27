@@ -43,6 +43,9 @@ spec = parallel $
             it "parse Application" $
                 parseProgram False "abc fge" `shouldBe` Ap (Var "abc") (Var "fge")
 
+            it "run application parser" $
+                doParse application "C (S abc)" `shouldBe` Ap (Var "C") (Ap (Var "S") (Var "abc"))
+
             it "parse application as left-associative" $ do
                 parseProgram False "abc fge 12" `shouldBe` Ap (Ap (Var "abc") (Var "fge")) (I 12)
                 parseProgram False "abc fge 12 k" `shouldBe` parseProgram False "((abc fge) 12) k"
@@ -61,12 +64,14 @@ spec = parallel $
             it "parse Dependent Product" $ do
                 parseProgram False "Π abc : U . abc" `shouldBe` Pi (B "abc") (U 0) (Var "abc")
                 parseProgram False "Πabc:U.abc" `shouldBe` Pi (B "abc") (U 0) (Var "abc")
+                parseProgram True "Π a : A . C (S a)" `shouldBe` Pi (B "a") (Var "A") (Ap (Var "C") (Ap (Var "S") (Var "a")))
 
             it "parse Function type" $ do
                 parseProgram False "() -> []" `shouldBe` Pi Wildcard Unit One
                 parseProgram False "(A : U) -> A" `shouldBe` Pi (B "A") (U 0) (Var "A")
                 parseProgram False "(A : U) → (b : A) → ()" `shouldBe` Pi (B "A") (U 0) (Pi (B "b") (Var "A") Unit)
                 parseProgram False "(_ : A) -> B" `shouldBe` parseProgram False "A -> B"
+                parseProgram False "(a : A) -> C (S a)" `shouldBe` Pi (B "a") (Var "A") (Ap (Var "C") (Ap (Var "S") (Var "a")))
 
             it "parse Dependent Sum" $ do
                 parseProgram False "Σ abc : U . abc" `shouldBe` Sigma (B "abc") (U 0) (Var "abc")
@@ -77,14 +82,11 @@ spec = parallel $
                 parseProgram False "π1.abc" `shouldBe` P1 (Var "abc")
                 parseProgram False "π2.abc" `shouldBe` P2 (Var "abc")
 
-            it "parse Constructor application" $
-                parseProgram False "$c1 abc" `shouldBe` Ctor "c1" (Just $ Var "abc")
-
             it "parse Pairing" $
                 parseProgram False "(abc,12)" `shouldBe` Pair (Var "abc") (I 12)
 
             it "parses Constructor w/ Pairing" $
-                parseProgram False "$foo (abc,12)" `shouldBe` Ctor "foo" (Just $ Pair (Var "abc") (I 12))
+                parseProgram False "foo (abc,12)" `shouldBe` Ap (Var "foo") (Pair (Var "abc") (I 12))
 
             it "parses Labelled Sum" $ do
                 parseProgram False "Sum(foo [] | bar Nat)" `shouldBe` Sum [Choice "foo" (Just One), Choice "bar" (Just $ Var "Nat")]
@@ -230,7 +232,7 @@ spec = parallel $
                         )
 
             it "parses natRec " $
-                parseProgram False "let rec natrec : Π C : Nat → U . C $zero → (Π n : Nat.C n → C ($succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
+                parseProgram False "let rec natrec : Π C : Nat → U . C zero → (Π n : Nat.C n → C (succ n)) → Π n : Nat . C n = λ C . λ a . λ g . case (zero → a | succ n1 → (g n1) ((((natrec C) a) g) n1)); ()"
                     `shouldBe` Let
                         ( RDecl
                             (B "natrec")
@@ -239,7 +241,7 @@ spec = parallel $
                                 (Pi Wildcard (Var "Nat") (U 0))
                                 ( Pi
                                     Wildcard
-                                    (Ap (Var "C") (Ctor "zero" Nothing))
+                                    (Ap (Var "C") (Var "zero"))
                                     ( Pi
                                         Wildcard
                                         ( Pi
@@ -250,7 +252,7 @@ spec = parallel $
                                                 (Ap (Var "C") (Var "n"))
                                                 ( Ap
                                                     (Var "C")
-                                                    (Ctor "succ" (Just $ Var "n"))
+                                                    (Ap (Var "succ") (Var "n"))
                                                 )
                                             )
                                         )
@@ -313,7 +315,7 @@ spec = parallel $
                         )
 
             it "parses another program" $
-                parseProgram False "let Unit : U = Sum (tt); let elimUnit : Π C : Unit -> U. C $tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h); ()"
+                parseProgram False "let Unit : U = Sum (tt); let elimUnit : Π C : Unit -> U. C tt -> Π x:Unit. C x = λ C . λ h . case (tt -> h); ()"
                     `shouldBe` Let
                         ( Decl
                             (B "Unit")
@@ -328,7 +330,7 @@ spec = parallel $
                                     (Pi Wildcard (Var "Unit") (U 0))
                                     ( Pi
                                         Wildcard
-                                        (Ap (Var "C") (Ctor "tt" Nothing))
+                                        (Ap (Var "C") (Var "tt"))
                                         (Pi (B "x") (Var "Unit") (Ap (Var "C") (Var "x")))
                                     )
                                 )
@@ -342,13 +344,13 @@ spec = parallel $
                     False
                     ( Text.unlines
                         [ "let rec NEList : Π A : U . U = λ A . Sum(S A | C (Σ a : A . NEList A));"
-                        , "let elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C ($S a)) -> (Π a : (Σ _ : A . NEList A) . C ($C a)) -> Π b : NEList A . C b "
+                        , "let elimNEList : Π A : U . Π C : NEList A -> U . (Π a : A . C (S a)) -> (Π a : (Σ _ : A . NEList A) . C (C a)) -> Π b : NEList A . C b "
                         , "  = λ A . λ  C . λ  h0 . λ h1 . case (S a -> h0 a | C a -> h1 a);"
                         , "let select : NEList Bool -> U = case (S _ -> Unit | C _ -> Unit);"
                         , "()"
                         ]
                     )
-                    `shouldBe` Let (RDecl (B "NEList") (Pi (B "A") (U 0) (U 0)) (Abs (B "A") (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))]))) (Let (Decl (B "elimNEList") (Pi (B "A") (U 0) (Pi (B "C") (Pi Wildcard (Ap (Var "NEList") (Var "A")) (U 0)) (Pi Wildcard (Pi (B "a") (Var "A") (Ap (Var "C") (Ctor "S" (Just (Var "a"))))) (Pi Wildcard (Pi (B "a") (Sigma Wildcard (Var "A") (Ap (Var "NEList") (Var "A"))) (Ap (Var "C") (Ctor "C" (Just (Var "a"))))) (Pi (B "b") (Ap (Var "NEList") (Var "A")) (Ap (Var "C") (Var "b"))))))) (Abs (B "A") (Abs (B "C") (Abs (B "h0") (Abs (B "h1") (Case [Clause "S" (Abs (B "a") (Ap (Var "h0") (Var "a"))), Clause "C" (Abs (B "a") (Ap (Var "h1") (Var "a")))])))))) (Let (Decl (B "select") (Pi Wildcard (Ap (Var "NEList") (Var "Bool")) (U 0)) (Case [Clause "S" (Abs Wildcard (Var "Unit")), Clause "C" (Abs Wildcard (Var "Unit"))])) Unit))
+                    `shouldBe` Let (RDecl (B "NEList") (Pi (B "A") (U 0) (U 0)) (Abs (B "A") (Sum [Choice "S" (Just (Var "A")), Choice "C" (Just (Sigma (B "a") (Var "A") (Ap (Var "NEList") (Var "A"))))]))) (Let (Decl (B "elimNEList") (Pi (B "A") (U 0) (Pi (B "C") (Pi Wildcard (Ap (Var "NEList") (Var "A")) (U 0)) (Pi Wildcard (Pi (B "a") (Var "A") (Ap (Var "C") (Ap (Var "S") (Var "a")))) (Pi Wildcard (Pi (B "a") (Sigma Wildcard (Var "A") (Ap (Var "NEList") (Var "A"))) (Ap (Var "C") (Ap (Var "C") (Var "a")))) (Pi (B "b") (Ap (Var "NEList") (Var "A")) (Ap (Var "C") (Var "b"))))))) (Abs (B "A") (Abs (B "C") (Abs (B "h0") (Abs (B "h1") (Case [Clause "S" (Abs (B "a") (Ap (Var "h0") (Var "a"))), Clause "C" (Abs (B "a") (Ap (Var "h1") (Var "a")))])))))) (Let (Decl (B "select") (Pi Wildcard (Ap (Var "NEList") (Var "Bool")) (U 0)) (Case [Clause "S" (Abs Wildcard (Var "Unit")), Clause "C" (Abs Wildcard (Var "Unit"))])) Unit))
 
         describe "Error handling" $ do
             describe "skipErrorTo" $

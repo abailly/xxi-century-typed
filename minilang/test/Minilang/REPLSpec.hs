@@ -21,7 +21,7 @@ spec = parallel $
                     withInput
                         [ "rec Nat : U = Sum (zero | succ Nat);"
                         , "id : Π A : U . Π _ : A . A = λ A . λ x . x;"
-                        , "id Nat ($succ ($succ ($succ $zero)))"
+                        , "id Nat (succ (succ (succ zero)))"
                         ]
 
             out
@@ -41,7 +41,7 @@ spec = parallel $
             it "evaluates single MiniLang term read from IO" $ \fileName -> do
                 let outputFileName = fileName <> ".out"
 
-                writeFile fileName "rec Nat : U = Sum (zero | succ Nat);\nid : Π A : U . Π _ : A . A = λ A . λ x . x;\nid Nat ($succ ($succ ($succ $zero)))"
+                writeFile fileName "rec Nat : U = Sum (zero | succ Nat);\nid : Π A : U . Π _ : A . A = λ A . λ x . x;\nid Nat (succ (succ (succ zero)))"
 
                 _ <- withFile fileName ReadMode $ \hin ->
                     withFile outputFileName AppendMode $ \hout ->

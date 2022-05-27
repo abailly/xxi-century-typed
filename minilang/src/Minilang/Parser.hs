@@ -162,14 +162,13 @@ expr =
             <|> (dependent_product <?> "dependent product")
             <|> (dependent_sum <?> "dependent sum")
             <|> (projection <?> "projection")
-            <|> (labelled_sum <?> "labelled sum")
+            <|> try (labelled_sum <?> "labelled sum")
             <|> (case_match <?> "case_match")
             -- try is needed because expressions are prefixes of function types
             <|> try (fun_type <?> "fun_type")
             -- try is needed because parenthesized expressions are prefixes of
             -- pairs
             <|> try (pair <?> "pair")
-            <|> (ctor_expr <?> "constructor")
             <|> try application
             <|> (term <?> "term")
             <?> "expression"
@@ -223,13 +222,13 @@ term ::
     MLParser AST
 term =
     debug
-        "term"
+        "term: "
         ( (string_literal <?> "string")
             <|> (number <?> "number")
             <|> (unit <?> "unit")
             <|> (one <?> "one")
-            <|> (ctor <?> "ctor")
-            <|> (variable <?> "identifier")
+            <|> (variable <?> "variable")
+            <|> try pair
             <|> ((lpar *> expr <* rpar) <?> "subexpression")
         )
 
@@ -258,13 +257,6 @@ fun_type = debug "function type" $ do
     nonDependentType = Pi Wildcard <$> (try application <|> term)
     dependentType = uncurry Pi <$> (lpar *> type_ascription <* rpar)
     funTypeLhs = try dependentType <|> nonDependentType
-
-ctor_expr ::
-    MLParser AST
-ctor_expr = debug "constructor" $ do
-    Ctor c _ <- ctor
-    e <- optionMaybe expr
-    pure $ Ctor c e
 
 application ::
     MLParser AST
@@ -345,7 +337,6 @@ number
     , string_literal
     , variable
     , unit
-    , ctor
     , one ::
         MLParser AST
 number = try $ do
@@ -373,7 +364,6 @@ variable = try $ do
         _ -> pure $ Var s
 unit = reservedOp "()" *> pure Unit <?> "unit"
 one = reservedOp "[]" *> pure One <?> "One"
-ctor = char '$' >> Ctor <$> identifier <*> pure Nothing
 
 identifier :: MLParser Text
 identifier = debug "identifier" $

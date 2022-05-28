@@ -52,8 +52,8 @@ deriving anyclass instance ToJSON AST
 deriving anyclass instance FromJSON AST
 
 data Decl
-    = Decl Binding AST AST
-    | RDecl Binding AST AST
+    = Decl {bound :: Binding, typeOf :: AST, body :: AST}
+    | RDecl {bound :: Binding, typeOf :: AST, body :: AST}
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Binding

@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Minilang.Type where
 
-import Control.Monad (forM_, unless, when)
+import Control.Monad (foldM, forM_, unless, when)
 import Control.Monad.Catch (Exception, MonadThrow (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text, pack, unpack)
@@ -162,13 +163,13 @@ checkD ::
     tc (Env, Context)
 checkD l d@(Decl p a m) ρ γ = do
     checkingDecl d l ρ γ
+    checkT l a ρ γ
     let t = eval a ρ
         v = eval m ρ
-    checkT l a ρ γ
     check l m t ρ γ
     γ1 <- bindType p t v γ
     boundType p t v l γ1
-    pure (ExtendDecl ρ d, γ1)
+    extendWith ρ γ1 v d
 checkD l d@(RDecl p a m) ρ γ = do
     checkingDecl d l ρ γ
     checkT l a ρ γ
@@ -178,12 +179,28 @@ checkD l d@(RDecl p a m) ρ γ = do
     boundType p t v l γ'
     pure (ExtendDecl ρ d, γ')
   where
+    v = eval m (ExtendDecl ρ d)
+    t = eval a ρ
     x_l = ENeut $ NV $ NVar l
     ρ_1 = ExtendPat ρ p x_l
-    t = eval a ρ
-    v = eval m (ExtendDecl ρ d)
+
+extendWith :: TypeChecker tc => Env -> Context -> Value -> Decl -> tc (Env, Context)
+extendWith ρ γ t d@Decl{body} = do
+    let ρ' = ExtendDecl ρ d
+        bindInEnv (ρ'', γ') (Choice c _) = do
+            let ctor = B c
+            γ'' <- bindType ctor t EUnit γ'
+            let ρ''' = ExtendPat ρ'' ctor (ECtor c Nothing)
+            pure (ρ''', γ'')
+    case body of
+        Sum cs -> foldM bindInEnv (ρ', γ) cs
+        _ -> pure (ρ', γ)
+
+--
+
 -- ** Check Type Well-Formedness
 
+--
 data CheckTEvent
     = CheckingIsType AST Int Env Context
     | CheckedIsType AST Int Env Context

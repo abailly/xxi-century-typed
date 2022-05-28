@@ -218,6 +218,16 @@ spec = parallel $
                         `shouldThrow` \TypingError{} -> True
 
             describe "Check a declaration is correct" $ do
+                it "check declarations registers constructors in env and context" $ do
+                    let dec = Decl (B "Bool") (U 0) (Sum [Choice "true" Nothing, Choice "false" Nothing])
+                    (ρ, γ) <- checkD 0 dec EmptyEnv EmptyContext
+
+                    rho ρ "true"
+                        `shouldBe` ECtor "true" Nothing
+
+                    lookupType "true" γ
+                        `shouldReturn` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
+
                 it "checks a recursive declaration is correct given env and empty context" $ do
                     (ρ, γ) <-
                         checkD

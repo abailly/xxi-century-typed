@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Minilang.Type where
 
@@ -8,6 +8,7 @@ import Control.Monad.Catch (Exception, MonadThrow (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as Text
+import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import Minilang.Env (Env' (..), Name)
 import Minilang.Eval (
@@ -169,7 +170,7 @@ checkD l d@(Decl p a m) ρ γ = do
     check l m t ρ γ
     γ1 <- bindType p t v γ
     boundType p t v l γ1
-    extendWith ρ γ1 v d
+    trace ("v : " <> show v) $ extendWith ρ γ1 t d
 checkD l d@(RDecl p a m) ρ γ = do
     checkingDecl d l ρ γ
     checkT l a ρ γ
@@ -177,7 +178,7 @@ checkD l d@(RDecl p a m) ρ γ = do
     check (l + 1) m t ρ_1 γ_1
     γ' <- bindType p t v γ
     boundType p t v l γ'
-    pure (ExtendDecl ρ d, γ')
+    extendWith ρ γ' t d
   where
     v = eval m (ExtendDecl ρ d)
     t = eval a ρ
@@ -185,16 +186,26 @@ checkD l d@(RDecl p a m) ρ γ = do
     ρ_1 = ExtendPat ρ p x_l
 
 extendWith :: TypeChecker tc => Env -> Context -> Value -> Decl -> tc (Env, Context)
-extendWith ρ γ t d@Decl{body} = do
-    let ρ' = ExtendDecl ρ d
-        bindInEnv (ρ'', γ') (Choice c _) = do
+extendWith ρ γ t = \case
+    d@Decl{body} -> go body t [] [] (ExtendDecl ρ d) γ
+    d@RDecl{body} -> go body t [] [] (ExtendDecl ρ d) γ
+  where
+    bindInEnv bs tys (ρ', γ') (Choice c _a) =
+        trace ("bs: " <> show bs <> ", tys: " <> show tys) $ do
             let ctor = B c
             γ'' <- bindType ctor t EUnit γ'
-            let ρ''' = ExtendPat ρ'' ctor (ECtor c Nothing)
-            pure (ρ''', γ'')
-    case body of
-        Sum cs -> foldM bindInEnv (ρ', γ) cs
-        _ -> pure (ρ', γ)
+            let ρ'' = ExtendPat ρ' ctor (ECtor c Nothing)
+            pure (ρ'', γ'')
+    go bod ty bs res ρ_1 γ_1 =
+        trace ("body: " <> show bod <> ", ty: " <> show ty) $ case (bod, ty) of
+            (Sum cs, _) -> foldM (bindInEnv bs res) (ρ_1, γ_1) cs
+            (Abs b rest, EPi t' g) -> trace ("b: " <> show b <> ", rest: " <> show rest <> ", t'" <> show t') $ do
+                γ_2 <- bindType b t' x_l γ_1
+                go rest (inst g x_l) (b : bs) (t : res) ρ_2 γ_2
+              where
+                x_l = ENeut $ NV $ NVar 0
+                ρ_2 = ExtendPat ρ_1 b x_l
+            _ -> pure (ρ, γ)
 
 --
 

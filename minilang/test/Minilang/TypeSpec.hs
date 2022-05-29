@@ -228,6 +228,23 @@ spec = parallel $
                     lookupType "true" γ
                         `shouldReturn` ESum (SumClos ([Choice "true" Nothing, Choice "false" Nothing], EmptyEnv))
 
+                it "check declarations registers one-arg constructors in env and context" $ do
+                    let dec =
+                            RDecl
+                                (B "Foo")
+                                (Pi (B "A") (U 0) (U 0))
+                                ( Abs
+                                    (B "A")
+                                    (Sum [Choice "S" (Just (Var "A")), Choice "C" Nothing])
+                                )
+                    (ρ, γ) <- checkD 0 dec EmptyEnv EmptyContext
+
+                    rho ρ "S"
+                        `shouldBe` ECtor "S" Nothing
+
+                    lookupType "S" γ
+                        `shouldReturn` ESum (SumClos ([Choice "S" (Just (Var "A")), Choice "C" Nothing], EmptyEnv))
+
                 it "checks a recursive declaration is correct given env and empty context" $ do
                     (ρ, γ) <-
                         checkD

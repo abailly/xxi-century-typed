@@ -513,27 +513,32 @@ checkI l e ρ γ =
  `Sum` instance where the given constructor is defined.
 -}
 lookupCtor :: (TypeChecker tc) => Name -> Env -> Context -> tc Value
-lookupCtor c_i (ExtendDecl ρ (Decl _ _ e)) γ = selectCtor c_i e ρ γ
-lookupCtor c_i ρ'@(ExtendDecl _ (RDecl _ _ e)) γ = selectCtor c_i e ρ' γ
+lookupCtor c_i (ExtendDecl ρ (Decl _ _ e)) γ =
+    trace ("lookup in " <> show ρ) $
+        selectCtor c_i e ρ γ
+lookupCtor c_i (ExtendDecl ρ (RDecl _ _ e)) γ =
+    trace ("lookup in " <> show ρ) $
+        selectCtor c_i e ρ γ
 lookupCtor c_i (ExtendPat ρ _ _) γ = lookupCtor c_i ρ γ
 lookupCtor c_i EmptyEnv _ = throwM $ typingError $ "cannot find constructor " <> show c_i
 
 selectCtor :: TypeChecker tc => Text -> AST -> Env -> Context -> tc Value
 selectCtor c_i e@(Sum cs) ρ γ =
-    case choose cs c_i of
-        Just (Choice _ Nothing) ->
-            pure $ eval e ρ
-        Just (Choice _ (Just a)) ->
-            -- TODO: need a unique name here
-            pure $ eval (Pi (B "u") a e) ρ
-        _ -> lookupCtor c_i ρ γ
-selectCtor c_i (Abs b e) ρ γ =
-    selectCtor c_i e ρ_1 γ
+    trace ("select " <> unpack c_i <> " in " <> show cs <> " env=" <> show ρ) $
+        case choose cs c_i of
+            Just (Choice _ Nothing) ->
+                pure $ eval e ρ
+            Just (Choice _ (Just a)) ->
+                -- TODO: need a unique name here
+                pure $ eval (Pi (B "u") a e) ρ
+            _ -> lookupCtor c_i ρ γ
+selectCtor c_i ab@(Abs b e) ρ γ =
+    trace ("select Abs " <> unpack c_i <> " in " <> show ab) $
+        selectCtor c_i e ρ_1 γ
   where
     x_l = ENeut $ NV $ NVar 0
     ρ_1 = ExtendPat ρ b x_l
 selectCtor c_i ast EmptyEnv _ = error $ "cannot select " <> Text.unpack c_i <> " in " <> show ast
-selectCtor c_i _ (ExtendDecl ρ RDecl{}) γ = lookupCtor c_i ρ γ
 selectCtor c_i _ ρ γ = lookupCtor c_i ρ γ
 -- * Programs
 

@@ -1,0 +1,35 @@
+name: xpdaybenelux2022
+synopsis: Haskell code for XP Day Benelux 2022
+maintainer: Arnaud Bailly <arnaud.bailly@iohk.io>
+github: abailly/xxi-century-typed
+category: Development
+
+ghc-options: -Wall -Werror
+default-extensions:
+  - DuplicateRecordFields
+  - RecordWildCards
+  - GADTs
+  - FlexibleContexts
+  - FlexibleInstances
+  - OverloadedStrings
+  - ScopedTypeVariables
+  - TypeApplications
+  - DataKinds
+  - RecordWildCards
+  - NamedFieldPuns
+
+dependencies:
+  - array
+  - base >= 4.9 && < 5
+  - basement
+  - bytestring
+  - mtl
+  - parsec
+  - text
+
+library:
+  source-dirs: .
+  exposed-modules: NIR
+  dependencies:
+  - hspec
+  - QuickCheck

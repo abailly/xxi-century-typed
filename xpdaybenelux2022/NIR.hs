@@ -1,4 +1,5 @@
-{-
+{- | Intro
+
 
                 Fifty Shades of TDD
 
@@ -8,10 +9,7 @@
 
                XP Days Benelux 2022
                    2022-09-09
-
 -}
-
--- | Intro
 module NIR where
 
 import Basement.Bounded (Zn (..), zn)
@@ -36,7 +34,7 @@ import Test.QuickCheck (
     forAll,
     frequency,
     suchThat,
-    tabulate,
+    tabulate
  )
 import Text.Parsec (Parsec, char, count, digit, runParser, (<|>))
 import Text.Printf (printf)
@@ -60,7 +58,7 @@ import Text.Printf (printf)
 -- Plus some more "interesting" Special cases: Foreign born, persons, overseas
 -- departments...
 
--- ** Take 1: Examples-Based TDD
+-- ** Take 1: Example-Based TDD
 
 validateINSEE :: INSEE1 -> Bool
 
@@ -134,7 +132,7 @@ newtype INSEE1 = INSEE1 String
 
 --
 
--- ** Validation functions
+-- ** Validation function
 
 --
 validateINSEE (INSEE1 [gender, year1, year2, month1, month2, dept1, dept2, com1, com2, com3, order1, order2, order3, key1, key2]) =
@@ -405,10 +403,10 @@ computeINSEEKey insee =
  Our /parseIsInverseToPrettyPrint/ property asserts the first proposition, we check the second by introducing
  /mutations/ into an otherwise valid number.
 -}
-inseeValidatorIsResilientToMutations :: Property
-inseeValidatorIsResilientToMutations =
+inseeValidatorKillsNonViableMutants :: Property
+inseeValidatorKillsNonViableMutants =
     forAll arbitrary $ \insee ->
-        forAll arbitrary $ \mutation ->
+        forAll nonViableMutant $ \mutation ->
             let mutant = mutate insee mutation
                 parsedInsee = makeINSEE mutant
              in isLeft parsedInsee
@@ -420,14 +418,16 @@ inseeValidatorIsResilientToMutations =
 data Mutation = Mutation {position :: Int, character :: Char}
     deriving (Eq, Show)
 
-instance Arbitrary Mutation where
-    arbitrary = do
-        position <- choose (0, 14)
-        character <- arbitraryPrintableChar `suchThat` (not . isDigit)
-        pure $ Mutation{position, character}
+nonViableMutant :: Gen Mutation
+nonViableMutant = do
+  position <- choose (0, 14)
+  character <- arbitraryPrintableChar `suchThat` (not . isDigit)
+  pure $ Mutation{position, character}
+
 
 mutate :: INSEE -> Mutation -> String
 mutate insee Mutation{position, character} =
     let (prefix, suffix) = splitAt position (pretty insee)
      in prefix ++ character : tail suffix
 -- * Conclusion
+

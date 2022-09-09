@@ -17,6 +17,7 @@ default-extensions:
   - DataKinds
   - RecordWildCards
   - NamedFieldPuns
+  - TypeApplications
 
 dependencies:
   - array

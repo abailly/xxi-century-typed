@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 {- | Intro
 
 
@@ -38,6 +40,7 @@ import Test.QuickCheck (
  )
 import Text.Parsec (Parsec, char, count, digit, runParser, (<|>))
 import Text.Printf (printf)
+import Basement.Compat.Natural (Natural)
 
 -- * Test-Driven Development
 
@@ -284,8 +287,8 @@ makeINSEE maybeINSEENumber =
     inseeParser :: Parsec String () INSEE
     inseeParser = do
         gender <- char '1' $> M <|> char '2' $> F
-        year <- Year . zn . fromInteger <$> integerDigits 2
-        month <- toEnum . fromInteger <$> integerDigits 2
+        year <- Year . zn  <$> integerDigits 2
+        month <- toEnum . fromIntegral <$> integerDigits 2
         dept <- do
             s <- count 2 digit
             case readNumber s of
@@ -294,18 +297,18 @@ makeINSEE maybeINSEENumber =
                     | d == 99 -> pure Foreign
                     | otherwise -> fail ("can't parse " <> s <> " as a department")
                 Nothing -> fail ("can't parse " <> s <> " as a department")
-        commune <- Commune . zn . fromInteger <$> integerDigits 3
-        order <- Order . zn . fromInteger <$> integerDigits 3
-        key <- Key . zn . fromInteger <$> integerDigits 2
+        commune <- Commune . zn  <$> integerDigits 3
+        order <- Order . zn  <$> integerDigits 3
+        key <- Key . zn  <$> integerDigits 2
         let insee = INSEE{..}
         if computeINSEEKey insee == key
             then pure insee
             else fail ("key " <> show key <> " is invalid")
 
-integerDigits :: Int -> Parsec String () Integer
+integerDigits :: Int -> Parsec String () Natural
 integerDigits numDigits = do
     s <- count numDigits digit
-    maybe (fail $ "can't parse " <> s <> " as a number") pure $ readNumber s
+    maybe (fail $ "can't parse " <> s <> " as a number") (pure . fromInteger) $ readNumber s
 
 -- | ** INSEE Generator
 instance Arbitrary INSEE where
@@ -341,7 +344,7 @@ instance Arbitrary Order where
 -- *** Utility function
 
 someZn :: (KnownNat k) => Gen (Zn k)
-someZn = zn . fromIntegral @Int . getPositive <$> arbitrary
+someZn = zn . fromInteger . getPositive <$> (arbitrary :: Gen (Positive Integer))
 
 -- ** 'Pretty-Printing' of an INSEE number
 

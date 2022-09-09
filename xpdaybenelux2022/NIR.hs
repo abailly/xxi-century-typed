@@ -227,8 +227,9 @@ parseIsInverseToPrettyPrint :: INSEE -> Property
 parseIsInverseToPrettyPrint insee =
     let prettyInsee = pretty insee
         parsedInsee = makeINSEE prettyInsee
-     in counterexample ("pretty = " <> prettyInsee <> "\n, parsed = " <> show parsedInsee) $
-            parsedInsee == Right insee
+     in parsedInsee == Right insee &
+         counterexample ("pretty = " <> prettyInsee <> "\n, parsed = " <> show parsedInsee)  &
+         tabulate "Year" [yearRange prettyInsee]
 
 {- | A somewhat less naive and much more self-descriptive INSEE code.
  It's a data  structure containing fields for the various constituents of an INSEE code.
@@ -432,5 +433,11 @@ mutate :: INSEE -> Mutation -> String
 mutate insee Mutation{position, character} =
     let (prefix, suffix) = splitAt position (pretty insee)
      in prefix ++ character : tail suffix
+
+yearRange :: String -> String
+yearRange insee =
+  let tens = fromJust (readNumber $ take 2 $ drop 1 insee) `div` 10
+  in show (tens * 10, (tens +1) * 10)
+
 -- * Conclusion
 

@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
-
 {- | Intro
 
 
@@ -12,6 +10,14 @@
                XP Days Benelux 2022
                    2022-09-09
 -}
+
+
+
+
+
+
+
+
 module NIR where
 
 import Basement.Bounded (Zn (..), zn)
@@ -76,6 +82,12 @@ validateINSEESpec = describe "Validate INSEE Number" $ do
 
     it "returns True given a valid INSEE Number" $
         validateINSEE aValidINSEENumber `shouldBe` True
+
+
+
+
+
+
 
     let tooShort = INSEE1 "2230"
         invalidGender = INSEE1 "323115935012322"
@@ -207,9 +219,9 @@ readNumber s =
 
  ''Parse, Don't Validate''
 
- Rather than having to validate an INSEE number upon each use because it's actually
- just a `String` in the `INSEE1` case, we guarantee by construction the resulting
- type, if it exists, is valid.
+ Rather than having to validate an INSEE number upon each use because
+ it's actually just a `String` in the `INSEE1` case, we guarantee by
+ construction the resulting type, if it exists, is valid.
 -}
 makeINSEE :: String -> Either String INSEE
 
@@ -441,3 +453,11 @@ yearRange insee =
 
 -- * Conclusion
 
+{-
+
+ * The 'T' in TDD does not always mean 'Test'
+
+ * Examples are good but are just one technique
+
+ * And by the way, TDD is not about /Testing/
+-}

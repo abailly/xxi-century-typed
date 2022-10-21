@@ -22,17 +22,17 @@
 
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module NIR where
+module Main where
 
 import Basement.Bounded (Zn (..), zn)
 import Data.Bifunctor (first)
-import Data.Char (isDigit)
+import Data.Char (isDigit, isSpace)
 import Data.Either (isLeft)
 import Data.Function ((&))
 import Data.Functor (($>))
 import Data.Maybe (fromJust, isJust)
 import GHC.TypeLits (KnownNat)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec (Spec, describe, it, shouldBe, hspec)
 import Test.QuickCheck (
     Arbitrary (arbitrary),
     Gen,
@@ -46,12 +46,13 @@ import Test.QuickCheck (
     forAll,
     frequency,
     suchThat,
-    tabulate
+    tabulate, oneof
  )
 import Text.Parsec (Parsec, char, count, digit, runParser, (<|>))
 import Text.Printf (printf)
 import Basement.Compat.Natural (Natural)
 import Data.String (IsString)
+import Test.Hspec.QuickCheck (prop)
 
 -- * Test-Driven Development
 
@@ -82,54 +83,41 @@ validateINSEE :: INSEE1 -> Bool
 -- Following classical TDD practice, we drive the implementation of the INSEE
 -- number validation logic using various test cases.
 validateINSEESpec :: Spec
-validateINSEESpec = describe "Validate INSEE Number" $ do
-    let aValidINSEENumber = "223115935012322"
+validateINSEESpec = do
 
     it "returns True given a valid INSEE Number" $
-        validateINSEE aValidINSEENumber `shouldBe` True
-        
-    let tooShort = INSEE1 "2230"
-        invalidGender = INSEE1 "323115935012322"
-        invalidYear = INSEE1 "2ab115935012322"
-        invalidMonth = INSEE1 "223ab5935012322"
-        invalidMonth2 = INSEE1 "223145935012322"
-        invalidMonth3 = INSEE1 "223005935012322"
-        invalidDepartment = INSEE1 "22311xx35012322"
-        invalidDepartment2 = INSEE1 "223119635012322"
-        somePersonBornInIndonesia = INSEE1 "200029923123486"
-        invalidCity = INSEE1 "2231159zzz12322"
-        invalidOrder = INSEE1 "2231159123zzz22"
-        invalidControlKey = INSEE1 "223115935012321"
+        validateINSEE "223115935012322" `shouldBe` True
 
-    it "has the right length" $
-        validateINSEE tooShort `shouldBe` False
+    it "must have the right length" $ do
+        validateINSEE "2230" `shouldBe` False
+        validateINSEE "2230159350123221" `shouldBe` False
 
     it "first character must be 1 or 2" $
-        validateINSEE invalidGender `shouldBe` False
+        validateINSEE "323115935012322" `shouldBe` False
 
     it "characters at index 2 and 3 represent year" $
-        validateINSEE invalidYear `shouldBe` False
+        validateINSEE "2ab115935012322" `shouldBe` False
 
     it "characters at index 4 and 5 represent month" $ do
-        validateINSEE invalidMonth `shouldBe` False
-        validateINSEE invalidMonth2 `shouldBe` False
-        validateINSEE invalidMonth3 `shouldBe` False
+        validateINSEE "223ab5935012322" `shouldBe` False
+        validateINSEE "223145935012322" `shouldBe` False
+        validateINSEE "223005935012322" `shouldBe` False
 
     it "characters at index 6 and 7 represent department" $ do
-        validateINSEE invalidDepartment `shouldBe` False
-        validateINSEE invalidDepartment2 `shouldBe` False
+        validateINSEE "22311xx35012322" `shouldBe` False
+        validateINSEE "223119635012322" `shouldBe` False
 
     it "characters at index 6 and 7 contain 99 for a foreign-born person" $
-        validateINSEE somePersonBornInIndonesia `shouldBe` True
+        validateINSEE "200029923123486" `shouldBe` True
 
     it "characters 8, 9, and 10 represent city or country code" $
-        validateINSEE invalidCity `shouldBe` False
+        validateINSEE "2231159zzz12322" `shouldBe` False
 
     it "characters 11, 12, and 13 represent an order" $
-        validateINSEE invalidOrder `shouldBe` False
+        validateINSEE "2231159123zzz22" `shouldBe` False
 
     it "characters 14 and 15 represent a control key" $ do
-        validateINSEE invalidControlKey `shouldBe` False
+        validateINSEE "223115935012321" `shouldBe` False
 
 -- ** Control Key "Algorithm"
 
@@ -315,7 +303,7 @@ makeINSEE maybeINSEENumber =
         let insee = INSEE{..}
         if computeINSEEKey insee == key
             then pure insee
-            else fail ("key " <> show key <> " is invalid")
+            else fail ("key '" <> pretty key <> "' is invalid")
 
 integerDigits :: Int -> Parsec String () Natural
 integerDigits numDigits = do
@@ -422,28 +410,35 @@ inseeValidatorKillsNonViableMutants :: Property
 inseeValidatorKillsNonViableMutants =
     forAll arbitrary $ \insee ->
         forAll nonViableMutant $ \mutation ->
-            let mutant = mutate insee mutation
+            let mutant =  mutation `mutate` insee
                 parsedInsee = makeINSEE mutant
              in isLeft parsedInsee
-                    & tabulate "Position" [show $ position mutation]
-                    & counterexample ("INSEE = " <> pretty insee)
+                    & tabulate "Mutation" [takeWhile (not . isSpace) $ show mutation]
+                    & counterexample ("INSEE  = " <> pretty insee)
                     & counterexample ("Mutant = " <> mutant)
                     & counterexample ("Result = " <> show parsedInsee)
 
-data Mutation = Mutation {position :: Int, character :: Char}
+data Mutation = MutateYear {position :: Int, character :: Char}
+  | MutateKey{key :: Key }
     deriving (Eq, Show)
 
 nonViableMutant :: Gen Mutation
-nonViableMutant = do
-  position <- choose (0, 14)
-  character <- arbitraryPrintableChar `suchThat` (not . isDigit)
-  pure $ Mutation{position, character}
+nonViableMutant = oneof [ genMutantForYear,  genMutantForKey]
+ where
+   genMutantForYear =  do
+    position <- choose (1, 2)
+    character <- arbitraryPrintableChar `suchThat` (not . isDigit)
+    pure $ MutateYear{position, character}
+   genMutantForKey =
+     MutateKey . Key  <$> someZn
 
-
-mutate :: INSEE -> Mutation -> String
-mutate insee Mutation{position, character} =
+mutate :: Mutation -> INSEE -> String
+mutate MutateYear{position, character} insee =
     let (prefix, suffix) = splitAt position (pretty insee)
      in prefix ++ character : tail suffix
+mutate MutateKey{key} insee =
+    let prefix = take 13 (pretty insee)
+     in prefix ++ pretty key
 
 yearRange :: String -> String
 yearRange insee =
@@ -460,3 +455,14 @@ yearRange insee =
 
  * And by the way, TDD is not about /Testing/
 -}
+
+
+-- * Tools
+
+main :: IO ()
+main = hspec $ describe "INSEE" $ do
+  describe "Unit tests"
+    validateINSEESpec
+  describe "Properties" $ do
+    prop "parse is inverse to print" parseIsInverseToPrettyPrint
+    prop "mutants are killed" inseeValidatorKillsNonViableMutants

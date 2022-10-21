@@ -28,9 +28,10 @@ dependencies:
   - parsec
   - text
 
-library:
+tests:
+ nir-test:
   source-dirs: .
-  exposed-modules: NIR
+  main: NIR.hs
   dependencies:
   - hspec
   - QuickCheck
